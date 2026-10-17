@@ -1,0 +1,41 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import {createHash} from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+import {createCloudHistoryPolicy,adaptCloudHistoryUI} from '../../dsh-rc2-implementation-20260928/ui/workspace-pinned-overlay.mjs';
+import {createComposerFeedback} from '../../dsh-rc2-implementation-20260928/ui/composer-feedback.mjs';
+const root=path.dirname(fileURLToPath(import.meta.url)),repo=path.resolve(root,'../../..');
+const large='C:/Users/LI YUHAO/.codex/tmp/dsh020-r41-desktop';
+const sha=b=>createHash('sha256').update(b).digest('hex');
+const acquisition=JSON.parse(fs.readFileSync(path.join(root,'evidence/upstream-ui-acquisition.json')));
+const names=['dsh-client-ui-brand-official','dsh-client-ui-conversation','dsh-client-ui-workspace','dsh-client-ui-settings-models','dsh-client-ui-chat'];
+const original={};
+for(const name of names){const row=acquisition.find(r=>r.name==='@deepseek-ai/'+name);if(row?.version!=='0.2.0-rc.2')throw Error('UPSTREAM_VERSION');const bytes=fs.readFileSync(path.join(large,'upstream-ui',name,'lib/client.js'));if(sha(bytes)!==row.files['lib/client.js'])throw Error('UPSTREAM_HASH');original[name]=bytes.toString();}
+const one=(source,a,b)=>{if(source.split(a).length!==2)throw Error('UI_SEAM:'+a.slice(0,120));return source.replace(a,()=>b);};
+const changed={};
+changed['dsh-client-ui-brand-official']=fs.readFileSync(path.join(repo,'output/batch-improvements-20261008/integration/public/cloud-brand-client.js'),'utf8');
+let s=one(original['dsh-client-ui-conversation'],'children: t("hero.headline")','children: "电亮AI新纪元"');
+const badge=/, \(0, react_jsx_runtime\.jsx\)\("span", \{\s*className: HeroShell_module_css_default\.previewBadge,\s*children: t\("hero\.preview"\)\s*\}\)/g;
+if([...s.matchAll(badge)].length!==1)throw Error('HERO_PREVIEW_SEAM');s=s.replace(badge,'');
+const input='\t\tconst InputBar = (0, react.memo)(function InputBar(';
+s=one(s,input,createComposerFeedback.toString()+'\n\t\tconst {ComposerToast:MegmeetComposerToast}=createComposerFeedback(react,react_dom);\n'+input);
+changed['dsh-client-ui-conversation']=one(s,'toast !== null && (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {','toast !== null && (0, react_jsx_runtime.jsx)(MegmeetComposerToast, {');
+s=one(original['dsh-client-ui-workspace'],'\t\t\t\tchildren: {\n\t\t\t\t\t"sidebar.workspaces.directoryFlow": {','\t\t\t\tchildren: {\n\t\t\t\t\t"sidebar.workspaces.pinned": { kind: "single", scope: "root" },\n\t\t\t\t\t"sidebar.workspaces.directoryFlow": {');
+const render='\t\t\t\t\t!wide && (0, react_jsx_runtime.jsx)("div", {\n\t\t\t\t\t\tclassName: WorkspaceBrowser_module_css_default.search,';
+s=one(s,render,'\t\t\t\t\trenderSlot("sidebar.workspaces.pinned", { wide, expandSidebar }),\n'+render);
+changed['dsh-client-ui-workspace']=adaptCloudHistoryUI(s,one,createCloudHistoryPolicy.toString());
+s=original['dsh-client-ui-settings-models'];
+const welcome=/if \(!\("dshDesktop" in globalThis\)\) ctx\.slots\.inject\("settings\.onboarding", \(\) => ctx\.slots\.register\(\{\s*name: "settings\.onboarding",\s*id: "welcome-notice",\s*order: -100,\s*inject: welcomeInjected\s*\}, WelcomeNotice\)\);/g;
+const official=/ctx\.slots\.inject\("settings\.onboarding", \(\) => ctx\.slots\.register\(\{\s*name: "settings\.onboarding",\s*id: "deepseek-official",\s*children: \{ "settings\.models\.sign-in": \{\s*kind: "single",\s*scope: "root"\s*\} \},\s*order: 0,\s*inject: deepSeekOnboardingInjected\s*\}, DeepSeekOnboardingDialog\)\);/g;
+for(const regex of [welcome,official]){if([...s.matchAll(regex)].length!==1)throw Error('ONBOARDING_SEAM');s=s.replace(regex,'/* Company IAM owns account onboarding. */');}
+changed['dsh-client-ui-settings-models']=s;
+s=original['dsh-client-ui-chat'];
+s=one(s,'const TURN_PROCESS_INDEPENDENT_KINDS = new Set([','const TURN_PROCESS_INDEPENDENT_KINDS = new Set([\n\t\t\t"megmeet-project-result",');
+s=one(s,'const INDEPENDENT = new Set([','const INDEPENDENT = new Set([\n\t\t\t"megmeet-project-result",');
+s=one(s,'blocks: data.blocks,','blocks: data.blocks.map(block => block.kind === "text" ? { ...block, text: block.text.replace(/<!-- maimi-project-v1:[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12} -->/gi, "").trimEnd() } : block),');
+changed['dsh-client-ui-chat']=s;
+const adaptations=[];
+for(const [name,source] of Object.entries(changed)){new vm.Script(source,{filename:name});const target=path.join(root,'overlays',name,'lib/client.js');fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,source);adaptations.push({name:'megmeet-020-compat',package:'@deepseek-ai/'+name,originalSha256:sha(original[name]),adaptedSha256:sha(source)});}
+const result={schema:'megmeet-dsh020-ui-adaptation-v1',dsh:'0.2.0-rc.2',status:'SYNTAX_VERIFIED_BROWSER_PENDING',adaptations,companyRequests:0};
+fs.writeFileSync(path.join(root,'candidate-ui.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));

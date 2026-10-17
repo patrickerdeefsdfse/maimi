@@ -1,0 +1,18 @@
+{
+  "name": "@megmeet/dsh-review-skills",
+  "version": "1.0.0",
+  "description": "麦米专利审核与入职体检报告辅助复核技能；使用现有 DSH 模型、文件及办公能力。",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": { ".": "./index.mjs", "./package.json": "./package.json" },
+  "files": ["index.mjs", "skills"],
+  "engines": { "node": ">=22" },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.4",
+    "@deepseek-ai/dsh-skill": "0.2.0-rc.2"
+  },
+  "scripts": {
+    "test": "node --test tests/native-registration.test.mjs"
+  },
+  "private": true
+}

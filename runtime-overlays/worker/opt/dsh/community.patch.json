@@ -1,0 +1,38 @@
+[
+  {
+    "insert": [
+      {
+        "id": "dshp-file-change-viewer",
+        "name": "@dshp/file-change-viewer",
+        "config": {
+          "patchTool": false
+        }
+      },
+      {
+        "id": "dshp-web-style",
+        "name": "@dshp/web-style",
+        "config": {
+          "themeId": "",
+          "radius": {
+            "global": -1
+          }
+        }
+      },
+      {
+        "id": "dshp-widget-kit",
+        "name": "@dshp/widget-kit",
+        "config": {
+          "referenceWidgets": false
+        }
+      },
+      {
+        "id": "dshp-token-meter",
+        "name": "@dshp/token-meter",
+        "config": {
+          "vendors": [],
+          "activeVendor": ""
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,37 @@
+{
+  "schema": "service-session-broker-r59-source-pins-v1",
+  "files": {
+    "main.py": {
+      "sha256": "2c963b1171b71b9714a35f1f473df57903de7a5f66663bb60450911e38cfc59d",
+      "size_bytes": 5731
+    },
+    "protocol.py": {
+      "sha256": "5ce4a96650f60690458d5a6c3cde44597aec00d53a52d68ce987174806395b42",
+      "size_bytes": 7340
+    },
+    "registry.py": {
+      "sha256": "b401e892759dad4f659258a4de0ac313641e7f0a6f8a0270d951c3935590833a",
+      "size_bytes": 2547
+    },
+    "journal.py": {
+      "sha256": "abc3a4e4cc9a2c9ef7825d9bd782e2e057f785bf7cc1dfa37e47103fbaa4e1eb",
+      "size_bytes": 5041
+    },
+    "service.py": {
+      "sha256": "da4b85024011fbfbc1e91b6b77382ee00f37169cb68b62263d8a9b88a129089b",
+      "size_bytes": 9205
+    },
+    "ssh_transport.py": {
+      "sha256": "b479c59a015f431ade428c28edf9d65d69f74f12fdcfc6c6a20c8315868562f8",
+      "size_bytes": 13769
+    },
+    "remote_program.py": {
+      "sha256": "181fe0be8c5d46bd90454a022e12dbbf58fcfef1702d1ac96a03664bc0cd5ee9",
+      "size_bytes": 5210
+    },
+    "vendor-wheels/asyncssh-2.24.1-py3-none-any.whl": {
+      "sha256": "fc560b4f43be0f0c602d184783e5e3876f5d24d933a25359d86e5a50a5f46fe5",
+      "size_bytes": 382514
+    }
+  }
+}

@@ -1,0 +1,2 @@
+# Use Unix newlines for Linux launchers on Windows checkouts.
+*.sh text eol=lf

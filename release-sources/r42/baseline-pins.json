@@ -1,0 +1,43 @@
+{
+  "ids": {
+    "db-migrate": "44291dfffc58682e8b791ba45f3285ca92f56c30623afcf824b4537a801b89d4",
+    "downloads": "ca7c24c2520a79e74d82c5ca52f12a980c66946d9de539ddd34ecccc8ee1ab87",
+    "gateway": "cc8c4607232f6666be2eef1af564e57f80578cc40f41fc1a7910b561f973b0df",
+    "office-service": "e7444311557bcb1e34c5a623fb2f286453ea8841989c59f917a41f4a69681300",
+    "personal-cloud-manager": "8fe120c75a0919eb7656b5d6c189811cdf10ba036adc1a2d3c4aacd1c6cd4dc3",
+    "postgres": "03663601f0917f3d85a8ac246810c33f7acf82343800da3a83b61ed663ca5199",
+    "redis": "a6b499d6f8f7413bac09cd1bd7d31d718d782f0abe3eec5c9b647ba1b704b97f",
+    "retention-worker": "d0899a25f26f83f02fce45fffff3e8d99247d40d29ff3dfc880ea6f501f92ba7"
+  },
+  "pins": {
+    "gateway": {
+      "/app/app/auth_middleware.py": "7e7371481c7f7101bc3ae99c13588e4e715405ad971e4ee29582878132cb4ee9",
+      "/app/app/connector_official_search.py": "5e61c4caa74f32e5879fec102011e819283be2b246ad5ae8a6acdf3c61d52ea1",
+      "/app/app/desktop_auth.py": "97c3c6597f113f20b5df11cc98cefa23848f01dd258dbbf4f458aefdc6f5de41",
+      "/app/app/desktop_device_auth.py": "36242c30e507e079af48b08d66e3d7af606b68438f22221888b2ba3c4c671f67",
+      "/app/app/drawing_office.py": "d500689e4bc531c429e38957ad0542f3c4eed4ffeae1a02cd74bb3ea17463b0a",
+      "/app/app/enterprise_connectors.py": "3ae266f8fac2de5975714a001c352a41be4c362dde49e68065e1c99a3e691d54",
+      "/app/app/iam_oauth.py": "df8df1a96e763c93bcd386ea7d2778e92d04e0cda15739c4c7b0bdb19197f3f9",
+      "/app/app/main.py": "2feacd73940e288bcc170bea63f33dc72e8189db725717f2fe98b4dc54b70353",
+      "/app/app/persistent_login.py": "04b28638fa75b044b9cb6782ebbf1785c2fa92e6ef74098d49f1e925062fe14c",
+      "/app/app/personal_cloud.py": "7088ced6067d68846a1341ca6a31d27cc4a4a33f627c87caaaed624e63e978a6",
+      "/app/app/personal_cloud_plugin_static.py": "93aec0833d5dc526c4faa8108d4fd2b67042716a5e06de6b7a62e3702cccad02",
+      "/app/app/personal_cloud_static.py": "69df9a4b4d533d76785f1512b644474da4b7baeff77ce09b739ed2468a10dc19",
+      "/app/app/personal_cloud_web.py": "50abe2ca423f51441abffd878392517dcedeeb42874e58f59c342a02832d4e8d",
+      "/app/app/personal_model_proxy.py": "ae61d7d7d43af322508be6305124e7c29703d9fc35c488ffd1949ad679824153",
+      "/app/app/personal_search.py": "2da5cdf3ee655dd62b28fc4d771cf505faa019ec2c77fff2c6fa6fe5565c915e",
+      "/app/app/project_platform.py": "d10ce3d4caf95dfbfd4ca3b7061c43cea5e03d43ad41f1acec0d7ea050efe378",
+      "/app/maimi_projects/card_batch.py": "6fb9990e61f412b5b534c58e4902cd206fbf2594b33d42d9b8d82d213637bed1",
+      "/app/maimi_projects/card_renderer.py": "07d9aaa17a1782a9ad0d19d9d3d9fab66d11814bc72d3e59dbb5fb8cb554f8d5",
+      "/app/maimi_projects/disk_alerts.py": "0fba882a4b81c103ba7c492bf6d2618a14b4d22e8588183eafd4d6041fe2e96e",
+      "/app/maimi_projects/disk_semantics.py": "d98ad04493d4e7affe0c93780f446be6cc70c3ee7b9ed59109566be48435c13a",
+      "/app/maimi_projects/heatcost_flow.py": "c758dced7c7c6bdac31fee095a77c60bf3d0012e25ef410259e4f50dec2ff48f",
+      "/app/maimi_projects/monitor.py": "5af9ba89d972dda09986597f0a899d7a95ef9a157227293cce90d20d8499cc57",
+      "/app/maimi_projects/monitor_projection.py": "7d5eea49d2a65ec7dd37ec1947f6c786fac5895e508b775ce2d4240dbc19e8c9",
+      "/app/maimi_projects/service.py": "facf130820c34047f313a2b0849db62e6997f8dd57e727766331787d2f8b287e"
+    },
+    "personal-cloud-manager": {
+      "/opt/personal-cloud/manager.py": "302a4666e9ce8ea7b292a2bbc4ae4bd929e30488042c9ef72155836908192bb8"
+    }
+  }
+}

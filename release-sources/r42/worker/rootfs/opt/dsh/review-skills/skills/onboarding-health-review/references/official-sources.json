@@ -1,0 +1,112 @@
+{
+  "schema": "megmeet-health-review-public-evidence-v1",
+  "jurisdiction": "CN",
+  "knowledge_version": "2026-10-08.1",
+  "checked_at": "2026-10-08",
+  "scope": "Ordinary onboarding report organization; occupational reports summarized only as authored by the medical institution.",
+  "source_type": "official_public_sources",
+  "contains_company_or_patient_data": false,
+  "contains_diagnostic_or_employment_thresholds": false,
+  "verification_limit": "Public official pages and search-accessible official document excerpts checked on this date; no claim of complete legislation coverage or downloaded-full-text hash verification.",
+  "sources": [
+    {
+      "id": "NHC-WST402-2024",
+      "title": "临床实验室定量检验项目参考区间的制定（WS/T 402—2024）",
+      "publisher": "国家卫生健康委员会",
+      "version": "WS/T 402—2024；代替WS/T 402—2012",
+      "published_on": "2024-05-09",
+      "effective_from": "2024-11-01",
+      "url": "https://www.nhc.gov.cn/wjw/s9492/202407/c69784a165424889bedb36d854e61554.shtml",
+      "document_url": "https://www.nhc.gov.cn/fzs/c100048/202407/758b8a012f4748c9b23ee48d22d0a79a/files/1733821990523_65339.pdf",
+      "provision": "附录A.1 参考区间与医学决定水平",
+      "summary": "参考区间须适用检测方法与人群；医学决定水平与参考区间不同。报告中的参考区间不能直接充当诊断或就业结论。",
+      "product_application": "保留报告原数值、单位、参考区间及医院标记，未提供的区间不从网上补值，不据区间偏离建立诊断或个人风险分。"
+    },
+    {
+      "id": "NHC-OCCUPATIONAL-EXAMS-2019",
+      "title": "职业健康检查管理办法",
+      "publisher": "国家卫生健康委员会",
+      "version": "2015年公布；2019年修订",
+      "published_on": "2019-02-28",
+      "effective_from": null,
+      "effective_date_note": "原办法自2015-05-01施行；来源页标注2019-02-28修改决定，本条未推定修订版独立生效日期。",
+      "url": "https://www.nhc.gov.cn/wjw/c100221/202201/b0468a0fd2394c4197549b82fa2c03b1.shtml",
+      "provision": "第二条",
+      "summary": "职业健康检查面向接触职业病危害作业的劳动者，包括上岗前、在岗期间和离岗时检查。",
+      "product_application": "普通入职材料整理与职业健康专项分开。只归纳专业机构原文，不代替职业健康或适岗结论。"
+    },
+    {
+      "id": "NHC-GBZ188-2025",
+      "title": "职业健康监护技术规范（GBZ 188—2025）",
+      "publisher": "国家卫生健康委员会",
+      "version": "GBZ 188—2025；代替GBZ 188—2014",
+      "published_on": "2025-08-20",
+      "effective_from": "2026-08-01",
+      "url": "https://www.nhc.gov.cn/wjw/pyl/202509/1e939d64e61a4ac6b9d31191c5569c34/files/GBZ%20188%E2%80%942025-20250904165938135.pdf",
+      "provision": "职业健康检查结果评价及体检结论",
+      "summary": "职业健康检查表应由主检医师审阅并填写结论、签名。2026-08-01起新规范替代2014版。",
+      "product_application": "只记录机构已出具结论及出处，不基于个人体检值产生职业禁忌、岗位风险或自动适任性判定。"
+    },
+    {
+      "id": "NHC-HBV-EMPLOYMENT-2010",
+      "title": "关于进一步规范入学和就业体检项目维护乙肝表面抗原携带者入学和就业权利的通知",
+      "publisher": "人力资源和社会保障部、教育部、卫生部",
+      "version": "人社部发〔2010〕12号",
+      "published_on": "2010-02-10",
+      "effective_from": null,
+      "effective_date_note": "登记官方发布日期；未推定来源页以外的生效日期。",
+      "url": "https://www.nhc.gov.cn/wjw/gfxwj/201002/e9d7c8e9e5c846308714fd80717b1744.shtml",
+      "provision": "规范入学、就业体检乙肝项目与就业权利",
+      "summary": "普通入学、就业体检不得要求乙肝项目检测或报告、询问携带状态，不得以携带者身份拒录。特殊职业的法定程序不能由本技能推定。",
+      "product_application": "缺少乙肝五项或HBV-DNA不列普通入职材料缺失，不以相关信息做录用、风险或排名特征。"
+    },
+    {
+      "id": "NHC-HBV-TESTING-2011",
+      "title": "卫生部办公厅关于进一步规范乙肝项目检测的通知",
+      "publisher": "卫生部办公厅",
+      "version": "2011年通知",
+      "published_on": "2011-01-30",
+      "effective_from": null,
+      "effective_date_note": "登记通知落款日期；官网页面发表于2011年2月。",
+      "url": "https://www.nhc.gov.cn/wjw/zcjd/201102/2a38bf51e9eb4000a2d48ee6d3590c61.shtml",
+      "provision": "就业体检乙肝检测、报告领取和保密",
+      "summary": "通知进一步规范就业体检乙肝检测，强调报告由本人或指定人员领取以及密封管理。",
+      "product_application": "只处理本次指定报告，最小化身份信息展示，不建立跨员工或跨会话画像，不向公开搜索发送报告内容。"
+    }
+  ],
+  "rules": [
+    {
+      "id": "H-REFERENCE-NOT-DIAGNOSIS",
+      "source_ids": ["NHC-WST402-2024"],
+      "mode": "evidence_assisted",
+      "required_inputs": ["原报告指标和真实位置"],
+      "behavior": "呈现医院原值、单位、参考区间及标记；不把区间偏离当诊断或录用结论。",
+      "missing_evidence_behavior": "原报告未显示或识别存疑；不以外部数值填补。"
+    },
+    {
+      "id": "H-ORDINARY-VS-OCCUPATIONAL",
+      "source_ids": ["NHC-OCCUPATIONAL-EXAMS-2019", "NHC-GBZ188-2025"],
+      "mode": "human_decision_boundary",
+      "required_inputs": ["报告明确类型或用户提供的工作背景"],
+      "behavior": "只整理职业健康机构原文结论；未知类型不按行业标签自动判断适岗。",
+      "missing_evidence_behavior": "列材料未提供，保留普通材料整理；不产生职业禁忌结论。"
+    },
+    {
+      "id": "H-NO-HBV-EMPLOYMENT-SCREEN",
+      "source_ids": ["NHC-HBV-EMPLOYMENT-2010", "NHC-HBV-TESTING-2011"],
+      "mode": "deterministic_workflow_boundary",
+      "required_inputs": [],
+      "behavior": "普通入职材料清单不强制乙肝检测，不以乙肝或健康敏感信息生成录用结论、分数或名单。",
+      "missing_evidence_behavior": "不把没有乙肝检测列为材料缺失。"
+    },
+    {
+      "id": "H-TRACEABLE-SUMMARY",
+      "source_ids": [],
+      "basis_type": "product_design_requirement",
+      "mode": "deterministic_workflow_boundary",
+      "required_inputs": ["实际读取范围", "文件编号", "原文位置"],
+      "behavior": "材料完整性和医院医学记载分表；已读、未读和存疑分开；多文件默认不混人。",
+      "missing_evidence_behavior": "暂停受影响字段推断，不扩大至全批失败，不声称全量已读。"
+    }
+  ]
+}

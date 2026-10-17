@@ -1,0 +1,2519 @@
+--- r40/app/account-lease.cjs
++++ r41/app/account-lease.cjs
+@@ -2,6 +2,7 @@
+ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+ const {execFile}=require('node:child_process');
+ const {promisify}=require('node:util');
++const {createProcessEvidenceProbe}=require('./process-evidence-probe.cjs');
+ const run=promisify(execFile);
+ const created=value=>typeof value==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{1,7}Z$/.test(value)&&Number.isFinite(Date.parse(value));
+ function electronSingleInstanceHeld(){
+@@ -51,6 +52,11 @@
+ }
+ async function acquireAccountLease(home,runtimeRoot,{processEvidence=windowsProcessEvidence,ownerEvidence=windowsOwnerEvidence,singleInstanceHeld=electronSingleInstanceHeld}={}) {
+   if(!path.isAbsolute(home)||!path.isAbsolute(runtimeRoot)||fs.lstatSync(home).isSymbolicLink())throw Error('DSH_ACCOUNT_PATH_UNSAFE');
++  // Reuse only the owned PowerShell process, never its evidence: each fence
++  // performs a fresh CIM query and validates the account lease on both sides.
++  const probe=processEvidence===windowsProcessEvidence?createProcessEvidenceProbe(home,runtimeRoot):null;
++  if(probe)processEvidence=()=>probe.query();
++  try {
+   const lock=path.join(home,'.megmeet-desktop-runtime.lock');
+   const token=crypto.randomUUID();
+   const self=await ownerEvidence(process.pid);
+@@ -128,7 +134,8 @@
+       if(evidence.matching!==0||evidence.unknown!==0)throw Error('DSH_OLD_RUNTIME_MUST_BE_CLOSED');
+       return {stopped:true,exclusive:true};
+     },
+-    release:()=>{assertOwned();fs.closeSync(fd);fs.unlinkSync(lock);released=true;},
++    release:()=>{try{assertOwned();fs.closeSync(fd);fs.unlinkSync(lock);released=true;}finally{probe?.close();}},
+   };
++  } catch(error) {probe?.close();throw error;}
+ }
+ module.exports={acquireAccountLease,windowsProcessEvidence,windowsOwnerEvidence,electronSingleInstanceHeld};
+--- r40/app/bootstrap.cjs
++++ r41/app/bootstrap.cjs
+@@ -0,0 +1,8 @@
++'use strict';
++// A read-only installation diagnostic exits before IAM, stored credentials,
++// updater, normal single-instance lock, or any business service is loaded.
++if (process.argv.slice(1).includes('--self-check')) {
++  void require('./self-check.cjs').runSelfCheck();
++} else {
++  require('./main.cjs');
++}
+--- r40/app/self-check.cjs
++++ r41/app/self-check.cjs
+@@ -0,0 +1,46 @@
++'use strict';
++const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
++function validateInputs(argv,environment){
++  if(argv.length!==1||argv[0]!=='--self-check')throw Error('SELF_CHECK_ARGUMENTS');
++  const directory=environment.MEGMEET_SELF_CHECK_USER_DATA;
++  if(typeof directory!=='string'||!path.isAbsolute(directory))throw Error('SELF_CHECK_PRIVATE_DIRECTORY');
++  const real=fs.realpathSync(directory),base=fs.realpathSync(os.tmpdir());
++  if(path.dirname(real)!==base||!/^megmeet-self-check-[A-Za-z0-9-]{12,80}$/.test(path.basename(real))||!fs.statSync(real).isDirectory())throw Error('SELF_CHECK_PRIVATE_DIRECTORY');
++  const pipe=environment.MEGMEET_SELF_CHECK_PIPE;
++  if(pipe!==undefined&&!/^\\\\\.\\pipe\\megmeet-self-check-[a-f0-9-]{36}$/.test(pipe))throw Error('SELF_CHECK_PIPE');
++  return {directory:real,pipe};
++}
++async function runSelfCheck(){
++  const {app}=require('electron');let result,code=1,inputs;
++  try{
++    inputs=validateInputs(process.argv.slice(1),process.env);
++    app.setPath('userData',inputs.directory);
++    app.setPath('sessionData',inputs.directory);
++    for(const flag of ['disable-background-networking','disable-component-update','disable-sync'])app.commandLine.appendSwitch(flag);
++    await app.whenReady();
++    if(!app.isPackaged)throw Error('SELF_CHECK_PACKAGED_REQUIRED');
++    const runtime=path.join(process.resourcesPath,'runtime');
++    const adapter=require('./dsh-adapter.cjs');
++    const checked=adapter.validateRuntime(runtime,{full:true});
++    if(typeof require('./account-lease.cjs').acquireAccountLease!=='function'||typeof require('./process-evidence-probe.cjs').createProcessEvidenceProbe!=='function')throw Error('SELF_CHECK_PROCESS_PROBE_MODULE');
++    const codec=await import(require('node:url').pathToFileURL(path.join(runtime,'node_modules/@deepseek-ai/dsh-session-format-catalog/lib/index.js')));
++    if(Object.keys(codec).length===0)throw Error('SELF_CHECK_NATIVE_MODULE');
++    result={schema:'megmeet-installed-self-check-v1',status:'PASS',version:app.getVersion(),runtime:checked.manifest.dsh,executable:fs.realpathSync(process.execPath),nativeCodecLoaded:true,iamLoaded:false,credentialsRead:false,companyRequests:0};code=0;
++  }catch(error){result={schema:'megmeet-installed-self-check-v1',status:'FAILED',code:/^SELF_CHECK_[A-Z_]+$/.test(error?.message)?error.message:'SELF_CHECK_INTEGRITY_OR_LOAD_FAILED',companyRequests:0};}
++  try{
++    const bytes=JSON.stringify(result)+'\n';
++    if(inputs?.pipe){
++      await new Promise((resolve,reject)=>{
++        const socket=require('node:net').createConnection(inputs.pipe);socket.setTimeout(10000,()=>socket.destroy(Error('SELF_CHECK_PIPE_TIMEOUT')));
++        socket.once('error',reject);socket.once('connect',()=>socket.end(bytes));socket.once('close',()=>resolve());
++      });
++    }else await new Promise((resolve,reject)=>{
++      // A detached invocation may have no live console pipe. This is a
++      // diagnostic transport failure, never an uncaught Electron exception.
++      process.stdout.once('error',reject);
++      process.stdout.write(bytes,error=>error?reject(error):resolve());
++    });
++  }catch{code=1;}
++  app.exit(code);
++}
++module.exports={validateInputs,runSelfCheck};
+--- r40/app/auth.cjs
++++ r41/app/auth.cjs
+@@ -65,8 +65,11 @@
+ }
+ 
+ function rememberedResult(value, device) {
++  // Zero is the server's explicit until-revoked device grant. Access tokens
++  // still carry their short finite expiry and rotate on every resume.
+   if (value.device_id !== device.deviceId || !Number.isSafeInteger(value.device_expires_at)
+-      || value.device_expires_at * 1000 <= Date.now() || value.device_expires_at * 1000 > Date.now() + 31 * 86400000)
++      || value.device_expires_at < 0 || (value.device_expires_at !== 0
++      && (value.device_expires_at * 1000 <= Date.now() || value.device_expires_at * 1000 > Date.now() + 31 * 86400000)))
+     throw Error('设备登录返回无效。');
+   return {deviceId: value.device_id, expiresAt: value.device_expires_at * 1000};
+ }
+--- r40/app/catalog.mjs
++++ r41/app/catalog.mjs
+@@ -1,78 +1,82 @@
+-// Bounded, ASCII-only startup transport; these values are model metadata.
+-export function readCatalog(env) {
+-  const countText=env.CLOUD_MODEL_CATALOG_COUNT||'';
+-  if (!/^[1-9]$/.test(countText)) throw new Error('cloud catalog chunk count invalid');
+-  const count=Number(countText);
+-  const expected=new Set(['CLOUD_MODEL_CATALOG_COUNT', ...Array.from({length:count},(_,i)=>'CLOUD_MODEL_CATALOG_'+i)]);
+-  if (Object.keys(env).some(k=>k.startsWith('CLOUD_MODEL_CATALOG')&&!expected.has(k))) throw new Error('cloud catalog unexpected chunk');
+-  const chunks=[];
+-  let total=0;
+-  for (let i=0;i<count;i++) {
+-    const part=env['CLOUD_MODEL_CATALOG_'+i];
+-    if (typeof part!=='string'||!part.length||part.length>60000||!/^[\x20-\x7e]+$/.test(part)) throw new Error('cloud catalog chunk invalid');
+-    total+=part.length;
+-    if (total>524288) throw new Error('cloud catalog total invalid');
+-    chunks.push(part);
+-  }
+-  return JSON.parse(chunks.join(''));
+-}
+-
+-// The managed provider accepts an explicit empty list. Never substitute the
+-// upstream built-in catalog when an employee has no authorized models.
+-export function normalizeCatalog(value) {
+-  if (!value || !Array.isArray(value.data) || value.data.length > 1000)
+-    throw new Error('cloud catalog unavailable');
+-  const ids = new Set();
+-  const data = value.data.map(item => {
+-    if (!item || typeof item.id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/.test(item.id)
+-      || ids.has(item.id) || (item.name != null && (typeof item.name !== 'string' || item.name.length > 500)))
+-      throw new Error('cloud catalog invalid');
+-    ids.add(item.id);
+-    const result = { id: item.id, name: item.name || item.id };
+-    if (Object.hasOwn(item, 'inputModalities')) {
+-      const modalities = item.inputModalities;
+-      if (!Array.isArray(modalities) || !modalities.includes('text') ||
+-          modalities.some(value => value !== 'text' && value !== 'image') ||
+-          new Set(modalities).size !== modalities.length)
+-        throw new Error('cloud model modalities invalid');
+-      result.inputModalities = ['text', 'image'].filter(value => modalities.includes(value));
+-    }
+-    return result;
+-  });
+-  if (data.length ? !ids.has(value.default_model) : value.default_model != null)
+-    throw new Error('cloud default model invalid');
+-  return { data, default_model: data.length ? value.default_model : null };
+-}
+-
+-export const MANAGED_PROVIDER = 'deepseek-official';
+-export function providerPatch(catalog, modelBase) {
+-  if(!catalog.data.length)return {providers:{}};
+-  return { providers: { [MANAGED_PROVIDER]: { api: 'openai-completions', apiKeyEnv: 'MEGMEET_MODEL_TOKEN',
+-    displayName: '麦米企业模型', baseURL: modelBase,
+-    // Preserve the already deployed adapter's off/low/high/max contract so
+-    // existing selections and V3 request headers remain valid after upgrade.
+-    models: catalog.data.map(({inputModalities,...model})=>({...model,...(inputModalities?{input:inputModalities}:{}),
+-      reasoningEfforts:{off:null,low:'low',high:'high',max:'max'}})),
+-    reasoning:'high',
+-    // Keep inline history below the Gateway's 16 MiB JSON budget. Native DSH
+-    // offloads older images as conversations grow instead of bypassing limits.
+-    maxRequestImageBytes: 12 * 1024 * 1024,
+-    compat: {supportsDeveloperRole:false,thinkingFormat:'deepseek',supportsReasoningEffort:true} } } };
+-}
+-
+-export function createCatalogUpdater(rpcArgs, modelBase) {
+-  let tail = Promise.resolve();
+-  return (value, { preserveDefault = false } = {}) => {
+-    // Validate and snapshot before queuing; an invalid update cannot poison
+-    // the queue, and a caller cannot mutate a pending update's metadata.
+-    const next = normalizeCatalog(value);
+-    const task = tail.then(async () => {
+-      await rpcArgs('settings/replace', { ns: 'llm-pi-ai', section: providerPatch(next, modelBase) });
+-      if (next.data.length && !preserveDefault) await rpcArgs('settings/update', { ns: 'agent-default-model',
+-        patch: { provider: MANAGED_PROVIDER, model: next.default_model } });
+-      return next;
+-    });
+-    tail = task.catch(() => {});
+-    return task;
+-  };
+-}
++// Company-approved chat model. Search has a separate provider contract.
++export const COMPANY_CHAT_MODEL = 'deepseek-v4.1-flash';
++export const isCompanyChatModel = value => value === COMPANY_CHAT_MODEL;
++// Bounded, ASCII-only startup transport; these values are model metadata.
++export function readCatalog(env) {
++  const countText=env.CLOUD_MODEL_CATALOG_COUNT||'';
++  if (!/^[1-9]$/.test(countText)) throw new Error('cloud catalog chunk count invalid');
++  const count=Number(countText);
++  const expected=new Set(['CLOUD_MODEL_CATALOG_COUNT', ...Array.from({length:count},(_,i)=>'CLOUD_MODEL_CATALOG_'+i)]);
++  if (Object.keys(env).some(k=>k.startsWith('CLOUD_MODEL_CATALOG')&&!expected.has(k))) throw new Error('cloud catalog unexpected chunk');
++  const chunks=[];
++  let total=0;
++  for (let i=0;i<count;i++) {
++    const part=env['CLOUD_MODEL_CATALOG_'+i];
++    if (typeof part!=='string'||!part.length||part.length>60000||!/^[\x20-\x7e]+$/.test(part)) throw new Error('cloud catalog chunk invalid');
++    total+=part.length;
++    if (total>524288) throw new Error('cloud catalog total invalid');
++    chunks.push(part);
++  }
++  return JSON.parse(chunks.join(''));
++}
++
++// The managed provider accepts an explicit empty list. Never substitute the
++// upstream built-in catalog when an employee has no authorized models.
++export function normalizeCatalog(value) {
++  if (!value || !Array.isArray(value.data) || value.data.length > 1000)
++    throw new Error('cloud catalog unavailable');
++  const ids = new Set();
++  const data = value.data.map(item => {
++    if (!item || typeof item.id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/.test(item.id)
++      || ids.has(item.id) || (item.name != null && (typeof item.name !== 'string' || item.name.length > 500)))
++      throw new Error('cloud catalog invalid');
++    ids.add(item.id);
++    const result = { id: item.id, name: item.name || item.id };
++    if (Object.hasOwn(item, 'inputModalities')) {
++      const modalities = item.inputModalities;
++      if (!Array.isArray(modalities) || !modalities.includes('text') ||
++          modalities.some(value => value !== 'text' && value !== 'image') ||
++          new Set(modalities).size !== modalities.length)
++        throw new Error('cloud model modalities invalid');
++      result.inputModalities = ['text', 'image'].filter(value => modalities.includes(value));
++    }
++    return result;
++  });
++  if (data.length ? !ids.has(value.default_model) : value.default_model != null)
++    throw new Error('cloud default model invalid');
++  const authorized = data.filter(item => isCompanyChatModel(item.id));
++  return { data: authorized, default_model: authorized.length ? COMPANY_CHAT_MODEL : null };
++}
++
++export const MANAGED_PROVIDER = 'deepseek-official';
++export function providerPatch(catalog, modelBase) {
++  if(!catalog.data.length)return {providers:{}};
++  return { providers: { [MANAGED_PROVIDER]: { api: 'openai-completions', apiKeyEnv: 'MEGMEET_MODEL_TOKEN',
++    displayName: '麦米企业模型', baseURL: modelBase,
++    // Preserve the already deployed adapter's off/low/high/max contract so
++    // existing selections and V3 request headers remain valid after upgrade.
++    models: catalog.data.map(({inputModalities,...model})=>({...model,...(inputModalities?{input:inputModalities}:{}),
++      reasoningEfforts:{off:null,low:'low',high:'high',max:'max'}})),
++    reasoning:'high',
++    // Keep inline history below the Gateway's 16 MiB JSON budget. Native DSH
++    // offloads older images as conversations grow instead of bypassing limits.
++    maxRequestImageBytes: 12 * 1024 * 1024,
++    compat: {supportsDeveloperRole:false,thinkingFormat:'deepseek',supportsReasoningEffort:true} } } };
++}
++
++export function createCatalogUpdater(rpcArgs, modelBase) {
++  let tail = Promise.resolve();
++  return (value, { preserveDefault = false } = {}) => {
++    // Validate and snapshot before queuing; an invalid update cannot poison
++    // the queue, and a caller cannot mutate a pending update's metadata.
++    const next = normalizeCatalog(value);
++    const task = tail.then(async () => {
++      await rpcArgs('settings/replace', { ns: 'llm-pi-ai', section: providerPatch(next, modelBase) });
++      if (next.data.length && !preserveDefault) await rpcArgs('settings/update', { ns: 'agent-default-model',
++        patch: { provider: MANAGED_PROVIDER, model: next.default_model } });
++      return next;
++    });
++    tail = task.catch(() => {});
++    return task;
++  };
++}
+--- r40/app/dsh-adapter.cjs
++++ r41/app/dsh-adapter.cjs
+@@ -4,15 +4,16 @@
+ const fs = require('node:fs');
+ const path = require('node:path');
+ const crypto = require('node:crypto');
+-const VERSION = '0.1.7-rc.2';
++const VERSION = '0.2.0-rc.2';
++const PACKAGE_SET_SHA256 = '43333d9f25c9b208cd240f27ab3048678af7c12f97c767f2dc4c821e24f034cf';
+ const ADAPTER = 'megmeet-dsh-native-v1';
+ const NODE = '24.13.0';
+ const NODE_SHA256 = 'd14ba95cdce1ef7dc9ad3ac74949ca5db38b27378ee30f30a23cf26f9e875a11';
+ const LEGACY_DATA_FORMAT = 'dsh-0.1.6-alpha.1-native';
+ const DATA_FORMAT = 'dsh-0.1.7-alpha.2-native-v4';
+-const MIGRATION = 'offline-owned-v4-rc2-admission-v1';
++const MIGRATION = 'offline-owned-v4-020-admission-v1';
+ const { pathToFileURL } = require('node:url');
+-const HELPERS = {"catalog.mjs":"36ea6dc1510d1ddd5e792deb5af45dc805caba2d6cd3268d1e881fc959063359","managed-profile.mjs":"2c2dcebb63717b77f91d434accd5e67e069d9688b5f1979277355ef63c2e6bc6","history-migration.mjs":"6e3bdf816b16df0591e61a755f186d102d35640bf019658be538b46821520a6e","history-native.mjs":"cb479bf6869ca38f412d253c94b81c76a543129a48901d109297a45bee4c15e4","community-profile.mjs":"715208ee35485c768369b65cebd4b7a0573c23e59067d532deb8ba6052cbf9d4","history-admission-rc2.mjs":"040363eb4ddc66201ccb1f530515293fbff9fe9b720319c1ea8d1b1044284094","enterprise-profile.mjs":"c350a77d61bc1ab9259e82ae552cf7031397d3167ff0a502fc693b374c4b1cd4"};
++const HELPERS = {"enterprise-model-policy.mjs":"b0ffb8b31f5a7f34ac9c41782e746db9a725a207286155575f0d3f0bb1a5e33a","catalog.mjs":"68a852b7b422fb355d9cd3a509ed386637b0520a33d0f490d27f55022d031860","managed-profile.mjs":"2c2dcebb63717b77f91d434accd5e67e069d9688b5f1979277355ef63c2e6bc6","history-migration.mjs":"7f6951a575cfcba356114468ea838a25c3598145fae9fbf407e663e17d2e68e0","history-native.mjs":"5cd1e2493ca5a0d4e56a213f65560924afb100de9b86b6d510b60c4f4a0d9c1c","history-runtime-snapshot.mjs":"529b0afb10e68148b99501f74759f00532fabba4c17eedb002ceb0aa862bb107","community-profile.mjs":"715208ee35485c768369b65cebd4b7a0573c23e59067d532deb8ba6052cbf9d4","history-admission-rc2.mjs":"040363eb4ddc66201ccb1f530515293fbff9fe9b720319c1ea8d1b1044284094","enterprise-profile.mjs":"d68e680e65abf01ae346480f0de60f5309a441ee6f265bd42dbf1b55e39ab43e"};
+ function verifiedHelper(name) {
+   check(Object.hasOwn(HELPERS,name) && digestFile(path.join(__dirname,name)) === HELPERS[name], 'DSH_ADAPTER_HELPER_INTEGRITY');
+   return path.join(__dirname,name);
+@@ -20,7 +21,7 @@
+ const normalizeCatalog = (...args) => require(verifiedHelper('catalog.mjs')).normalizeCatalog(...args);
+ const providerPatch = (...args) => require(verifiedHelper('catalog.mjs')).providerPatch(...args);
+ 
+-const CONTRACTS = Object.freeze({ nativeRpc: 'dsh-named-rpc-0.1.7-rc.2',
++const CONTRACTS = Object.freeze({ nativeRpc: 'dsh-named-rpc-0.2.0-rc.2',
+   workspace: 'megmeet-personal-cloud-v1', enterprise: 'megmeet-plugins-v1',
+   personalModel: 'openai-chat-completions-v1', data: DATA_FORMAT });
+ const CORE = ['dsh', 'dsh-web-frontend', 'dsh-web-app', 'dsh-agent',
+@@ -60,15 +61,15 @@
+     && set.node === NODE && set.platform === 'win32-x64', 'DSH_MIXED_RELEASE');
+   check(set.extension?.branding === 'megmeet-assets-r5'
+     && /^[0-9a-f]{64}$/.test(set.extension.sha256)
+-    && set.extension.version === '3.6.0', 'DSH_EXTENSION_REQUIRED');
++    && set.extension.version === '3.7.0', 'DSH_EXTENSION_REQUIRED');
+   check(set.community?.commit === 'b9ea3d7625a7ec40cf191094e7b83571ba5c0a79'
+     && set.community.plugins?.length === 4, 'DSH_COMMUNITY_REVIEW_REQUIRED');
+-  check(set.extension.workspace?.version === '2.1.0'
++  check(set.extension.workspace?.version === '2.2.0'
+     && /^[0-9a-f]{64}$/.test(set.extension.workspace.sha256), 'DSH_WORKSPACE_EXTENSION_REQUIRED');
+   check(JSON.stringify(set.contracts) === JSON.stringify(CONTRACTS), 'DSH_CONTRACT_UNSUPPORTED');
+   check(set.nativeData?.write === DATA_FORMAT && set.nativeData.migration === MIGRATION
+     && JSON.stringify(set.nativeData.read) === JSON.stringify([LEGACY_DATA_FORMAT, DATA_FORMAT]), 'DSH_DATA_MIGRATION_REQUIRED');
+-  check(set.packages && Object.keys(set.packages).length === 273
++  check(set.packages && sha(JSON.stringify(Object.keys(set.packages).sort().map(k => [k,set.packages[k]]))) === PACKAGE_SET_SHA256
+     && Object.entries(set.packages).every(([key, version]) => /^@deepseek-ai\/dsh(?:-|$)/.test(key) && version === VERSION)
+     && CORE.every(name => set.packages['@deepseek-ai/' + name] === VERSION), 'DSH_MIXED_PACKAGE_SET');
+   return set;
+@@ -100,7 +101,7 @@
+   check(JSON.stringify(release.enterpriseAdapter) === JSON.stringify(brand.enterpriseAdapter)
+     && digestFile(path.join(root, 'enterprise-native.mjs')) === release.enterpriseAdapter?.sha256, 'DSH_EXTENSION_INTEGRITY');
+   check(JSON.stringify(release.workspaceAdapter) === JSON.stringify(brand.workspaceAdapter)
+-    && release.workspaceAdapter?.version === '2.1.0'
++    && release.workspaceAdapter?.version === '2.2.0'
+     && digestFile(path.join(root, 'workspace-pinned-overlay.mjs')) === release.workspaceAdapter?.sha256, 'DSH_WORKSPACE_EXTENSION_INTEGRITY');
+   const adapterSha256 = digestFile(__filename);
+   const supported = assertSupportedSet(componentSet(release, manifest, adapterSha256));
+@@ -119,10 +120,10 @@
+   check(JSON.stringify(brand.adaptations.map(item => item.package).sort()) === JSON.stringify([
+     '@deepseek-ai/dsh-client-ui-brand-official', '@deepseek-ai/dsh-client-ui-conversation', '@deepseek-ai/dsh-client-ui-workspace', '@deepseek-ai/dsh-client-ui-settings-models', '@deepseek-ai/dsh-client-ui-chat'].sort()), 'DSH_ADAPTATION_REQUIRED');
+   check(brand.adaptations.some(item => item.package === '@deepseek-ai/dsh-client-ui-workspace'
+-    && item.originalSha256 === '854722447794b79607651e6c75d0652db1aba376324f468ab8cd6ecdfe7d177f'), 'DSH_WORKSPACE_INPUT_CONTRACT_REQUIRED');
+-  check(release.adaptations?.some(item => item.name === 'megmeet-rc2-compat'
++    && item.originalSha256 === 'e784543780fb8ac7c38c853afd26b9b1713c6907eec2b07eff37461e07bd3be9'), 'DSH_WORKSPACE_INPUT_CONTRACT_REQUIRED');
++  check(release.adaptations?.some(item => item.name === 'megmeet-020-compat'
+     && item.package === '@deepseek-ai/dsh-client-ui-settings-models'
+-    && item.originalSha256 === '67ebf868e5278f9e260d164b048a8abb320a4de16d63c05b6dad7302071abaa2'), 'DSH_NOTICE_ADAPTATION_REQUIRED');
++    && item.originalSha256 === '7674ed0ba2eef60fa7db91b4bf8cea4dc23e1f0a2f3dd1e6a2a67ad4c0d005fa'), 'DSH_NOTICE_ADAPTATION_REQUIRED');
+   for (const [name, digest] of Object.entries(brand.assets || {}))
+     check(digestFile(safeRelative(path.join(root, 'assets'), name)) === digest, 'DSH_ASSET_INTEGRITY');
+   if (full) {
+@@ -214,6 +215,8 @@
+     check(state.schema===1 && [LEGACY_DATA_FORMAT,DATA_FORMAT].includes(state.format),'DSH_DATA_MIGRATION_REQUIRED');
+   }
+   verifiedHelper('history-native.mjs');
++  verifiedHelper('history-migration.mjs');
++  verifiedHelper('history-runtime-snapshot.mjs');
+   const {createHistoryMigration}=await import(pathToFileURL(verifiedHelper('history-admission-rc2.mjs')));
+   await createHistoryMigration({stateRoot:path.dirname(home),runtimeRoot,assertQuiescent}).admit();
+   // Keep the prior app marker as evidence, and write V4 only after migration
+@@ -226,5 +229,8 @@
+   fs.renameSync(temporary,marker);
+ }
+ 
+-module.exports = { VERSION, ADAPTER, NODE, DATA_FORMAT, CONTRACTS, sha, componentSet,
++function modelPolicyPatch(home, modelBase) {
++  return require('./model-policy-profile.cjs').modelPolicyPatch(home, modelBase, verifiedHelper('enterprise-model-policy.mjs'));
++}
++module.exports = { modelPolicyPatch, VERSION, ADAPTER, NODE, DATA_FORMAT, CONTRACTS, sha, componentSet,
+   assertSupportedSet, validateRuntime, modelPatch, modelSettingsUpdates, communityPatch, launchArguments, startupToken, guardDataFormat, prepareModelProfile, prepareDesktopCommunityProfile, LEGACY_DATA_FORMAT, MIGRATION };
+--- r40/app/enterprise-profile.mjs
++++ r41/app/enterprise-profile.mjs
+@@ -1,13 +1,14 @@
+-// Enterprise composition policy shared by cloud and desktop cloud adapters.
+-// Preserve the telemetry seam in DISABLED mode so feedback consumers can boot.
+-export const REVIEWED_RUNTIME = '0.1.7-rc.2';
+-export function enterpriseProfile({cloud = true} = {}) {
+-  return [
+-    {id:'llm-deepseek',disabled:true},
+-    {id:'llm-deepseek-account',disabled:true},
+-    {id:'session-log-deepseek',config:{enabled:false,maxBytes:8*1024*1024}},
+-    {id:'session-telemetry-otel',config:{mode:'DISABLED'}},
+-    {id:'skill-office',config:{cli:false}},
+-    ...(cloud ? [{id:'schedule',disabled:true},{id:'ui-schedule',disabled:true}] : []),
+-  ];
+-}
++// Explicit enterprise policy for the exact reviewed DSH runtime.
++// OTel registry remains available to consumers; all export paths are disabled.
++export const REVIEWED_RUNTIME = '0.2.0-rc.2';
++export function enterpriseProfile({cloud = true} = {}) {
++  return [
++    {id:'llm-deepseek',disabled:true},
++    {id:'llm-deepseek-account',disabled:true},
++    {id:'session-log-deepseek',config:{enabled:false,maxBytes:8*1024*1024}},
++    {id:'session-telemetry-otel',config:{mode:'DISABLED'}},
++    {id:'desktop-product-telemetry',disabled:true},
++    {id:'product-analytics',disabled:true},
++    {id:'skill-office',config:{cli:false}},
++  ];
++}
+--- r40/app/entry.html
++++ r41/app/entry.html
+@@ -1,10 +1,5 @@
+-<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8">
+-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; connect-src 'none'; img-src 'self'">
+-<title>MEGMEET AI 登录</title>
+-<style>body{margin:0;font:16px system-ui,sans-serif;color:#192d43;background:#f7f9fc;display:grid;min-height:100vh;place-items:center}.card{background:white;border:1px solid #e1e6ed;border-radius:18px;padding:42px;max-width:530px;box-shadow:0 16px 48px #2233440b}h1{margin-top:0;font-size:28px}p{line-height:1.65;color:#586a7b}button{border:0;border-radius:9px;padding:13px 21px;font-size:16px;background:#175cd3;color:white;cursor:pointer;margin:8px 12px 8px 0}button.secondary{color:#33465a;background:#edf1f6}button:disabled{opacity:.45;cursor:wait}.tag{display:inline-block;background:#fff3ce;color:#71531a;border-radius:6px;padding:6px 9px;font-size:13px}.status{min-height:44px;color:#384f66;white-space:pre-line}small{display:block;color:#718195;line-height:1.6}</style></head>
+-<body><main class="card"><h1>MEGMEET AI</h1><div class="tag">正在读取应用配置</div>
+-<p>登录后进入原生 DSH。个人工作区由你手动选择 Windows 文件夹，聊天历史按账号保存在这台电脑。</p>
+-<div id="status" class="status">正在检查登录状态…</div>
+-<button id="login">使用系统浏览器登录</button><button id="local" hidden>打开个人工作区</button><button id="logout" class="secondary" hidden>退出账号</button>
+-<button id="updates" class="secondary">软件更新</button>
+-<small>个人本地工作区与个人云端工作区分开管理。登录方式以当前应用配置为准。</small></main><script src="entry.js"></script></body></html>
++<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
++<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; connect-src 'none'; img-src 'self'">
++<title>麦米 · 欢迎回来</title><style>
++:root{color-scheme:light;--bg:#faf8f1;--ink:#263e37;--muted:#6c7d74;--line:#dbe5da;--accent:#238f78;--soft:#eef5ec}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px "Segoe UI","Microsoft YaHei",sans-serif;line-height:1.65}main{max-width:600px;margin:auto;padding:30px 38px 22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:27px}.brand{width:151px;height:auto}.tag{font-size:11px;color:#557064;letter-spacing:.04em;border:1px solid var(--line);border-radius:30px;padding:4px 10px;background:#fff8}.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--accent);margin:0 0 3px}h1{font-size:30px;font-weight:600;letter-spacing:.04em;margin:0 0 6px}.intro{color:var(--muted);margin:0 0 23px;font-size:14px}.card{border:1px solid var(--line);border-radius:18px;background:#fffdf8;padding:22px;box-shadow:0 10px 35px #253e3106}.status{min-height:46px;white-space:pre-line;margin:0 0 13px;font-size:14px}button{font:inherit;border:1px solid transparent;border-radius:10px;padding:11px 18px;background:var(--accent);color:white;cursor:pointer;font-weight:500;transition:filter .15s}button:hover{filter:brightness(.94)}button:focus-visible{outline:2px solid #1b7967;outline-offset:3px}button:disabled{opacity:.55;cursor:wait}.primary{display:block;width:100%}.secondary{background:transparent;color:var(--muted);border-color:var(--line);padding:7px 12px;font-size:12px}.actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:15px}.hint{color:#738378;font-size:12px}.keep{margin:14px 0 0;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}.keep:before{content:'✓';color:var(--accent)}small{display:block;color:var(--muted);font-size:11px;line-height:1.7;margin-top:21px}.version{font-size:11px;color:#91a095}.divider{border:0;border-top:1px solid var(--line);margin:21px 0 14px}[hidden]{display:none!important}@media(max-width:450px){main{padding:22px}.tag{max-width:155px}h1{font-size:27px}}@media(prefers-reduced-motion:reduce){button{transition:none}}
++</style></head><body><main><header><img class="brand" src="assets/megmeet-wordmark.svg" alt="MEGMEET"><span class="tag">公司统一身份登录</span></header><p class="eyebrow">麦米办公助手</p><h1>欢迎回来</h1><p class="intro">从这里开始，把想法变成成果。</p><section class="card" aria-label="账号登录"><div id="status" class="status" role="status" aria-live="polite">正在检查登录状态…</div><button class="primary" id="login">使用公司账号登录</button><button class="primary" id="local" hidden>进入我的工作区</button><p class="keep">安全保存此设备登录，日常打开更省心</p><div class="actions"><span class="hint">通过公司 IAM 完成授权</span><button id="logout" class="secondary" hidden>退出账号</button></div></section><small>本机聊天和文件保存在电脑；个人云端工作区的数据保存在公司服务器。</small><hr class="divider"><div class="actions"><span class="version" id="version">麦米办公助手</span><button id="updates" class="secondary">软件更新</button></div></main><script src="entry.js"></script></body></html>
+--- r40/app/entry.js
++++ r41/app/entry.js
+@@ -12,13 +12,14 @@
+     : '本开发环境使用模拟员工和模型，不连接公司真实 IAM 或 TokenKey。个人云端工作区与本地文件分开管理。';
+   statusNode.textContent = state.message || (state.user ? `已登录：${state.user.display_name || state.user.user_no}\n本机历史按此账号保存；工作文件在你选择的文件夹中。` : '请先登录。');
+   login.hidden = !!state.user; local.hidden = !state.user; logout.hidden = !state.user && !state.remembered;
+-  login.textContent = state.remembered ? '重试连接' : '使用系统浏览器登录';
++  login.textContent = state.remembered ? '重试连接' : '使用公司账号登录';
++  document.querySelector('#version').textContent = /^\d+\.\d+\.\d+$/.test(state.version || '') ? '麦米办公助手 · ' + state.version : '麦米办公助手';
+   login.disabled = state.busy; local.disabled = state.busy;
+ }
+ login.addEventListener('click', async () => { login.disabled = true; statusNode.textContent = '正在打开系统浏览器…'; try { await window.megmeetEntry.login(); } catch { statusNode.textContent = '登录未完成，请重试。'; } await refresh(); });
+ local.addEventListener('click', async () => { local.disabled = true; try { await window.megmeetEntry.local(); } catch { statusNode.textContent = '本机运行核心启动失败，请查看启动日志。'; local.disabled = false; } });
+ logout.addEventListener('click', async () => { await window.megmeetEntry.logout(); await refresh(); });
+-setInterval(() => { void refresh(); }, 1200);
+-void refresh();
++setInterval(() => { void refresh().catch(() => { statusNode.textContent = '暂时无法读取登录状态，请稍后重试。'; }); }, 1200);
++void refresh().catch(() => { statusNode.textContent = '暂时无法读取登录状态，请稍后重试。'; });
+ 
+ document.querySelector('#updates').addEventListener('click', () => { void window.megmeetEntry.updates().catch(() => { statusNode.textContent = '更新窗口暂时无法打开，请从帮助菜单重试。'; }); });
+--- r40/app/history-migration.mjs
++++ r41/app/history-migration.mjs
+@@ -1,186 +1,190 @@
+-/** Offline, incremental V3 -> V4 admission using the pinned rc.2 official codec.
+- * Existing V4 and all original V3 bytes are immutable. A separate metadata-only
+- * journal owns temporary encoded files, and hard-link publication never replaces
+- * a destination. No rollback/delete operation is provided by this module.
+- */
+-import {mkdir,readdir,lstat,open,link,unlink} from 'node:fs/promises';
+-import {constants} from 'node:fs';
+-import path from 'node:path';
+-import {pathToFileURL} from 'node:url';
+-import {zstdCompressSync,zstdDecompressSync} from 'node:zlib';
+-import {createHistoryMaintenance,migrationInternals as I} from './history-native.mjs';
+-
+-const RUNTIME='0.1.7-rc.2', HOME='.history-v4-incremental-r29';
+-const sha=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
+-const segment=x=>typeof x==='string'&&x.length>0&&!['.','..'].includes(x)&&!/[\\/\x00-\x1f:]/.test(x);
+-const identity=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,200}$/.test(x);
+-const stable=x=>JSON.stringify(x);
+-const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
+-const artifactHash=a=>I.digest(stable(canonical({header:a.header,events:a.events,inheritedEventCount:a.inheritedEventCount})));
+-
+-export function strictFrames(bytes) {
+-  const frames=[];let offset=0;
+-  const need=n=>{if(bytes.length-offset<n)I.fail('MIGRATION_INCOMPLETE_ZSTD');};
+-  while(offset<bytes.length) {
+-    const start=offset;need(5);if(bytes.readUInt32LE(offset)!==0xfd2fb528)I.fail('MIGRATION_CORRUPT_ZSTD');offset+=4;
+-    const d=bytes[offset++];if(d&24)I.fail('MIGRATION_CORRUPT_ZSTD');
+-    const c=d>>>6,single=!!(d&32),dict=d&3,n=(single?0:1)+(dict===3?4:dict)+(c===0?(single?1:0):1<<c);need(n);offset+=n;
+-    for(;;){need(3);const b=bytes.readUIntLE(offset,3);offset+=3;const type=(b>>>1)&3;if(type===3)I.fail('MIGRATION_CORRUPT_ZSTD');const size=type===1?1:b>>>3;need(size);offset+=size;if(b&1)break;}
+-    if(d&4){need(4);offset+=4;}frames.push(bytes.subarray(start,offset));
+-  }
+-  if(!frames.length)I.fail('MIGRATION_INCOMPLETE_ZSTD');return frames;
+-}
+-
+-export function createHistoryMigration({stateRoot,runtimeRoot,assertQuiescent,maxBytes=32*1024*1024,maxDecodedBytes=128*1024*1024,maxLegacyBytes=8*1024*1024,maxLegacyDecodedBytes=16*1024*1024,maxSessions=2000,onCheckpoint=async()=>{}}) {
+-  const root=path.resolve(stateRoot),home=path.join(root,HOME),staging=path.join(home,'staging');
+-  const maintenance=createHistoryMaintenance({stateRoot:root,runtimeRoot,assertQuiescent,maxSessions,maxBytes,maxDecodedBytes});
+-  const moduleFile=name=>pathToFileURL(path.join(runtimeRoot,'node_modules/@deepseek-ai',name,'lib/index.js')).href;
+-  const mod=name=>import(moduleFile(name));
+-  async function json(file,limit) {try{return JSON.parse((await I.rawFile(file,limit)).bytes);}catch(e){if(e.code)throw e;I.fail('MIGRATION_RECEIPT_INVALID');}}
+-  async function oldReceipt() {
+-    const dir=path.join(root,'.history-v4-migration');if(!await I.safeDirectory(dir,true))return null;
+-    const raw=await I.rawFile(path.join(dir,'manifest.json'),4*1024*1024);let r;try{r=JSON.parse(raw.bytes);}catch{I.fail('MIGRATION_RECEIPT_INVALID');}
+-    if(r.schema!=='owned-session-v4-migration-v1'||r.runtime!=='0.1.7-alpha.2'||!Array.isArray(r.items)||r.items.length>maxSessions||!Array.isArray(r.priorDeletions))I.fail('MIGRATION_RECEIPT_INVALID');
+-    if(r.status!=='complete')I.fail('MIGRATION_RECEIPT_PENDING');
+-    const items=new Map();for(const item of r.items){if(!identity(item?.sessionId)||items.has(item.sessionId)||!validRelative(item.relative)||!validFile(item.source,/^session\.v[34]\.jsonl(?:\.zstd)?$/))I.fail('MIGRATION_RECEIPT_INVALID');items.set(item.sessionId,item);}
+-    return {sha256:raw.sha256,items};
+-  }
+-  function validRelative(x){return Array.isArray(x)&&x.length===2&&x.every(segment);}
+-  function validFile(x,re){return x&&typeof x.name==='string'&&re.test(x.name)&&sha(x.sha256);}
+-  async function deletions() {
+-    const dir=path.join(root,'.history-deletions'),ids=new Set();if(!await I.safeDirectory(dir,true))return ids;
+-    const names=await readdir(dir);if(names.length>20000)I.fail('DELETION_BASELINE_LIMIT');
+-    for(const name of names){if(!sha(name))I.fail('INVALID_DELETE_MANIFEST');await I.safeDirectory(path.join(dir,name));const v=await json(path.join(dir,name,'manifest.json'),128*1024);
+-      if(v.version!==1||!identity(v.sessionId)||I.digest(v.sessionId)!==name)I.fail('INVALID_DELETE_MANIFEST');if(v.status!=='deleted')I.fail('MIGRATION_DELETION_PENDING');ids.add(v.sessionId);}
+-    return ids;
+-  }
+-  async function journal(mutate=false) {
+-    if(!await I.safeDirectory(home,true))return null;
+-    const names=await readdir(home),orphan=names.filter(x=>/^\.manifest-[a-f0-9-]{36}$/.test(x));
+-    if(names.some(x=>!['manifest.json','staging'].includes(x)&&!orphan.includes(x)))I.fail('MIGRATION_RECEIPT_INVALID');
+-    for(const name of orphan){await I.rawFile(path.join(home,name),8*1024*1024);if(!mutate)I.fail('MIGRATION_RECEIPT_PENDING');await unlink(path.join(home,name));}if(orphan.length)await I.syncDirectory(home);
+-    if(!names.includes('manifest.json')){if(await I.safeDirectory(staging,true)&&(await readdir(staging)).length)I.fail('MIGRATION_STAGING_CONFLICT');return null;}
+-    const r=await json(path.join(home,'manifest.json'),8*1024*1024);
+-    if(r.schema!=='owned-session-incremental-v4-v1'||r.runtime!==RUNTIME||!['publishing','complete'].includes(r.status)||!Array.isArray(r.items)||r.items.length>maxSessions||!Array.isArray(r.baseline)||r.baseline.length>maxSessions||(r.legacy_receipt_sha256!==null&&!sha(r.legacy_receipt_sha256)))I.fail('MIGRATION_RECEIPT_INVALID');
+-    const ids=new Set();for(const x of r.items){if(!identity(x?.sessionId)||ids.has(x.sessionId)||!validRelative(x.relative)||!validFile(x.source,/^session\.v3\.jsonl(?:\.zstd)?$/)||!validFile(x.target,/^session\.v4\.jsonl(?:\.zstd)?$/)||x.target.name!==x.source.name.replace('.v3.','.v4.')||!Number.isSafeInteger(x.source.bytes)||x.source.bytes<1||!Number.isSafeInteger(x.target.bytes)||x.target.bytes<1||x.source.bytes>maxBytes||x.target.bytes>maxBytes||!sha(x.artifact_sha256)||!['pending','published'].includes(x.status))I.fail('MIGRATION_RECEIPT_INVALID');ids.add(x.sessionId);}
+-    const bases=new Set();for(const x of r.baseline){if(!identity(x?.sessionId)||bases.has(x.sessionId)||!sha(x.sha256))I.fail('MIGRATION_RECEIPT_INVALID');bases.add(x.sessionId);}
+-    if(r.status==='complete'&&r.items.some(x=>x.status!=='published'))I.fail('MIGRATION_RECEIPT_INVALID');
+-    await I.safeDirectory(staging);const temporary=await readdir(staging);
+-    const allowed=new Set(r.items.map(x=>I.digest(x.sessionId)+'.stage'));
+-    if(temporary.some(x=>!allowed.has(x)))I.fail('MIGRATION_STAGING_CONFLICT');
+-    if(r.status==='complete'&&temporary.length)I.fail('MIGRATION_STAGING_CONFLICT');return r;
+-  }
+-  async function physical(file,version) {
+-    const limit=version===3?Math.min(maxBytes,maxLegacyBytes):maxBytes,decodedLimit=version===3?Math.min(maxDecodedBytes,maxLegacyDecodedBytes):maxDecodedBytes;
+-    const raw=await I.rawFile(file,limit);let data=raw.bytes;
+-    if(file.endsWith('.zstd')){const chunks=[];let length=0;for(const frame of strictFrames(data)){const chunk=zstdDecompressSync(frame,{maxOutputLength:decodedLimit-length});length+=chunk.length;if(length>decodedLimit||chunk.at(-1)!==10)I.fail('MIGRATION_INCOMPLETE_LOG');chunks.push(chunk);}data=Buffer.concat(chunks);}if(data.length>decodedLimit)I.fail('ARTIFACT_LIMIT');
+-    return {...parseBytes(data,version),raw};
+-  }
+-  function parseBytes(data,version) {
+-    if(data.length>maxDecodedBytes||data.at(-1)!==10)I.fail('MIGRATION_INCOMPLETE_LOG');
+-    let rows;try{rows=new TextDecoder('utf-8',{fatal:true}).decode(data).slice(0,-1).split('\n').map(x=>JSON.parse(x));}catch{I.fail('MIGRATION_INVALID_LOG');}
+-    const header=rows.shift();if(header?.version!==version)I.fail('MIGRATION_HEADER_MISMATCH');return {header,rows};
+-  }
+-  function restore(catalog,p) {const reader=catalog.createRestore(p.header,{recovery:'strict',validation:'current'});for(const row of p.rows)reader.decodeRow(row);return reader.finish();}
+-  async function strictCurrent(p){const {sessionFormatCatalog}=await mod('dsh-session-format-catalog'),a=restore(sessionFormatCatalog,p);const {Session}=await mod('dsh-session');const s=Session.create(a.header.id,a.events,a.header,a.inheritedEventCount);s.deriveMessages();s.toolHistory();return a;}
+-  async function converted(context,item,facts) {
+-    const api=await mod('dsh-session-format-catalog'),p=await physical(path.join(context.sessions,...item.relative,item.v3.name),3);
+-    if(p.raw.sha256!==item.v3.sha256)I.fail('MIGRATION_SOURCE_CHANGED');
+-    const children=facts.filter(x=>x.parent===item.sessionId).map(x=>x.value),a=restore(api.createSessionFormatCatalogWithChildren(children),p);
+-    const encodedHeader=api.sessionFormatCatalog.encodeCurrentHeader(a.header,a.inheritedEventCount);
+-    if(stable(canonical({...p.header,version:4}))!==stable(canonical(encodedHeader)))I.fail('MIGRATION_HEADER_MISMATCH');
+-    const text=Buffer.from([encodedHeader,...a.events.map(e=>api.sessionFormatCatalog.encodeCurrentEvent(e))].map(stable).join('\n')+'\n');
+-    const encoded=item.v3.name.endsWith('.zstd')?zstdCompressSync(text):text;
+-    if(encoded.length>maxBytes||text.length>maxDecodedBytes)I.fail('FILE_TOO_LARGE');
+-    const verified=await strictCurrent(parseBytes(text,4));if(artifactHash(a)!==artifactHash(verified))I.fail('MIGRATION_EXPECTED_MISMATCH');
+-    return {output:encoded,expected:{name:item.v3.name.replace('.v3.','.v4.'),sha256:I.digest(encoded),bytes:encoded.length},artifact_sha256:artifactHash(a)};
+-  }
+-  // Recover the only deliberate nlink=2 interval. Never unlink a user path.
+-  async function recoverLinks(r,context,mutate) {
+-    if(!r||r.status==='complete')return;
+-    for(const x of r.items){const temp=path.join(staging,I.digest(x.sessionId)+'.stage'),dest=path.join(context.sessions,...x.relative,x.target.name);
+-      if(!await I.exists(temp)||!await I.exists(dest))continue;
+-      const a=await lstat(temp,{bigint:true}),b=await lstat(dest,{bigint:true});
+-      if(a.isSymbolicLink()||b.isSymbolicLink()||!a.isFile()||!b.isFile())I.fail('UNSAFE_FILE');
+-      if(a.ino===b.ino&&a.dev===b.dev){if(a.nlink!==2n||b.nlink!==2n||a.size!==BigInt(x.target.bytes))I.fail('MIGRATION_STAGING_CONFLICT');if(!mutate)I.fail('MIGRATION_RECEIPT_PENDING');await context.fence();await unlink(temp);await I.syncDirectory(staging);}
+-    }
+-  }
+-  async function inspect(context,r,{mutate=false}={}) {
+-    const old=await oldReceipt(),deleted=await deletions();if(r&&(r.legacy_receipt_sha256!==old?.sha256&&!(r.legacy_receipt_sha256===null&&!old)))I.fail('MIGRATION_SOURCE_CHANGED');
+-    await recoverLinks(r,context,mutate);
+-    const inventory=await context.deletionInventory();if(!inventory.complete)I.fail('INCOMPLETE_DEPENDENCY_INVENTORY');
+-    const api=await mod('dsh-session-format-catalog'),converter=await mod('dsh-session-format-v3-to-v4');
+-    const proof=new Map((r?.items||[]).map(x=>[x.sessionId,x])),items=[],facts=[];let bytes=0,events=0;
+-    const converting=new Set(inventory.sessions.filter(x=>x.header.version===3||proof.get(x.sessionId)?.status==='pending').map(x=>x.sessionId));
+-    function childEvidence(info,a){
+-      if(info.header.origin!=='subagent'||!converting.has(info.header.parentSession))return;
+-      const source=converter.historicalChildCatalogSource(a),d=source.descriptor;
+-      // The official childCatalogFact consumes only these descriptor fields.
+-      // Do not retain optional agent prompts or extension payloads in memory.
+-      if(d&&typeof d==='object'&&!Array.isArray(d))source.descriptor=Object.fromEntries(['version','provider','mode','label'].filter(k=>Object.hasOwn(d,k)).map(k=>[k,d[k]]));
+-      facts.push({parent:info.header.parentSession,value:source});
+-    }
+-    for(const info of inventory.sessions.sort((a,b)=>a.sessionId.localeCompare(b.sessionId))){await context.fence();if(deleted.has(info.sessionId))I.fail('SESSION_REAPPEARED');
+-      const dir=path.join(context.sessions,...info.relative),snap=await I.deletionSnapshot(dir),v3=snap.files.find(x=>x.name.startsWith('session.v3.')),v4=snap.files.find(x=>x.name.startsWith('session.v4.'));
+-      const saved=proof.get(info.sessionId),prior=old?.items.get(info.sessionId);
+-      if(saved&&(!v3||stable(saved.relative)!==stable(info.relative)||saved.source.name!==v3.name||saved.source.sha256!==v3.sha256))I.fail('MIGRATION_SOURCE_CHANGED');
+-      if(v3&&v4&&!saved&&(!prior||stable(prior.relative)!==stable(info.relative)||prior.source.name!==v3.name||prior.source.sha256!==v3.sha256))I.fail('DUAL_GENERATION_WITHOUT_RECEIPT');
+-      const fact={...info,v3,v4,snap};
+-      // Only compact descriptor evidence escapes this iteration; neither full
+-      // event arrays nor raw history buffers are retained across the corpus.
+-      if(v4){const p=await physical(path.join(dir,v4.name),4),a=await strictCurrent(p);bytes+=p.raw.bytes.length;events+=a.events.length;if(saved&&r.status==='publishing'&&!r.baseline.some(x=>x.sessionId===saved.sessionId)&&p.raw.sha256!==saved.target.sha256)I.fail('MIGRATION_PUBLISHED_CONFLICT');childEvidence(info,a);}
+-      else if(v3){const p=await physical(path.join(dir,v3.name),3),a=restore(api.historicalSessionFormatCatalog,p);bytes+=p.raw.bytes.length;events+=a.events.length;childEvidence(info,a);}
+-      if(!v3&&!v4)I.fail('INCOMPLETE_DEPENDENCY_INVENTORY');if(bytes>256*1024*1024)I.fail('MIGRATION_CORPUS_LIMIT');if(events>1000000)I.fail('MIGRATION_EVENT_LIMIT');items.push(fact);
+-    }
+-    for(const saved of proof.values())if(!items.some(x=>x.sessionId===saved.sessionId)&&(!deleted.has(saved.sessionId)||saved.status!=='published'||r.status!=='complete'))I.fail('MIGRATION_SOURCE_CHANGED');
+-    // Whole inventory supplies every direct child's descriptor. V4 children
+-    // use their strictly restored current artifact; legacy sources stay fixed.
+-    for(const item of items.filter(x=>x.v3&&!x.v4||proof.get(x.sessionId)?.status==='pending')){
+-      const {expected,artifact_sha256}=await converted(context,item,facts);item.expected=expected;item.artifact_sha256=artifact_sha256;
+-      const saved=proof.get(item.sessionId);if(saved&&(stable(saved.target)!==stable(item.expected)||saved.artifact_sha256!==item.artifact_sha256))I.fail('MIGRATION_EXPECTED_MISMATCH');
+-    }
+-    if(r?.status==='publishing')for(const base of r.baseline){const item=items.find(x=>x.sessionId===base.sessionId);if(!item?.v4||item.v4.sha256!==base.sha256)I.fail('MIGRATION_SOURCE_CHANGED');}
+-    for(const x of items)if((await I.deletionSnapshot(path.join(context.sessions,...x.relative))).digest!==x.snap.digest)I.fail('SNAPSHOT_CHANGED');
+-    return {items,facts,old,deleted,bytes,events};
+-  }
+-  async function publish(context,r,item,facts) {
+-    const record=r.items.find(x=>x.sessionId===item.sessionId),dest=path.join(context.sessions,...record.relative,record.target.name),temp=path.join(staging,I.digest(item.sessionId)+'.stage');
+-    const prepared=await converted(context,item,facts),output=prepared.output;if(stable(prepared.expected)!==stable(record.target)||prepared.artifact_sha256!==record.artifact_sha256)I.fail('MIGRATION_EXPECTED_MISMATCH');
+-    if(await I.exists(dest)){if((await I.rawFile(dest,maxBytes)).sha256!==record.target.sha256)I.fail('MIGRATION_PUBLISHED_CONFLICT');if(await I.exists(temp)){const bytes=(await I.rawFile(temp,maxBytes)).bytes;if(!bytes.equals(output))I.fail('MIGRATION_STAGING_CONFLICT');await unlink(temp);await I.syncDirectory(staging);}}
+-    else {
+-      if(await I.exists(temp)){const previous=(await I.rawFile(temp,maxBytes)).bytes;if(!output.subarray(0,previous.length).equals(previous))I.fail('MIGRATION_STAGING_CONFLICT');if(!previous.equals(output)){await context.fence();await unlink(temp);await I.syncDirectory(staging);}}
+-      if(!await I.exists(temp)){const handle=await open(temp,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|(constants.O_NOFOLLOW||0),0o600);try{await handle.writeFile(output);await handle.sync();}finally{await handle.close();}await I.syncDirectory(staging);}
+-      await onCheckpoint({phase:'after-stage'});await context.fence();
+-      if((await I.rawFile(path.join(context.sessions,...record.relative,record.source.name),maxBytes)).sha256!==record.source.sha256)I.fail('MIGRATION_SOURCE_CHANGED');
+-      // link(2) is atomic and refuses any existing destination, including symlinks.
+-      try{await link(temp,dest);}catch(e){if(e.code==='EEXIST')I.fail('MIGRATION_PUBLISHED_CONFLICT');throw e;}
+-      await I.syncDirectory(path.dirname(dest));await onCheckpoint({phase:'after-link'});
+-      await unlink(temp);await I.syncDirectory(staging);await onCheckpoint({phase:'after-unlink'});
+-    }
+-    record.status='published';await I.writeManifest(home,r);await onCheckpoint({phase:'after-item'});
+-  }
+-  async function execute(context,mutate) {
+-    let r=await journal(mutate),scan=await inspect(context,r,{mutate});const needs=scan.items.filter(x=>x.v3&&!x.v4);
+-    if(!mutate)return {status:'VERIFIED',runtime:RUNTIME,format:4,sessions:scan.items.length,migrations:needs.length,journal_pending:r?.status==='publishing',liveChanges:'NONE'};
+-    if(needs.length&&(!r||r.status==='complete')){
+-      // Completed deletion tombstones were verified by inspect; their metadata
+-      // no longer authorizes a physical generation and must not enter a new
+-      // pending batch (nor accumulate against the active-session limit).
+-      const oldItems=(r?.items||[]).filter(x=>!scan.deleted.has(x.sessionId)),ids=new Set(oldItems.map(x=>x.sessionId));
+-      const additions=needs.map(x=>{if(ids.has(x.sessionId))I.fail('MIGRATION_SOURCE_CHANGED');return {sessionId:x.sessionId,relative:x.relative,source:{name:x.v3.name,sha256:x.v3.sha256,bytes:x.v3.size},target:x.expected,artifact_sha256:x.artifact_sha256,status:'pending'};});
+-      if(oldItems.length+additions.length>maxSessions)I.fail('SESSION_LIMIT');
+-      r={schema:'owned-session-incremental-v4-v1',runtime:RUNTIME,status:'publishing',legacy_receipt_sha256:scan.old?.sha256??null,baseline:scan.items.filter(x=>x.v4).map(x=>({sessionId:x.sessionId,sha256:x.v4.sha256})),items:[...oldItems,...additions]};
+-      if(!await I.safeDirectory(home,true)){await mkdir(home,{mode:0o700});await I.syncDirectory(root);}if(!await I.safeDirectory(staging,true)){await mkdir(staging,{mode:0o700});await I.syncDirectory(home);}await I.writeManifest(home,r);await onCheckpoint({phase:'after-plan'});
+-    }
+-    if(r?.status==='publishing'){
+-      scan=await inspect(context,r,{mutate:true});
+-      for(const item of scan.items.filter(x=>r.items.find(y=>y.sessionId===x.sessionId)?.status==='pending'))await publish(context,r,item,scan.facts);
+-      await inspect(context,r,{mutate:true});if((await readdir(staging)).length)I.fail('MIGRATION_STAGING_CONFLICT');r.status='complete';await I.writeManifest(home,r);await onCheckpoint({phase:'after-complete'});
+-    }
+-    const final=await inspect(context,r,{mutate:true});if(final.items.some(x=>!x.v4))I.fail('LEGACY_MIGRATION_REQUIRED');
+-    const admission=path.join(root,'.history-runtime-admission');if(!await I.safeDirectory(admission,true)){await mkdir(admission,{mode:0o700});await I.syncDirectory(root);}if(await I.exists(path.join(admission,'manifest.json')))await I.rawFile(path.join(admission,'manifest.json'),128*1024);
+-    await I.writeManifest(admission,{schema:'owned-session-runtime-admission-v1',status:'complete',runtime:RUNTIME,format:4,sessions:final.items.length,legacy_receipt_sha256:final.old?.sha256??null,incremental_receipt_sha256:r?I.digest(stable(r)+'\n'):null});
+-    return {status:'READY',runtime:RUNTIME,format:4};
+-  }
+-  return {check:()=>maintenance.exclusive(c=>execute(c,false)),admit:()=>maintenance.exclusive(c=>execute(c,true)),migrate:()=>maintenance.exclusive(c=>execute(c,true)),rollback:()=>I.fail('RUNTIME_SNAPSHOT_REQUIRED')};
+-}
++/** Offline, incremental V3 -> V4 admission using the pinned rc.2 official codec.
++ * Existing V4 and all original V3 bytes are immutable. A separate metadata-only
++ * journal owns temporary encoded files, and hard-link publication never replaces
++ * a destination. No rollback/delete operation is provided by this module.
++ */
++import {mkdir,readdir,lstat,open,link,unlink} from 'node:fs/promises';
++import {constants} from 'node:fs';
++import path from 'node:path';
++import {pathToFileURL} from 'node:url';
++import {zstdCompressSync,zstdDecompressSync} from 'node:zlib';
++import {createHistoryMaintenance,migrationInternals as I} from './history-native.mjs';
++import {preserveRuntimeGeneration} from './history-runtime-snapshot.mjs';
++
++const RUNTIME='0.2.0-rc.2', HOME='.history-v4-incremental-r29';
++const sha=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
++const segment=x=>typeof x==='string'&&x.length>0&&!['.','..'].includes(x)&&!/[\\/\x00-\x1f:]/.test(x);
++const identity=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,200}$/.test(x);
++const stable=x=>JSON.stringify(x);
++const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
++const artifactHash=a=>I.digest(stable(canonical({header:a.header,events:a.events,inheritedEventCount:a.inheritedEventCount})));
++
++export function strictFrames(bytes) {
++  const frames=[];let offset=0;
++  const need=n=>{if(bytes.length-offset<n)I.fail('MIGRATION_INCOMPLETE_ZSTD');};
++  while(offset<bytes.length) {
++    const start=offset;need(5);if(bytes.readUInt32LE(offset)!==0xfd2fb528)I.fail('MIGRATION_CORRUPT_ZSTD');offset+=4;
++    const d=bytes[offset++];if(d&24)I.fail('MIGRATION_CORRUPT_ZSTD');
++    const c=d>>>6,single=!!(d&32),dict=d&3,n=(single?0:1)+(dict===3?4:dict)+(c===0?(single?1:0):1<<c);need(n);offset+=n;
++    for(;;){need(3);const b=bytes.readUIntLE(offset,3);offset+=3;const type=(b>>>1)&3;if(type===3)I.fail('MIGRATION_CORRUPT_ZSTD');const size=type===1?1:b>>>3;need(size);offset+=size;if(b&1)break;}
++    if(d&4){need(4);offset+=4;}frames.push(bytes.subarray(start,offset));
++  }
++  if(!frames.length)I.fail('MIGRATION_INCOMPLETE_ZSTD');return frames;
++}
++
++export function createHistoryMigration({stateRoot,runtimeRoot,assertQuiescent,maxBytes=32*1024*1024,maxDecodedBytes=128*1024*1024,maxLegacyBytes=8*1024*1024,maxLegacyDecodedBytes=16*1024*1024,maxSessions=2000,onCheckpoint=async()=>{}}) {
++  const root=path.resolve(stateRoot),home=path.join(root,HOME),staging=path.join(home,'staging');
++  const maintenance=createHistoryMaintenance({stateRoot:root,runtimeRoot,assertQuiescent,maxSessions,maxBytes,maxDecodedBytes});
++  const moduleFile=name=>pathToFileURL(path.join(runtimeRoot,'node_modules/@deepseek-ai',name,'lib/index.js')).href;
++  const mod=name=>import(moduleFile(name));
++  async function json(file,limit) {try{return JSON.parse((await I.rawFile(file,limit)).bytes);}catch(e){if(e.code)throw e;I.fail('MIGRATION_RECEIPT_INVALID');}}
++  async function oldReceipt() {
++    const dir=path.join(root,'.history-v4-migration');if(!await I.safeDirectory(dir,true))return null;
++    const raw=await I.rawFile(path.join(dir,'manifest.json'),4*1024*1024);let r;try{r=JSON.parse(raw.bytes);}catch{I.fail('MIGRATION_RECEIPT_INVALID');}
++    if(r.schema!=='owned-session-v4-migration-v1'||r.runtime!=='0.1.7-alpha.2'||!Array.isArray(r.items)||r.items.length>maxSessions||!Array.isArray(r.priorDeletions))I.fail('MIGRATION_RECEIPT_INVALID');
++    if(r.status!=='complete')I.fail('MIGRATION_RECEIPT_PENDING');
++    const items=new Map();for(const item of r.items){if(!identity(item?.sessionId)||items.has(item.sessionId)||!validRelative(item.relative)||!validFile(item.source,/^session\.v[34]\.jsonl(?:\.zstd)?$/))I.fail('MIGRATION_RECEIPT_INVALID');items.set(item.sessionId,item);}
++    return {sha256:raw.sha256,items};
++  }
++  function validRelative(x){return Array.isArray(x)&&x.length===2&&x.every(segment);}
++  function validFile(x,re){return x&&typeof x.name==='string'&&re.test(x.name)&&sha(x.sha256);}
++  async function deletions() {
++    const dir=path.join(root,'.history-deletions'),ids=new Set();if(!await I.safeDirectory(dir,true))return ids;
++    const names=await readdir(dir);if(names.length>20000)I.fail('DELETION_BASELINE_LIMIT');
++    for(const name of names){if(!sha(name))I.fail('INVALID_DELETE_MANIFEST');await I.safeDirectory(path.join(dir,name));const v=await json(path.join(dir,name,'manifest.json'),128*1024);
++      if(v.version!==1||!identity(v.sessionId)||I.digest(v.sessionId)!==name)I.fail('INVALID_DELETE_MANIFEST');if(v.status!=='deleted')I.fail('MIGRATION_DELETION_PENDING');ids.add(v.sessionId);}
++    return ids;
++  }
++  async function journal(mutate=false) {
++    if(!await I.safeDirectory(home,true))return null;
++    const names=await readdir(home),orphan=names.filter(x=>/^\.manifest-[a-f0-9-]{36}$/.test(x));
++    if(names.some(x=>!['manifest.json','staging'].includes(x)&&!orphan.includes(x)))I.fail('MIGRATION_RECEIPT_INVALID');
++    for(const name of orphan){await I.rawFile(path.join(home,name),8*1024*1024);if(!mutate)I.fail('MIGRATION_RECEIPT_PENDING');await unlink(path.join(home,name));}if(orphan.length)await I.syncDirectory(home);
++    if(!names.includes('manifest.json')){if(await I.safeDirectory(staging,true)&&(await readdir(staging)).length)I.fail('MIGRATION_STAGING_CONFLICT');return null;}
++    const r=await json(path.join(home,'manifest.json'),8*1024*1024);
++    if(r.schema!=='owned-session-incremental-v4-v1'||!['0.1.7-rc.2',RUNTIME].includes(r.runtime)||!['publishing','complete'].includes(r.status)||!Array.isArray(r.items)||r.items.length>maxSessions||!Array.isArray(r.baseline)||r.baseline.length>maxSessions||(r.legacy_receipt_sha256!==null&&!sha(r.legacy_receipt_sha256)))I.fail('MIGRATION_RECEIPT_INVALID');
++    // A pending older codec transaction must finish with its original runtime.
++    if(r.runtime!==RUNTIME && r.status!=='complete')I.fail('MIGRATION_PRIOR_RUNTIME_PENDING');
++    const ids=new Set();for(const x of r.items){if(!identity(x?.sessionId)||ids.has(x.sessionId)||!validRelative(x.relative)||!validFile(x.source,/^session\.v3\.jsonl(?:\.zstd)?$/)||!validFile(x.target,/^session\.v4\.jsonl(?:\.zstd)?$/)||x.target.name!==x.source.name.replace('.v3.','.v4.')||!Number.isSafeInteger(x.source.bytes)||x.source.bytes<1||!Number.isSafeInteger(x.target.bytes)||x.target.bytes<1||x.source.bytes>maxBytes||x.target.bytes>maxBytes||!sha(x.artifact_sha256)||!['pending','published'].includes(x.status))I.fail('MIGRATION_RECEIPT_INVALID');ids.add(x.sessionId);}
++    const bases=new Set();for(const x of r.baseline){if(!identity(x?.sessionId)||bases.has(x.sessionId)||!sha(x.sha256))I.fail('MIGRATION_RECEIPT_INVALID');bases.add(x.sessionId);}
++    if(r.status==='complete'&&r.items.some(x=>x.status!=='published'))I.fail('MIGRATION_RECEIPT_INVALID');
++    await I.safeDirectory(staging);const temporary=await readdir(staging);
++    const allowed=new Set(r.items.map(x=>I.digest(x.sessionId)+'.stage'));
++    if(temporary.some(x=>!allowed.has(x)))I.fail('MIGRATION_STAGING_CONFLICT');
++    if(r.status==='complete'&&temporary.length)I.fail('MIGRATION_STAGING_CONFLICT');return r;
++  }
++  async function physical(file,version) {
++    const limit=version===3?Math.min(maxBytes,maxLegacyBytes):maxBytes,decodedLimit=version===3?Math.min(maxDecodedBytes,maxLegacyDecodedBytes):maxDecodedBytes;
++    const raw=await I.rawFile(file,limit);let data=raw.bytes;
++    if(file.endsWith('.zstd')){const chunks=[];let length=0;for(const frame of strictFrames(data)){const chunk=zstdDecompressSync(frame,{maxOutputLength:decodedLimit-length});length+=chunk.length;if(length>decodedLimit||chunk.at(-1)!==10)I.fail('MIGRATION_INCOMPLETE_LOG');chunks.push(chunk);}data=Buffer.concat(chunks);}if(data.length>decodedLimit)I.fail('ARTIFACT_LIMIT');
++    return {...parseBytes(data,version),raw};
++  }
++  function parseBytes(data,version) {
++    if(data.length>maxDecodedBytes||data.at(-1)!==10)I.fail('MIGRATION_INCOMPLETE_LOG');
++    let rows;try{rows=new TextDecoder('utf-8',{fatal:true}).decode(data).slice(0,-1).split('\n').map(x=>JSON.parse(x));}catch{I.fail('MIGRATION_INVALID_LOG');}
++    const header=rows.shift();if(header?.version!==version)I.fail('MIGRATION_HEADER_MISMATCH');return {header,rows};
++  }
++  function restore(catalog,p) {const reader=catalog.createRestore(p.header,{recovery:'strict',validation:'current'});for(const row of p.rows)reader.decodeRow(row);return reader.finish();}
++  async function strictCurrent(p){const {sessionFormatCatalog}=await mod('dsh-session-format-catalog'),a=restore(sessionFormatCatalog,p);const {Session}=await mod('dsh-session');const s=Session.create(a.header.id,a.events,a.header,a.inheritedEventCount);s.deriveMessages();s.toolHistory();return a;}
++  async function converted(context,item,facts) {
++    const api=await mod('dsh-session-format-catalog'),p=await physical(path.join(context.sessions,...item.relative,item.v3.name),3);
++    if(p.raw.sha256!==item.v3.sha256)I.fail('MIGRATION_SOURCE_CHANGED');
++    const children=facts.filter(x=>x.parent===item.sessionId).map(x=>x.value),a=restore(api.createSessionFormatCatalogWithChildren(children),p);
++    const encodedHeader=api.sessionFormatCatalog.encodeCurrentHeader(a.header,a.inheritedEventCount);
++    if(stable(canonical({...p.header,version:4}))!==stable(canonical(encodedHeader)))I.fail('MIGRATION_HEADER_MISMATCH');
++    const text=Buffer.from([encodedHeader,...a.events.map(e=>api.sessionFormatCatalog.encodeCurrentEvent(e))].map(stable).join('\n')+'\n');
++    const encoded=item.v3.name.endsWith('.zstd')?zstdCompressSync(text):text;
++    if(encoded.length>maxBytes||text.length>maxDecodedBytes)I.fail('FILE_TOO_LARGE');
++    const verified=await strictCurrent(parseBytes(text,4));if(artifactHash(a)!==artifactHash(verified))I.fail('MIGRATION_EXPECTED_MISMATCH');
++    return {output:encoded,expected:{name:item.v3.name.replace('.v3.','.v4.'),sha256:I.digest(encoded),bytes:encoded.length},artifact_sha256:artifactHash(a)};
++  }
++  // Recover the only deliberate nlink=2 interval. Never unlink a user path.
++  async function recoverLinks(r,context,mutate) {
++    if(!r||r.status==='complete')return;
++    for(const x of r.items){const temp=path.join(staging,I.digest(x.sessionId)+'.stage'),dest=path.join(context.sessions,...x.relative,x.target.name);
++      if(!await I.exists(temp)||!await I.exists(dest))continue;
++      const a=await lstat(temp,{bigint:true}),b=await lstat(dest,{bigint:true});
++      if(a.isSymbolicLink()||b.isSymbolicLink()||!a.isFile()||!b.isFile())I.fail('UNSAFE_FILE');
++      if(a.ino===b.ino&&a.dev===b.dev){if(a.nlink!==2n||b.nlink!==2n||a.size!==BigInt(x.target.bytes))I.fail('MIGRATION_STAGING_CONFLICT');if(!mutate)I.fail('MIGRATION_RECEIPT_PENDING');await context.fence();await unlink(temp);await I.syncDirectory(staging);}
++    }
++  }
++  async function inspect(context,r,{mutate=false}={}) {
++    const old=await oldReceipt(),deleted=await deletions();if(r&&(r.legacy_receipt_sha256!==old?.sha256&&!(r.legacy_receipt_sha256===null&&!old)))I.fail('MIGRATION_SOURCE_CHANGED');
++    await recoverLinks(r,context,mutate);
++    const inventory=await context.deletionInventory();if(!inventory.complete)I.fail('INCOMPLETE_DEPENDENCY_INVENTORY');
++    const api=await mod('dsh-session-format-catalog'),converter=await mod('dsh-session-format-v3-to-v4');
++    const proof=new Map((r?.items||[]).map(x=>[x.sessionId,x])),items=[],facts=[];let bytes=0,events=0;
++    const converting=new Set(inventory.sessions.filter(x=>x.header.version===3||proof.get(x.sessionId)?.status==='pending').map(x=>x.sessionId));
++    function childEvidence(info,a){
++      if(info.header.origin!=='subagent'||!converting.has(info.header.parentSession))return;
++      const source=converter.historicalChildCatalogSource(a),d=source.descriptor;
++      // The official childCatalogFact consumes only these descriptor fields.
++      // Do not retain optional agent prompts or extension payloads in memory.
++      if(d&&typeof d==='object'&&!Array.isArray(d))source.descriptor=Object.fromEntries(['version','provider','mode','label'].filter(k=>Object.hasOwn(d,k)).map(k=>[k,d[k]]));
++      facts.push({parent:info.header.parentSession,value:source});
++    }
++    for(const info of inventory.sessions.sort((a,b)=>a.sessionId.localeCompare(b.sessionId))){await context.fence();if(deleted.has(info.sessionId))I.fail('SESSION_REAPPEARED');
++      const dir=path.join(context.sessions,...info.relative),snap=await I.deletionSnapshot(dir),v3=snap.files.find(x=>x.name.startsWith('session.v3.')),v4=snap.files.find(x=>x.name.startsWith('session.v4.'));
++      const saved=proof.get(info.sessionId),prior=old?.items.get(info.sessionId);
++      if(saved&&(!v3||stable(saved.relative)!==stable(info.relative)||saved.source.name!==v3.name||saved.source.sha256!==v3.sha256))I.fail('MIGRATION_SOURCE_CHANGED');
++      if(v3&&v4&&!saved&&(!prior||stable(prior.relative)!==stable(info.relative)||prior.source.name!==v3.name||prior.source.sha256!==v3.sha256))I.fail('DUAL_GENERATION_WITHOUT_RECEIPT');
++      const fact={...info,v3,v4,snap};
++      // Only compact descriptor evidence escapes this iteration; neither full
++      // event arrays nor raw history buffers are retained across the corpus.
++      if(v4){const p=await physical(path.join(dir,v4.name),4),a=await strictCurrent(p);bytes+=p.raw.bytes.length;events+=a.events.length;if(saved&&r.status==='publishing'&&!r.baseline.some(x=>x.sessionId===saved.sessionId)&&p.raw.sha256!==saved.target.sha256)I.fail('MIGRATION_PUBLISHED_CONFLICT');childEvidence(info,a);}
++      else if(v3){const p=await physical(path.join(dir,v3.name),3),a=restore(api.historicalSessionFormatCatalog,p);bytes+=p.raw.bytes.length;events+=a.events.length;childEvidence(info,a);}
++      if(!v3&&!v4)I.fail('INCOMPLETE_DEPENDENCY_INVENTORY');if(bytes>256*1024*1024)I.fail('MIGRATION_CORPUS_LIMIT');if(events>1000000)I.fail('MIGRATION_EVENT_LIMIT');items.push(fact);
++    }
++    for(const saved of proof.values())if(!items.some(x=>x.sessionId===saved.sessionId)&&(!deleted.has(saved.sessionId)||saved.status!=='published'||r.status!=='complete'))I.fail('MIGRATION_SOURCE_CHANGED');
++    // Whole inventory supplies every direct child's descriptor. V4 children
++    // use their strictly restored current artifact; legacy sources stay fixed.
++    for(const item of items.filter(x=>x.v3&&!x.v4||proof.get(x.sessionId)?.status==='pending')){
++      const {expected,artifact_sha256}=await converted(context,item,facts);item.expected=expected;item.artifact_sha256=artifact_sha256;
++      const saved=proof.get(item.sessionId);if(saved&&(stable(saved.target)!==stable(item.expected)||saved.artifact_sha256!==item.artifact_sha256))I.fail('MIGRATION_EXPECTED_MISMATCH');
++    }
++    if(r?.status==='publishing')for(const base of r.baseline){const item=items.find(x=>x.sessionId===base.sessionId);if(!item?.v4||item.v4.sha256!==base.sha256)I.fail('MIGRATION_SOURCE_CHANGED');}
++    for(const x of items)if((await I.deletionSnapshot(path.join(context.sessions,...x.relative))).digest!==x.snap.digest)I.fail('SNAPSHOT_CHANGED');
++    return {items,facts,old,deleted,bytes,events};
++  }
++  async function publish(context,r,item,facts) {
++    const record=r.items.find(x=>x.sessionId===item.sessionId),dest=path.join(context.sessions,...record.relative,record.target.name),temp=path.join(staging,I.digest(item.sessionId)+'.stage');
++    const prepared=await converted(context,item,facts),output=prepared.output;if(stable(prepared.expected)!==stable(record.target)||prepared.artifact_sha256!==record.artifact_sha256)I.fail('MIGRATION_EXPECTED_MISMATCH');
++    if(await I.exists(dest)){if((await I.rawFile(dest,maxBytes)).sha256!==record.target.sha256)I.fail('MIGRATION_PUBLISHED_CONFLICT');if(await I.exists(temp)){const bytes=(await I.rawFile(temp,maxBytes)).bytes;if(!bytes.equals(output))I.fail('MIGRATION_STAGING_CONFLICT');await unlink(temp);await I.syncDirectory(staging);}}
++    else {
++      if(await I.exists(temp)){const previous=(await I.rawFile(temp,maxBytes)).bytes;if(!output.subarray(0,previous.length).equals(previous))I.fail('MIGRATION_STAGING_CONFLICT');if(!previous.equals(output)){await context.fence();await unlink(temp);await I.syncDirectory(staging);}}
++      if(!await I.exists(temp)){const handle=await open(temp,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|(constants.O_NOFOLLOW||0),0o600);try{await handle.writeFile(output);await handle.sync();}finally{await handle.close();}await I.syncDirectory(staging);}
++      await onCheckpoint({phase:'after-stage'});await context.fence();
++      if((await I.rawFile(path.join(context.sessions,...record.relative,record.source.name),maxBytes)).sha256!==record.source.sha256)I.fail('MIGRATION_SOURCE_CHANGED');
++      // link(2) is atomic and refuses any existing destination, including symlinks.
++      try{await link(temp,dest);}catch(e){if(e.code==='EEXIST')I.fail('MIGRATION_PUBLISHED_CONFLICT');throw e;}
++      await I.syncDirectory(path.dirname(dest));await onCheckpoint({phase:'after-link'});
++      await unlink(temp);await I.syncDirectory(staging);await onCheckpoint({phase:'after-unlink'});
++    }
++    record.status='published';await I.writeManifest(home,r);await onCheckpoint({phase:'after-item'});
++  }
++  async function execute(context,mutate) {
++    let r=await journal(mutate),scan=await inspect(context,r,{mutate});const needs=scan.items.filter(x=>x.v3&&!x.v4);
++    if(!mutate)return {status:'VERIFIED',runtime:RUNTIME,format:4,sessions:scan.items.length,migrations:needs.length,journal_pending:r?.status==='publishing',liveChanges:'NONE'};
++    await preserveRuntimeGeneration({stateRoot:root,context,items:scan.items,deleted:scan.deleted,maxBytes,onCheckpoint});
++    if(needs.length&&(!r||r.status==='complete')){
++      // Completed deletion tombstones were verified by inspect; their metadata
++      // no longer authorizes a physical generation and must not enter a new
++      // pending batch (nor accumulate against the active-session limit).
++      const oldItems=(r?.items||[]).filter(x=>!scan.deleted.has(x.sessionId)),ids=new Set(oldItems.map(x=>x.sessionId));
++      const additions=needs.map(x=>{if(ids.has(x.sessionId))I.fail('MIGRATION_SOURCE_CHANGED');return {sessionId:x.sessionId,relative:x.relative,source:{name:x.v3.name,sha256:x.v3.sha256,bytes:x.v3.size},target:x.expected,artifact_sha256:x.artifact_sha256,status:'pending'};});
++      if(oldItems.length+additions.length>maxSessions)I.fail('SESSION_LIMIT');
++      r={schema:'owned-session-incremental-v4-v1',runtime:RUNTIME,status:'publishing',legacy_receipt_sha256:scan.old?.sha256??null,baseline:scan.items.filter(x=>x.v4).map(x=>({sessionId:x.sessionId,sha256:x.v4.sha256})),items:[...oldItems,...additions]};
++      if(!await I.safeDirectory(home,true)){await mkdir(home,{mode:0o700});await I.syncDirectory(root);}if(!await I.safeDirectory(staging,true)){await mkdir(staging,{mode:0o700});await I.syncDirectory(home);}await I.writeManifest(home,r);await onCheckpoint({phase:'after-plan'});
++    }
++    if(r?.status==='publishing'){
++      scan=await inspect(context,r,{mutate:true});
++      for(const item of scan.items.filter(x=>r.items.find(y=>y.sessionId===x.sessionId)?.status==='pending'))await publish(context,r,item,scan.facts);
++      await inspect(context,r,{mutate:true});if((await readdir(staging)).length)I.fail('MIGRATION_STAGING_CONFLICT');r.status='complete';await I.writeManifest(home,r);await onCheckpoint({phase:'after-complete'});
++    }
++    const final=await inspect(context,r,{mutate:true});if(final.items.some(x=>!x.v4))I.fail('LEGACY_MIGRATION_REQUIRED');
++    const admission=path.join(root,'.history-runtime-admission');if(!await I.safeDirectory(admission,true)){await mkdir(admission,{mode:0o700});await I.syncDirectory(root);}if(await I.exists(path.join(admission,'manifest.json')))await I.rawFile(path.join(admission,'manifest.json'),128*1024);
++    await I.writeManifest(admission,{schema:'owned-session-runtime-admission-v1',status:'complete',runtime:RUNTIME,format:4,sessions:final.items.length,legacy_receipt_sha256:final.old?.sha256??null,incremental_receipt_sha256:r?I.digest(stable(r)+'\n'):null});
++    return {status:'READY',runtime:RUNTIME,format:4};
++  }
++  return {check:()=>maintenance.exclusive(c=>execute(c,false)),admit:()=>maintenance.exclusive(c=>execute(c,true)),migrate:()=>maintenance.exclusive(c=>execute(c,true)),rollback:()=>I.fail('RUNTIME_SNAPSHOT_REQUIRED')};
++}
+--- r40/app/history-native.mjs
++++ r41/app/history-native.mjs
+@@ -1,4 +1,4 @@
+-/** Reviewed candidate for exactly DSH 0.1.7-rc.2, Session V4.
++/** Reviewed candidate for exactly DSH 0.2.0-rc.2, Session V4.
+  * Offline manager fence remains mandatory. Permanent deletion removes all
+  * validated session generations plus its private migration backup, preserving
+  * shared attachments/project files. Legacy restore/quarantine is not exposed.
+@@ -12,9 +12,9 @@
+ import { Readable } from 'node:stream';
+ 
+ const DAY = 86400000;
+-// Runtime compatibility and persisted format are separate contracts. These two
+-// releases share format 3; future packages still require an explicit review.
+-const SUPPORTED_RUNTIMES = new Set(['0.1.7-rc.2']);
++// Runtime compatibility and persisted format are separate contracts. This
++// exact release is audited for V4; newer packages require explicit review.
++const SUPPORTED_RUNTIMES = new Set(['0.2.0-rc.2']);
+ const FILES = new Set(['session.v3.jsonl.zstd', 'session.v3.jsonl', 'session.v4.jsonl.zstd', 'session.v4.jsonl', 'session.lock']);
+ function validGenerations(names) {
+   const logs=names.filter(x=>x!=='session.lock');
+@@ -369,16 +369,22 @@
+     const directory=path.join(root,'.history-v4-incremental-r29');
+     if(!await safeDirectory(directory,true))return;
+     let entry;try{entry=JSON.parse((await rawFile(path.join(directory,'manifest.json'),8*1024*1024)).bytes);}catch(error){if(error.code)throw error;fail('MIGRATION_RECEIPT_INVALID');}
+-    if(entry.schema!=='owned-session-incremental-v4-v1'||entry.runtime!=='0.1.7-rc.2'||!Array.isArray(entry.items)||entry.items.length>maxSessions)fail('MIGRATION_RECEIPT_INVALID');
++    if(entry.schema!=='owned-session-incremental-v4-v1'||!['0.1.7-rc.2','0.2.0-rc.2'].includes(entry.runtime)||!Array.isArray(entry.items)||entry.items.length>maxSessions)fail('MIGRATION_RECEIPT_INVALID');
+     if(entry.status!=='complete'||entry.items.some(x=>x?.status!=='published'))fail('MIGRATION_RECEIPT_PENDING');
+     await safeDirectory(path.join(directory,'staging'));
+     if((await readdir(path.join(directory,'staging'))).length)fail('MIGRATION_STAGING_CONFLICT');
+   }
+   async function deleteSession(sessionId) {
+     await incrementalMigrationComplete();
++    const runtimeSnapshot=path.join(root,'.history-runtime-020-snapshot');
++    if(await safeDirectory(runtimeSnapshot,true)){
++      let snapshot;try{snapshot=JSON.parse((await rawFile(path.join(runtimeSnapshot,'manifest.json'),8*1024*1024)).bytes);}catch(error){if(error.code)throw error;fail('RUNTIME_SNAPSHOT_INVALID');}
++      if(snapshot?.schema!=='owned-runtime-020-snapshot-v1'||snapshot.runtime!=='0.2.0-rc.2')fail('RUNTIME_SNAPSHOT_INVALID');
++      if(snapshot.status!=='complete')fail('RUNTIME_SNAPSHOT_PENDING');
++    }
+     if (!/^[A-Za-z0-9_-]{1,200}$/.test(sessionId || '')) fail('INVALID_SESSION_ID');
+     const native = await upstream(runtimeRoot);
+-    if (native.runtimeVersion !== '0.1.7-rc.2') fail('UNSUPPORTED_RUNTIME');
++    if (native.runtimeVersion !== '0.2.0-rc.2') fail('UNSUPPORTED_RUNTIME');
+     const ctx=new native.Context(), fiber=ctx.plugin(native.Backend,{root:sessions,compression:'zstd'});
+     let leaf;
+     try { await fiber.await();leaf=path.basename(path.dirname(ctx.get('sessionPersistence').locate({id:sessionId,cwd:'/workspace'}).path)); }
+@@ -417,6 +423,13 @@
+         for(const file of saved.files.filter(x=>x.name!=='session.lock'))if((await deletionHeader(path.join(backup,file.name))).id!==sessionId)fail('MIGRATION_BACKUP_CONFLICT');
+         sources.push({kind:'migration',relative:[digest(sessionId),'payload'],files:saved.files,digest:saved.digest});
+       }
++      const runtimeBackupRoot=path.join(root,'.history-runtime-020-snapshot','backups');
++      const runtimeBackup=path.join(runtimeBackupRoot,digest(sessionId),'payload');
++      if(await safeDirectory(runtimeSnapshot,true) && await safeDirectory(runtimeBackupRoot,true) && await safeDirectory(path.dirname(runtimeBackup),true) && await safeDirectory(runtimeBackup,true)) {
++        const saved=await deletionSnapshot(runtimeBackup);
++        for(const file of saved.files.filter(x=>x.name!=='session.lock'))if((await deletionHeader(path.join(runtimeBackup,file.name))).id!==sessionId)fail('RUNTIME_SNAPSHOT_CHANGED');
++        sources.push({kind:'runtime-snapshot',relative:[digest(sessionId),'payload'],files:saved.files,digest:saved.digest});
++      }
+       if(sources.length>8)fail('DELETE_SOURCE_LIMIT');
+       try { await deleteMetadata(root,runtimeRoot,sessionId,true,16*1024*1024,preserve); }
+       catch(error) { if(error.code==='SESSION_DEPENDENCY')return {status:'deferred',sessionId,reason:error.code};throw error; }
+@@ -428,14 +441,14 @@
+       await writeManifest(journal,entry,true);
+     }
+     const sourcePath=source=>{
+-      if(!plain(source) || !['sessions','trash','migration'].includes(source.kind) || !Array.isArray(source.relative)
++      if(!plain(source) || !['sessions','trash','migration','runtime-snapshot'].includes(source.kind) || !Array.isArray(source.relative)
+           || source.relative.length!==2 || !source.relative.every(segment) || !Array.isArray(source.files)
+           || source.files.length<1 || source.files.length>3 || source.files.some(x=>!plain(x)||!FILES.has(x.name))
+           || digest(JSON.stringify(source.files))!==source.digest)fail('INVALID_DELETE_MANIFEST');
+       if(source.kind==='sessions' && source.relative[1]!==leaf)fail('INVALID_DELETE_MANIFEST');
+       if(source.kind==='trash' && (!/^[a-f0-9-]{36}$/.test(source.relative[0]) || source.relative[1]!=='payload'))fail('INVALID_DELETE_MANIFEST');
+-      if(source.kind==='migration' && (source.relative[0]!==digest(sessionId)||source.relative[1]!=='payload'))fail('INVALID_DELETE_MANIFEST');
+-      return path.join(source.kind==='sessions'?sessions:source.kind==='trash'?trash:path.join(root,'.history-v4-migration','backups'),...source.relative);
++      if(['migration','runtime-snapshot'].includes(source.kind) && (source.relative[0]!==digest(sessionId)||source.relative[1]!=='payload'))fail('INVALID_DELETE_MANIFEST');
++      return path.join(source.kind==='sessions'?sessions:source.kind==='trash'?trash:source.kind==='runtime-snapshot'?path.join(root,'.history-runtime-020-snapshot','backups'):path.join(root,'.history-v4-migration','backups'),...source.relative);
+     };
+     // Verify every remaining byte of every source before any additional
+     // mutation; a partly completed previous unlink is the only tolerated miss.
+--- r40/app/history-runtime-snapshot.mjs
++++ r41/app/history-runtime-snapshot.mjs
+@@ -0,0 +1,120 @@
++/** Owner-scoped immutable raw history generation before rc20's first write.
++ * Called only inside the existing exclusive offline history fence. No account,
++ * model credentials, attachments, workspace files or network requests are used.
++ */
++import {mkdir,open,link,unlink,lstat,readdir} from 'node:fs/promises';
++import {constants} from 'node:fs';
++import path from 'node:path';
++import {migrationInternals as I} from './history-native.mjs';
++export const SNAPSHOT_ROOT='.history-runtime-020-snapshot';
++const RECEIPT_FILE='prior-r29-receipt.json',RECEIPT_STAGE='.prior-r29-receipt.partial';
++const formats=/^session\.v[34]\.jsonl(?:\.zstd)?$/;
++const segment=x=>typeof x==='string'&&x.length>0&&!['.','..'].includes(x)&&!/[\\/\x00-\x1f:]/.test(x);
++const validEntry=e=>e&&typeof e.sessionId==='string'&&/^[A-Za-z0-9_-]{1,200}$/.test(e.sessionId)&&Array.isArray(e.relative)&&e.relative.length===2&&e.relative.every(segment)&&Array.isArray(e.files)&&e.files.length>0&&e.files.length<=2&&e.files.every(f=>f&&formats.test(f.name)&&/^[a-f0-9]{64}$/.test(f.sha256)&&Number.isSafeInteger(f.bytes)&&f.bytes>=0);
++export async function preserveRuntimeGeneration(options){
++ try{return await preserve(options);}catch(error){
++  if(["ENOSPC","EDQUOT","EACCES","EROFS","EIO"].includes(error.code))I.fail("RUNTIME_SNAPSHOT_STORAGE_UNAVAILABLE");
++  throw error;
++ }
++}
++async function preserve({stateRoot,context,items,deleted,maxBytes,onCheckpoint=async()=>{}}){
++ const root=path.join(stateRoot,SNAPSHOT_ROOT),backups=path.join(root,'backups');
++ await context.fence();
++ let record=null;
++ if(await I.safeDirectory(root,true)){
++  const names=await readdir(root);
++  if(names.some(x=>!['manifest.json','backups',RECEIPT_FILE,RECEIPT_STAGE].includes(x)&&!/^\.manifest-[a-f0-9-]{36}$/.test(x)))I.fail('RUNTIME_SNAPSHOT_INVALID');
++  if(await I.exists(path.join(root,'manifest.json'))){
++   try{record=JSON.parse((await I.rawFile(path.join(root,'manifest.json'),8*1024*1024)).bytes);}catch(e){if(e.code)throw e;I.fail('RUNTIME_SNAPSHOT_INVALID');}
++   if(record?.schema!=='owned-runtime-020-snapshot-v1'||record.runtime!=='0.2.0-rc.2'||!['preparing','complete'].includes(record.status)||!Array.isArray(record.items)||record.items.length>2000||record.items.some(e=>!validEntry(e))||new Set(record.items.map(e=>e.sessionId)).size!==record.items.length)I.fail('RUNTIME_SNAPSHOT_INVALID');
++   if(record.receipt!==undefined&&(!record.receipt||!/^[a-f0-9]{64}$/.test(record.receipt.sha256)||!Number.isSafeInteger(record.receipt.bytes)||record.receipt.bytes<0||record.receipt.bytes>8*1024*1024))I.fail('RUNTIME_SNAPSHOT_INVALID');
++  }
++ }
++ if(!record){
++  if(!await I.safeDirectory(root,true)){await mkdir(root,{mode:0o700});await I.syncDirectory(stateRoot);}
++  if(!await I.safeDirectory(backups,true)){await mkdir(backups,{mode:0o700});await I.syncDirectory(root);}
++  const entries=items.map(e=>({sessionId:e.sessionId,relative:e.relative,files:[e.v3,e.v4].filter(Boolean).map(f=>({name:f.name,sha256:f.sha256,bytes:f.size}))}));
++  if(entries.some(e=>!validEntry(e)))I.fail('RUNTIME_SNAPSHOT_INVALID');
++  const receiptSource=path.join(stateRoot,'.history-v4-incremental-r29','manifest.json');
++  let receipt;if(await I.exists(receiptSource)){const raw=await I.rawFile(receiptSource,8*1024*1024);receipt={sha256:raw.sha256,bytes:raw.bytes.length};}
++  record={schema:'owned-runtime-020-snapshot-v1',runtime:'0.2.0-rc.2',status:'preparing',items:entries,...(receipt?{receipt}:{})};
++  await I.writeManifest(root,record);await onCheckpoint({phase:'snapshot-planned'});
++ }
++ // Preserve an older completed migration receipt independently of later batches.
++ // It holds identity/hash metadata only, not conversation bodies.
++ const receiptDest=path.join(root,RECEIPT_FILE),receiptStage=path.join(root,RECEIPT_STAGE);
++ if(record.receipt){
++  if(record.status==='complete'){
++   if(await I.exists(receiptStage)||(await I.rawFile(receiptDest,8*1024*1024)).sha256!==record.receipt.sha256)I.fail('RUNTIME_SNAPSHOT_CHANGED');
++  }else{
++   if(await I.exists(receiptDest)&&await I.exists(receiptStage)){
++    const a=await lstat(receiptDest,{bigint:true}),b=await lstat(receiptStage,{bigint:true});
++    if(a.isSymbolicLink()||b.isSymbolicLink()||!a.isFile()||!b.isFile())I.fail('UNSAFE_FILE');
++    if(a.ino===b.ino&&a.dev===b.dev&&a.nlink===2n&&b.nlink===2n){await unlink(receiptStage);await I.syncDirectory(root);}
++   }
++   if(await I.exists(receiptDest)){
++    if(await I.exists(receiptStage)||(await I.rawFile(receiptDest,8*1024*1024)).sha256!==record.receipt.sha256)I.fail('RUNTIME_SNAPSHOT_CHANGED');
++   }else{
++    const source=await I.rawFile(path.join(stateRoot,'.history-v4-incremental-r29','manifest.json'),8*1024*1024);
++    if(source.sha256!==record.receipt.sha256)I.fail('RUNTIME_SNAPSHOT_CHANGED');
++    if(await I.exists(receiptStage)){
++     const prior=await I.rawFile(receiptStage,8*1024*1024);if(!source.bytes.subarray(0,prior.bytes.length).equals(prior.bytes))I.fail('RUNTIME_SNAPSHOT_CHANGED');await unlink(receiptStage);await I.syncDirectory(root);
++    }
++    const fd=await open(receiptStage,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|(constants.O_NOFOLLOW||0),0o600);
++    try{await fd.writeFile(source.bytes);await fd.sync();}finally{await fd.close();}
++    await onCheckpoint({phase:'snapshot-receipt-staged'});await context.fence();
++    try{await link(receiptStage,receiptDest);}catch(e){if(e.code==='EEXIST')I.fail('RUNTIME_SNAPSHOT_CHANGED');throw e;}
++    await I.syncDirectory(root);await onCheckpoint({phase:'snapshot-receipt-linked'});await unlink(receiptStage);await I.syncDirectory(root);
++   }
++  }
++ }else if(await I.exists(receiptDest)||await I.exists(receiptStage))I.fail('RUNTIME_SNAPSHOT_INVALID');
++ await I.safeDirectory(backups);
++ if((await readdir(backups)).some(n=>!record.items.some(e=>I.digest(e.sessionId)===n)))I.fail("RUNTIME_SNAPSHOT_INVALID");
++ for(const entry of record.items){
++  await context.fence();
++  const parent=path.join(backups,I.digest(entry.sessionId)),payload=path.join(parent,'payload');
++  if(deleted.has(entry.sessionId)){
++   if(record.status!=='complete')I.fail('RUNTIME_SNAPSHOT_CHANGED');
++   if(await I.safeDirectory(parent,true)&&await I.safeDirectory(payload,true))I.fail('RUNTIME_SNAPSHOT_CHANGED');
++   continue;
++  }
++  if(record.status==='complete'){
++   await I.safeDirectory(parent);await I.safeDirectory(payload);
++   if((await readdir(parent)).some(n=>n!=='payload'))I.fail('RUNTIME_SNAPSHOT_INVALID');
++   const names=await readdir(payload);if(names.length!==entry.files.length||names.some(n=>!entry.files.some(f=>f.name===n)))I.fail('RUNTIME_SNAPSHOT_INVALID');
++   for(const f of entry.files)if((await I.rawFile(path.join(payload,f.name),maxBytes)).sha256!==f.sha256)I.fail('RUNTIME_SNAPSHOT_CHANGED');
++   continue;
++  }
++  for(const dir of [parent,payload])if(!await I.safeDirectory(dir,true)){await mkdir(dir,{mode:0o700});await I.syncDirectory(path.dirname(dir));}
++  if((await readdir(parent)).some(n=>n!=='payload'&&!entry.files.some(f=>f.name+'.partial'===n)))I.fail('RUNTIME_SNAPSHOT_INVALID');
++  for(const f of entry.files){
++   const current=items.find(e=>e.sessionId===entry.sessionId),actual=[current?.v3,current?.v4].find(v=>v?.name===f.name);
++   if(!actual||actual.sha256!==f.sha256||JSON.stringify(current.relative)!==JSON.stringify(entry.relative))I.fail('RUNTIME_SNAPSHOT_CHANGED');
++   const dest=path.join(payload,f.name),stage=path.join(parent,f.name+'.partial');
++   if(await I.exists(dest)&&await I.exists(stage)){
++    const a=await lstat(dest,{bigint:true}),b=await lstat(stage,{bigint:true});
++    if(a.isSymbolicLink()||b.isSymbolicLink()||!a.isFile()||!b.isFile())I.fail('UNSAFE_FILE');
++    if(a.ino===b.ino&&a.dev===b.dev&&a.nlink===2n&&b.nlink===2n){await unlink(stage);await I.syncDirectory(parent);}
++   }
++   if(await I.exists(dest)){
++    if((await I.rawFile(dest,maxBytes)).sha256!==f.sha256)I.fail('RUNTIME_SNAPSHOT_CHANGED');
++    continue;
++   }
++   const source=await I.rawFile(path.join(context.sessions,...entry.relative,f.name),maxBytes);
++   if(source.sha256!==f.sha256)I.fail('RUNTIME_SNAPSHOT_CHANGED');
++   if(await I.exists(stage)){
++    const prior=await I.rawFile(stage,maxBytes);if(!source.bytes.subarray(0,prior.bytes.length).equals(prior.bytes))I.fail('RUNTIME_SNAPSHOT_CHANGED');await unlink(stage);await I.syncDirectory(parent);
++   }
++   const fd=await open(stage,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|(constants.O_NOFOLLOW||0),0o600);
++   try{await fd.writeFile(source.bytes);await fd.sync();}finally{await fd.close();}
++   await onCheckpoint({phase:'snapshot-staged'});await context.fence();
++   try{await link(stage,dest);}catch(e){if(e.code==='EEXIST')I.fail('RUNTIME_SNAPSHOT_CHANGED');throw e;}
++   await I.syncDirectory(payload);await onCheckpoint({phase:'snapshot-linked'});await unlink(stage);await I.syncDirectory(parent);
++   if((await I.rawFile(path.join(context.sessions,...entry.relative,f.name),maxBytes)).sha256!==f.sha256)I.fail('RUNTIME_SNAPSHOT_CHANGED');
++  }
++ }
++ if(record.status!=='complete'){
++  await context.fence();record.status='complete';await I.writeManifest(root,record);await onCheckpoint({phase:'snapshot-complete'});
++ }
++ return {status:'PRESERVED',sessions:record.items.length};
++}
+--- r40/app/main.cjs
++++ r41/app/main.cjs
+@@ -1,56 +1,56 @@
+-'use strict';
++'use strict';
+ const { app, BrowserWindow, Menu, dialog, ipcMain, session, shell, powerMonitor, safeStorage } = require('electron');
+-const fs = require('node:fs');
+-const path = require('node:path');
+-const { pathToFileURL } = require('node:url');
+-const { isNativeUrl, isExternalHttps, isAllowedResource, isAllowedDownload, isAllowedClipboardWrite } = require('./policy.cjs');
+-const { startHost } = require('./backend.cjs');
++const fs = require('node:fs');
++const path = require('node:path');
++const { pathToFileURL } = require('node:url');
++const { isNativeUrl, isExternalHttps, isAllowedResource, isAllowedDownload, isAllowedClipboardWrite } = require('./policy.cjs');
++const { startHost } = require('./backend.cjs');
+ const { signIn, signOut, renewSession, createSessionExpiry } = require('./auth.cjs');
+ const authApi = require('./auth.cjs');
+ const {createRememberedStore} = require('./remembered-store.cjs');
+ const {createDeviceSession} = require('./device-session.cjs');
+-const { ensureLocalGateway } = require('./gateway-dev.cjs');
+-const { DEVELOPMENT, MODE, APP_NAME } = require('./deployment.cjs');
+-const { createUpdater } = require('./updater.cjs');
+-const { createUpdateWindow, nativeUpdateHandler } = require('./update-window.cjs');
+-const { diagnosticLog } = require('./diagnostic-log.cjs');
+-const {installDesktopShortcuts}=require('./shortcut-keyboard.cjs');
+-let shortcuts;
+-
+-app.setName(APP_NAME);
+-app.setAppUserModelId(DEVELOPMENT ? 'com.megmeet.ai.local' : 'com.megmeet.ai');
+-app.enableSandbox();
+-const lifecycleSmoke = DEVELOPMENT && process.argv.includes('--desktop-lifecycle-smoke');
+-const smoke = DEVELOPMENT && (lifecycleSmoke || process.argv.some(arg => /^--desktop-(?:brand-|chat-)?smoke$/.test(arg)));
+-const fixture = process.argv.includes('--fixture-b') ? 'b' : 'a';
+-if (smoke) app.setPath('userData', path.join(app.getPath('userData'), 'verification-windows-v2-' + fixture));
+-const entryUrl = pathToFileURL(path.join(__dirname, 'entry.html')).href;
+-const appIcon = app.isPackaged ? path.join(process.resourcesPath, 'app-icon.ico')
+-  : path.join(__dirname, 'assets', 'app-icon.ico');
+-let entryWindow, nativeWindow, auth, host, busy = false, message = '', log, quitting = false;
+-let generation = 0, loginAbort, hostAbort;
++const { ensureLocalGateway } = require('./gateway-dev.cjs');
++const { DEVELOPMENT, MODE, APP_NAME } = require('./deployment.cjs');
++const { createUpdater } = require('./updater.cjs');
++const { createUpdateWindow, nativeUpdateHandler } = require('./update-window.cjs');
++const { diagnosticLog } = require('./diagnostic-log.cjs');
++const {installDesktopShortcuts}=require('./shortcut-keyboard.cjs');
++let shortcuts;
++
++app.setName(APP_NAME);
++app.setAppUserModelId(DEVELOPMENT ? 'com.megmeet.ai.local' : 'com.megmeet.ai');
++app.enableSandbox();
++const lifecycleSmoke = DEVELOPMENT && process.argv.includes('--desktop-lifecycle-smoke');
++const smoke = DEVELOPMENT && (lifecycleSmoke || process.argv.some(arg => /^--desktop-(?:brand-|chat-)?smoke$/.test(arg)));
++const fixture = process.argv.includes('--fixture-b') ? 'b' : 'a';
++if (smoke) app.setPath('userData', path.join(app.getPath('userData'), 'verification-windows-v2-' + fixture));
++const entryUrl = pathToFileURL(path.join(__dirname, 'entry.html')).href;
++const appIcon = app.isPackaged ? path.join(process.resourcesPath, 'app-icon.ico')
++  : path.join(__dirname, 'assets', 'app-icon.ico');
++let entryWindow, nativeWindow, auth, host, busy = false, message = '', log, quitting = false;
++let generation = 0, loginAbort, hostAbort;
+ let sessionRetirement;
+ let deviceSession, recoveryInFlight, recoveryTimer;
+ const retainedDraftWindows = new Set();
+-let updater, updateStatus = 'idle', updateVersion, systemShutdown = false, updateQuitComplete = false;
+-let quitCleanupComplete = false, updateHandoffInFlight = false, manualUpdateRequested = false;
+-let updatePanel, updateUnexpectedFailure = false, updateMenuProgress;
+-const updateBusyStates = ['checking', 'connecting', 'downloading', 'verifying', 'installing'];
+-const updateLabels = { idle: '自动检查更新', checking: '正在检查更新…', connecting: '发现新版本，正在连接下载服务…', downloading: '正在下载更新…', verifying: '正在校验更新…',
+-  ready: '更新已准备好，退出程序后安装', current: '已是最新版本', unavailable: '暂时无法检查更新，稍后自动重试',
+-  installing: '上次更新正在安装，请稍候', 'install-failed': '上次更新未完成，下次退出时重试' };
+-const expiryMessage = '登录已过期，请重新登录。已保存的会话和文件不会删除；重新登录前，请在原聊天窗口复制保留未发送的草稿，之后重新选择附件。';
+-const sessionExpiry = createSessionExpiry({ renew: renewSession, onExpire: previous => { void expireSession(previous); } });
+-const safePreferences = { nodeIntegration: false, contextIsolation: true, sandbox: true,
+-  webSecurity: true, webviewTag: false, devTools: false, backgroundThrottling: false };
+-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+-
+-function validateEntry(event) {
+-  if (!entryWindow || event.sender !== entryWindow.webContents || event.senderFrame !== entryWindow.webContents.mainFrame || event.senderFrame?.url !== entryUrl)
+-    throw Error('Untrusted desktop entry');
+-}
++let updater, updateStatus = 'idle', updateVersion, systemShutdown = false, updateQuitComplete = false;
++let quitCleanupComplete = false, updateHandoffInFlight = false, manualUpdateRequested = false;
++let updatePanel, updateUnexpectedFailure = false, updateMenuProgress;
++const updateBusyStates = ['checking', 'connecting', 'downloading', 'verifying', 'installing'];
++const updateLabels = { idle: '自动检查更新', checking: '正在检查更新…', connecting: '发现新版本，正在连接下载服务…', downloading: '正在下载更新…', verifying: '正在校验更新…',
++  ready: '更新已准备好，点击更新并重启', current: '已是最新版本', unavailable: '暂时无法检查更新，稍后自动重试',
++  installing: '上次更新正在安装，请稍候', 'install-failed': '上次更新未完成，可重新安装' };
++const expiryMessage = '登录已过期，请重新登录。已保存的会话和文件不会删除；重新登录前，请在原聊天窗口复制保留未发送的草稿，之后重新选择附件。';
++const sessionExpiry = createSessionExpiry({ renew: renewSession, onExpire: previous => { void expireSession(previous); } });
++const safePreferences = { nodeIntegration: false, contextIsolation: true, sandbox: true,
++  webSecurity: true, webviewTag: false, devTools: false, backgroundThrottling: false };
++const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
++
++function validateEntry(event) {
++  if (!entryWindow || event.sender !== entryWindow.webContents || event.senderFrame !== entryWindow.webContents.mainFrame || event.senderFrame?.url !== entryUrl)
++    throw Error('Untrusted desktop entry');
++}
+ function state() { sessionExpiry.check(); return { busy, message, user: auth?.user,
+-  remembered: deviceSession?.status().remembered === true, mode: MODE }; }
++  remembered: deviceSession?.status().remembered === true, mode: MODE, version: app.getVersion() }; }
+ 
+ function clearRecoveryTimer() { if (recoveryTimer) clearTimeout(recoveryTimer); recoveryTimer = undefined; }
+ function closeRetainedDrafts() { for (const window of retainedDraftWindows) if (!window.isDestroyed()) window.close(); retainedDraftWindows.clear(); }
+@@ -97,16 +97,16 @@
+   recoveryInFlight = work;
+   try { return await work; } finally { if (recoveryInFlight === work) recoveryInFlight = undefined; }
+ }
+-function openEntry() {
+-  if (entryWindow && !entryWindow.isDestroyed()) { entryWindow.show(); entryWindow.focus(); return; }
+-  entryWindow = new BrowserWindow({ width: 600, height: 560, show: !smoke, title: DEVELOPMENT ? 'MEGMEET AI · 本地开发版' : 'MEGMEET AI',
+-    icon: appIcon,
+-    webPreferences: { ...safePreferences, preload: path.join(__dirname, 'preload.cjs'), partition: 'persist:megmeet-entry-v2' } });
+-  entryWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+-  entryWindow.webContents.on('will-navigate', (event, url) => { if (url !== entryUrl) event.preventDefault(); });
+-  entryWindow.on('closed', () => { entryWindow = undefined; });
+-  void entryWindow.loadURL(entryUrl);
+-}
++function openEntry() {
++  if (entryWindow && !entryWindow.isDestroyed()) { entryWindow.show(); entryWindow.focus(); return; }
++  entryWindow = new BrowserWindow({ width: 600, height: 560, show: !smoke, title: DEVELOPMENT ? 'MEGMEET AI · 本地开发版' : 'MEGMEET AI',
++    icon: appIcon,
++    webPreferences: { ...safePreferences, preload: path.join(__dirname, 'preload.cjs'), partition: 'persist:megmeet-entry-v2' } });
++  entryWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
++  entryWindow.webContents.on('will-navigate', (event, url) => { if (url !== entryUrl) event.preventDefault(); });
++  entryWindow.on('closed', () => { entryWindow = undefined; });
++  void entryWindow.loadURL(entryUrl);
++}
+ async function login() {
+   sessionExpiry.check();
+   if (busy || auth) return state();
+@@ -114,17 +114,17 @@
+     await restoreRemembered({openWorkspace: true});
+     if (auth || deviceSession.status().remembered) return state();
+   }
+-  // An expired window is retained only so its unsent draft can be copied. The
+-  // explicit re-login click retires that view before adopting another account.
++  // An expired window is retained only so its unsent draft can be copied. The
++  // explicit re-login click retires that view before adopting another account.
+   if (nativeWindow) nativeWindow.close();
+   closeRetainedDrafts(); clearRecoveryTimer();
+-  const epoch = ++generation;
+-  loginAbort = new AbortController();
+-  const signal = loginAbort.signal;
+-  busy = true; message = '正在准备登录…';
+-  try {
+-    await ensureLocalGateway({ log, signal });
+-    signal.throwIfAborted();
++  const epoch = ++generation;
++  loginAbort = new AbortController();
++  const signal = loginAbort.signal;
++  busy = true; message = '正在准备登录…';
++  try {
++    await ensureLocalGateway({ log, signal });
++    signal.throwIfAborted();
+     const browser = smoke
+       ? (url, options) => require('./fixture-browser.cjs').fixtureBrowser(url, fixture, options)
+       : url => shell.openExternal(url);
+@@ -135,162 +135,163 @@
+       if (!candidate.remembered) await signOut(candidate).catch(() => {});
+       throw Error('Login cancelled');
+     }
+-    auth = candidate;
+-    sessionExpiry.arm(candidate);
++    auth = candidate;
++    sessionExpiry.arm(candidate);
+     message = candidate.remembered ? '' : result.storageAvailable === false
+       ? '已登录。本机安全存储暂不可用，本次关闭软件后需要重新登录。'
+       : '已登录。当前服务器暂未提供记住设备登录，本次关闭软件后需要重新登录。';
+-  } catch { if (generation === epoch) message = DEVELOPMENT ? '登录未完成。请确认本机开发服务已启动，然后重试。' : '公司登录暂未完成，请稍后重试。'; throw Error('登录未完成。'); }
+-  finally { if (generation === epoch) busy = false; }
+-  return state();
+-}
+-async function external(url) {
+-  if (!isExternalHttps(url)) return;
+-  const result = await dialog.showMessageBox(nativeWindow, { type: 'question', title: '打开外部链接',
+-    message: '使用系统浏览器打开这个链接？', detail: new URL(url).origin,
+-    buttons: ['取消', '打开'], defaultId: 0, cancelId: 0 });
+-  if (result.response === 1) await shell.openExternal(url);
+-}
+-function updateSnapshot() {
+-  if (updateUnexpectedFailure) return { status: 'unavailable', currentVersion: app.getVersion(), canInstall: false, errorCode: 'check-unavailable' };
+-  return updater?.snapshot || { status: DEVELOPMENT ? 'disabled' : updateStatus === 'unavailable' ? 'unavailable' : 'disabled',
+-    currentVersion: app.getVersion(), canInstall: false, errorCode: undefined };
+-}
+-function startUpdates() {
+-  if (DEVELOPMENT || !app.isPackaged || process.platform !== 'win32') return;
+-  try {
+-    updater = createUpdater({ currentVersion: app.getVersion(), directory: path.join(app.getPath('userData'), 'software-updates'),
+-      policy: require('./update-policy.json'), onStatus: (value, version, detail, snapshot) => {
+-        const percent = value === 'downloading' && Number.isInteger(snapshot?.progress?.percent) ? snapshot.progress.percent : undefined;
+-        const changed = value !== updateStatus || version !== updateVersion || percent !== updateMenuProgress || updateUnexpectedFailure;
+-        if (value !== updateStatus) log?.write('SOFTWARE_UPDATE_STATE: ' + value + '\n');
+-        updateStatus = value; updateVersion = version; updateMenuProgress = percent; updateUnexpectedFailure = false;
+-        if (changed) menus();
+-      } });
+-    updater.start();
+-  } catch { updateStatus = 'unavailable'; menus(); log?.write('SOFTWARE_UPDATE_STATE: unavailable\n'); }
+-}
+-async function checkForUpdates() {
+-  try { await updater?.checkNow(); }
+-  catch { updateUnexpectedFailure = true; updateStatus = 'unavailable'; menus(); }
+-  return updateSnapshot();
+-}
+-function openUpdates() {
+-  updatePanel?.open();
+-  if (updater && !updateBusyStates.includes(updater.status)) void checkForUpdates();
+-  return { opened: !!updatePanel };
+-}
+-async function installUpdateNow() {
+-  if (!updater?.snapshot.canInstall || manualUpdateRequested || quitting) return { accepted: false };
+-  const result = await dialog.showMessageBox(updatePanel?.window || nativeWindow || entryWindow, {
+-    type: 'question', title: '安装软件更新', message: '退出麦米并安装已下载的更新？',
+-    detail: '请先完成正在运行的任务，并保存输入框中尚未发送的内容。已保存的聊天和文件会保留。安装完成后重新打开麦米即可。',
+-    buttons: ['暂不安装', '退出并安装'], defaultId: 0, cancelId: 0,
+-  });
+-  if (result.response !== 1 || !updater?.snapshot.canInstall) return { accepted: false };
+-  manualUpdateRequested = true; setImmediate(() => app.quit()); return { accepted: true };
+-}
+-function menus() {
+-  Menu.setApplicationMenu(Menu.buildFromTemplate([
+-    ...(shortcuts ? [shortcuts.fileMenu({fileMenu:"文件",closePage:"关闭当前页面"})] : []),
+-    { label: '账号与工作台', submenu: [
+-      { label: auth ? `当前账号：${auth.user.display_name || auth.user.user_no}` : '未登录', enabled: false },
+-      { label: '个人工作区：在原生界面选择本机文件夹', enabled: false },
+-      { label: '账号状态', click: () => openEntry() },
+-      { label: '停止插件与电脑操作', accelerator: 'CommandOrControl+Shift+Escape', click: () => { void host?.stopTools?.(); } },
+-      { label: '退出登录', click: () => { void logout(); } },
+-      { type: 'separator' }, { role: 'quit', label: '退出程序' },
+-    ] },
+-    { label: '编辑', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' },
+-      { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
+-    { label: '视图', submenu: [{ role: 'reload' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }] },
+-    { label: '帮助', submenu: [
+-      { label: '麦米办公助手 ' + app.getVersion(), enabled: false },
+-      { label: DEVELOPMENT ? '本地开发版不接收公司更新' : (updateLabels[updateStatus] + (Number.isInteger(updateMenuProgress) ? ` ${updateMenuProgress}%` : '') + (updateVersion && updateStatus === 'ready' ? ` (${updateVersion})` : '')), enabled: false },
+-      { label: '软件更新…', click: () => { openUpdates(); } },
+-    ] },
+-  ]));
+-}
+-async function openLocal() {
+-  sessionExpiry.check();
+-  if (busy) throw Error('操作正在进行，请稍候。');
+-  if (!auth || auth.expiresAt <= Date.now()) throw Error('请重新登录。');
+-  if (nativeWindow && !nativeWindow.isDestroyed()) { nativeWindow.show(); nativeWindow.focus(); return; }
+-  busy = true; message = '正在打开本机 DSH…';
+-  const epoch = generation, owner = auth;
+-  hostAbort = new AbortController();
+-  const signal = hostAbort.signal;
+-  let openedHost, openedWindow;
+-  try {
+-    const candidate = host || await startHost({ auth: owner, stateRoot: path.join(app.getPath('userData'), 'personal-runtime'), log, signal,
+-      approveTool: async ({title,detail}) => {
+-        if(generation!==epoch||signal.aborted||!nativeWindow||nativeWindow.isDestroyed())return false;
+-        const result=await dialog.showMessageBox(nativeWindow,{type:'question',title,message:title,detail,
+-          buttons:['取消','允许本次操作'],defaultId:0,cancelId:0,noLink:true});
+-        return result.response===1&&generation===epoch&&!signal.aborted;
+-      } });
+-    if (generation !== epoch || signal.aborted) { await candidate.stop(); throw Error('Host opening cancelled'); }
+-    openedHost = candidate;
+-    host = candidate;
+-    const origin = host.origin;
+-    const nativeSession = session.fromPartition('persist:megmeet-personal-' + host.account);
+-    await nativeSession.setProxy({ mode: 'direct' });
+-    await nativeSession.clearCache();
+-    await nativeSession.cookies.set({ url: origin, name: host.browserCookie.name, value: host.browserCookie.value,
+-      path: '/', httpOnly: true, sameSite: 'strict', secure: false });
+-    if (generation !== epoch || signal.aborted) throw Error('Host opening cancelled');
+-    nativeSession.setPermissionRequestHandler((contents, permission, callback, details) => callback(
+-      contents === nativeWindow?.webContents
+-      && isAllowedClipboardWrite(permission, details.requestingUrl, details.isMainFrame, origin)));
+-    nativeSession.setPermissionCheckHandler((contents, permission, requestingOrigin, details) =>
+-      contents === nativeWindow?.webContents && requestingOrigin === origin
+-      && isAllowedClipboardWrite(permission, details.requestingUrl, details.isMainFrame, origin));
+-    nativeSession.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !isAllowedResource(details.url, origin) }));
+-    nativeSession.removeAllListeners('will-download');
+-    nativeSession.on('will-download', (event, item) => {
+-      if (!isAllowedDownload(item.getURL(), origin)) { event.preventDefault(); return; }
+-      item.setSaveDialogOptions({ title: '保存文件' });
+-    });
+-    nativeWindow = new BrowserWindow({ width: 1380, height: 920, minWidth: 900, minHeight: 620,
+-      show: !smoke, title: DEVELOPMENT ? 'MEGMEET AI · 本机个人工作区 · 开发版' : 'MEGMEET AI · 个人工作区',
+-      icon: appIcon,
+-      webPreferences: { ...safePreferences, session: nativeSession, preload: path.join(__dirname,'preload-native.cjs'), additionalArguments:['--megmeet-native-origin='+origin] } });
+-    openedWindow = nativeWindow;
+-    shortcuts.attach(nativeWindow);
+-    nativeWindow.webContents.setWindowOpenHandler(({ url }) => { void external(url); return { action: 'deny' }; });
+-    nativeWindow.on('page-title-updated', event => { event.preventDefault(); });
+-    for (const name of ['will-navigate', 'will-redirect']) nativeWindow.webContents.on(name, (event, url) => {
+-      if (!isNativeUrl(url, origin)) { event.preventDefault(); if (name === 'will-navigate') void external(url); }
+-    });
+-    nativeWindow.on('closed', () => { if (nativeWindow === openedWindow) nativeWindow = undefined; });
+-    await nativeWindow.loadURL(origin);
+-    if (generation !== epoch || signal.aborted) throw Error('Host opening cancelled');
+-    if (entryWindow) entryWindow.close();
+-    menus(); message = '';
+-  } catch (error) {
+-    // A failed opening must not leave a blank window that the next click treats
+-    // as a ready session. Retire only resources owned by this opening attempt.
+-    if (openedWindow && !openedWindow.isDestroyed()) openedWindow.close();
+-    if (nativeWindow === openedWindow) nativeWindow = undefined;
+-    if (host === openedHost) host = undefined;
+-    await openedHost?.stop();
+-    if (generation === epoch) {
+-      message = error?.code === 'NO_PERSONAL_MODELS'
+-        ? '当前账号没有可用模型，请联系管理员配置后重试。'
+-        : '个人工作区打开失败，请检查登录和公司服务后重试。';
+-    }
+-    throw Error(message || '个人工作区打开已取消。');
+-  } finally { if (generation === epoch) busy = false; }
+-}
++  } catch { if (generation === epoch) message = DEVELOPMENT ? '登录未完成。请确认本机开发服务已启动，然后重试。' : '公司登录暂未完成，请稍后重试。'; throw Error('登录未完成。'); }
++  finally { if (generation === epoch) busy = false; }
++  return state();
++}
++async function external(url) {
++  if (!isExternalHttps(url)) return;
++  const result = await dialog.showMessageBox(nativeWindow, { type: 'question', title: '打开外部链接',
++    message: '使用系统浏览器打开这个链接？', detail: new URL(url).origin,
++    buttons: ['取消', '打开'], defaultId: 0, cancelId: 0 });
++  if (result.response === 1) await shell.openExternal(url);
++}
++function updateSnapshot() {
++  if (updateUnexpectedFailure) return { status: 'unavailable', currentVersion: app.getVersion(), canInstall: false, errorCode: 'check-unavailable' };
++  return updater?.snapshot || { status: DEVELOPMENT ? 'disabled' : updateStatus === 'unavailable' ? 'unavailable' : 'disabled',
++    currentVersion: app.getVersion(), canInstall: false, errorCode: undefined };
++}
++function startUpdates() {
++  if (DEVELOPMENT || !app.isPackaged || process.platform !== 'win32') return;
++  try {
++    updater = createUpdater({ currentVersion: app.getVersion(), directory: path.join(app.getPath('userData'), 'software-updates'),
++      policy: require('./update-policy.json'), onStatus: (value, version, detail, snapshot) => {
++        const percent = value === 'downloading' && Number.isInteger(snapshot?.progress?.percent) ? snapshot.progress.percent : undefined;
++        const changed = value !== updateStatus || version !== updateVersion || percent !== updateMenuProgress || updateUnexpectedFailure;
++        if (value !== updateStatus) log?.write('SOFTWARE_UPDATE_STATE: ' + value + '\n');
++        updateStatus = value; updateVersion = version; updateMenuProgress = percent; updateUnexpectedFailure = false;
++        if (changed) menus();
++      } });
++    updater.start();
++  } catch { updateStatus = 'unavailable'; menus(); log?.write('SOFTWARE_UPDATE_STATE: unavailable\n'); }
++}
++async function checkForUpdates() {
++  try { await updater?.checkNow(); }
++  catch { updateUnexpectedFailure = true; updateStatus = 'unavailable'; menus(); }
++  return updateSnapshot();
++}
++function openUpdates() {
++  updatePanel?.open();
++  if (updater && !updateBusyStates.includes(updater.status)) void checkForUpdates();
++  return { opened: !!updatePanel };
++}
++async function installUpdateNow() {
++  if (!updater?.snapshot.canInstall || manualUpdateRequested || quitting) return { accepted: false };
++  const result = await dialog.showMessageBox(updatePanel?.window || nativeWindow || entryWindow, {
++    type: 'question', title: '安装软件更新', message: '退出麦米并安装已下载的更新？',
++    detail: '请先完成正在运行的任务，并保存输入框中尚未发送的内容。已保存的聊天和文件会保留。安装时会显示进度，完成后自动打开新版本。',
++    buttons: ['暂不安装', '更新并重启'], defaultId: 0, cancelId: 0,
++  });
++  if (result.response !== 1 || !updater?.snapshot.canInstall) return { accepted: false };
++  manualUpdateRequested = true; setImmediate(() => app.quit()); return { accepted: true };
++}
++function menus() {
++  Menu.setApplicationMenu(Menu.buildFromTemplate([
++    ...(updater?.snapshot.canInstall ? [{ label: '更新并重启', click: () => { void installUpdateNow(); } }] : []),
++    ...(shortcuts ? [shortcuts.fileMenu({fileMenu:"文件",closePage:"关闭当前页面"})] : []),
++    { label: '账号与工作台', submenu: [
++      { label: auth ? `当前账号：${auth.user.display_name || auth.user.user_no}` : '未登录', enabled: false },
++      { label: '个人工作区：在原生界面选择本机文件夹', enabled: false },
++      { label: '账号状态', click: () => openEntry() },
++      { label: '停止插件与电脑操作', accelerator: 'CommandOrControl+Shift+Escape', click: () => { void host?.stopTools?.(); } },
++      { label: '退出登录', click: () => { void logout(); } },
++      { type: 'separator' }, { role: 'quit', label: '退出程序' },
++    ] },
++    { label: '编辑', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' },
++      { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
++    { label: '视图', submenu: [{ role: 'reload' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }] },
++    { label: '帮助', submenu: [
++      { label: '麦米办公助手 ' + app.getVersion(), enabled: false },
++      { label: DEVELOPMENT ? '本地开发版不接收公司更新' : (updateLabels[updateStatus] + (Number.isInteger(updateMenuProgress) ? ` ${updateMenuProgress}%` : '') + (updateVersion && updateStatus === 'ready' ? ` (${updateVersion})` : '')), enabled: false },
++      { label: '软件更新…', click: () => { openUpdates(); } },
++    ] },
++  ]));
++}
++async function openLocal() {
++  sessionExpiry.check();
++  if (busy) throw Error('操作正在进行，请稍候。');
++  if (!auth || auth.expiresAt <= Date.now()) throw Error('请重新登录。');
++  if (nativeWindow && !nativeWindow.isDestroyed()) { nativeWindow.show(); nativeWindow.focus(); return; }
++  busy = true; message = '正在打开本机 DSH…';
++  const epoch = generation, owner = auth;
++  hostAbort = new AbortController();
++  const signal = hostAbort.signal;
++  let openedHost, openedWindow;
++  try {
++    const candidate = host || await startHost({ auth: owner, stateRoot: path.join(app.getPath('userData'), 'personal-runtime'), log, signal,
++      approveTool: async ({title,detail}) => {
++        if(generation!==epoch||signal.aborted||!nativeWindow||nativeWindow.isDestroyed())return false;
++        const result=await dialog.showMessageBox(nativeWindow,{type:'question',title,message:title,detail,
++          buttons:['取消','允许本次操作'],defaultId:0,cancelId:0,noLink:true});
++        return result.response===1&&generation===epoch&&!signal.aborted;
++      } });
++    if (generation !== epoch || signal.aborted) { await candidate.stop(); throw Error('Host opening cancelled'); }
++    openedHost = candidate;
++    host = candidate;
++    const origin = host.origin;
++    const nativeSession = session.fromPartition('persist:megmeet-personal-' + host.account);
++    await nativeSession.setProxy({ mode: 'direct' });
++    await nativeSession.clearCache();
++    await nativeSession.cookies.set({ url: origin, name: host.browserCookie.name, value: host.browserCookie.value,
++      path: '/', httpOnly: true, sameSite: 'strict', secure: false });
++    if (generation !== epoch || signal.aborted) throw Error('Host opening cancelled');
++    nativeSession.setPermissionRequestHandler((contents, permission, callback, details) => callback(
++      contents === nativeWindow?.webContents
++      && isAllowedClipboardWrite(permission, details.requestingUrl, details.isMainFrame, origin)));
++    nativeSession.setPermissionCheckHandler((contents, permission, requestingOrigin, details) =>
++      contents === nativeWindow?.webContents && requestingOrigin === origin
++      && isAllowedClipboardWrite(permission, details.requestingUrl, details.isMainFrame, origin));
++    nativeSession.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !isAllowedResource(details.url, origin) }));
++    nativeSession.removeAllListeners('will-download');
++    nativeSession.on('will-download', (event, item) => {
++      if (!isAllowedDownload(item.getURL(), origin)) { event.preventDefault(); return; }
++      item.setSaveDialogOptions({ title: '保存文件' });
++    });
++    nativeWindow = new BrowserWindow({ width: 1380, height: 920, minWidth: 900, minHeight: 620,
++      show: !smoke, title: DEVELOPMENT ? 'MEGMEET AI · 本机个人工作区 · 开发版' : 'MEGMEET AI · 个人工作区',
++      icon: appIcon,
++      webPreferences: { ...safePreferences, session: nativeSession, preload: path.join(__dirname,'preload-native.cjs'), additionalArguments:['--megmeet-native-origin='+origin] } });
++    openedWindow = nativeWindow;
++    shortcuts.attach(nativeWindow);
++    nativeWindow.webContents.setWindowOpenHandler(({ url }) => { void external(url); return { action: 'deny' }; });
++    nativeWindow.on('page-title-updated', event => { event.preventDefault(); });
++    for (const name of ['will-navigate', 'will-redirect']) nativeWindow.webContents.on(name, (event, url) => {
++      if (!isNativeUrl(url, origin)) { event.preventDefault(); if (name === 'will-navigate') void external(url); }
++    });
++    nativeWindow.on('closed', () => { if (nativeWindow === openedWindow) nativeWindow = undefined; });
++    await nativeWindow.loadURL(origin);
++    if (generation !== epoch || signal.aborted) throw Error('Host opening cancelled');
++    if (entryWindow) entryWindow.close();
++    menus(); message = '';
++  } catch (error) {
++    // A failed opening must not leave a blank window that the next click treats
++    // as a ready session. Retire only resources owned by this opening attempt.
++    if (openedWindow && !openedWindow.isDestroyed()) openedWindow.close();
++    if (nativeWindow === openedWindow) nativeWindow = undefined;
++    if (host === openedHost) host = undefined;
++    await openedHost?.stop();
++    if (generation === epoch) {
++      message = error?.code === 'NO_PERSONAL_MODELS'
++        ? '当前账号没有可用模型，请联系管理员配置后重试。'
++        : '个人工作区打开失败，请检查登录和公司服务后重试。';
++    }
++    throw Error(message || '个人工作区打开已取消。');
++  } finally { if (generation === epoch) busy = false; }
++}
+ async function expireSession(previous) {
+-  if (auth !== previous) return;
+-  const epoch = ++generation;
+-  sessionExpiry.clear(); loginAbort?.abort(); hostAbort?.abort();
+-  auth = undefined; busy = true; message = expiryMessage;
+-  const previousHost = host; host = undefined;
+-  // Stop authority immediately. Retain only the rendered window until the user
+-  // chooses login/logout; do not read, upload, erase or pretend to save drafts.
+-  openEntry(); menus();
++  if (auth !== previous) return;
++  const epoch = ++generation;
++  sessionExpiry.clear(); loginAbort?.abort(); hostAbort?.abort();
++  auth = undefined; busy = true; message = expiryMessage;
++  const previousHost = host; host = undefined;
++  // Stop authority immediately. Retain only the rendered window until the user
++  // chooses login/logout; do not read, upload, erase or pretend to save drafts.
++  openEntry(); menus();
+   const canRestore = deviceSession?.status().remembered === true;
+   if (canRestore && nativeWindow && !nativeWindow.isDestroyed()) {
+     const oldWindow = nativeWindow; nativeWindow = undefined;
+@@ -300,139 +301,140 @@
+   }
+   const retirement = Promise.allSettled([previousHost?.stop(),
+     canRestore ? Promise.resolve() : signOut(previous, { timeout: 3000 })]);
+-  sessionRetirement = retirement;
+-  try { await retirement; }
+-  finally {
+-    if (sessionRetirement === retirement) sessionRetirement = undefined;
++  sessionRetirement = retirement;
++  try { await retirement; }
++  finally {
++    if (sessionRetirement === retirement) sessionRetirement = undefined;
+     if (generation === epoch) {
+       busy = false; message = canRestore ? '正在恢复此设备的登录…' : expiryMessage; menus();
+       if (canRestore) void restoreRemembered({openWorkspace: true});
+     }
+-  }
+-}
++  }
++}
+ async function logout() {
+   sessionExpiry.clear();
+   clearRecoveryTimer();
+-  ++generation; loginAbort?.abort(); hostAbort?.abort();
+-  busy = true;
+-  openEntry();
++  ++generation; loginAbort?.abort(); hostAbort?.abort();
++  busy = true;
++  openEntry();
+   nativeWindow?.close();
+   closeRetainedDrafts();
+-  const previous = auth; auth = undefined;
+-  const previousHost = host; host = undefined;
++  const previous = auth; auth = undefined;
++  const previousHost = host; host = undefined;
+   // DeviceSession persists its sign-out tombstone before any network wait.
+   const revocation = (deviceSession ? deviceSession.forget(previous) : signOut(previous).then(() => true))
+     .then(value => ({value}), error => ({error}));
+   if (previousHost) await previousHost.stop();
+-  await sessionRetirement;
++  await sessionRetirement;
+   const result = await revocation;
+   message = result.error ? '退出尚未完成；请连接公司网络后重试退出。'
+     : result.value ? '' : '本机已退出；连接恢复后会继续完成服务器设备撤销。';
+   scheduleRecovery();
+-  busy = false; menus();
+-  return state();
+-}
+-async function verify() {
+-  await login(); await openLocal();
+-  let result;
+-  for (let n = 0; n < 90; n++) {
+-    result = await nativeWindow.webContents.executeJavaScript(`({
+-      title:document.title, hero:!!document.querySelector('img[data-megmeet-hero-image="r5"]'),
+-      sidebar:!!document.querySelector('img[data-megmeet-sidebar-image="r4"]'),
+-      headline:document.body.innerText.includes('电亮AI新纪元'),
+-      manualWorkspace:/选择工作区|选择文件夹|Choose workspace|Select a folder|Open workspace|Select workspace/i.test(document.body.innerText),
+-      nodeExposed:typeof require!=='undefined'||typeof process!=='undefined',
+-      text:document.body.innerText.slice(0,3000)
+-    })`);
+-    if (result.hero && result.sidebar) break;
+-    await delay(1000);
+-  }
+-  result.version = app.getVersion(); result.mode = 'windows-personal-development'; result.dsh = host.release.dsh;
+-  result.user = auth.user.user_no; result.statePath = host.dshHome;
+-  const evidence = path.join(app.getPath('userData'), 'evidence'); fs.mkdirSync(evidence, { recursive: true });
+-  fs.writeFileSync(path.join(evidence, 'desktop-smoke.json'), JSON.stringify(result, null, 2));
+-  await nativeWindow.webContents.executeJavaScript('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+-  await delay(400);
+-  const image = await nativeWindow.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true }); fs.writeFileSync(path.join(evidence, 'desktop-smoke.png'), image.toPNG());
+-  if (!result.hero || !result.sidebar || !result.headline || result.nodeExposed) throw Error('Native desktop checks failed');
+-  log.write('WINDOWS_DESKTOP_SMOKE: PASS\n');
+-  await logout(); app.exit(0);
+-}
+-async function verifyLifecycle() {
+-  await login();
+-  const pendingHost = openLocal();
+-  await delay(50);
+-  await logout();
+-  await pendingHost.catch(() => {});
+-  if (host || auth || nativeWindow) throw Error('Logout allowed a late Host to reopen');
+-  const pendingLogin = login();
+-  await delay(5);
+-  await logout();
+-  await pendingLogin.catch(() => {});
+-  if (host || auth || nativeWindow) throw Error('Logout allowed a late login to restore identity');
+-  log.write('DESKTOP_LOGOUT_RACE_CHECK: PASS\n');
+-  diagnosticLog(process.stdout).write('DESKTOP_LOGOUT_RACE_CHECK: PASS\n');
+-  app.exit(0);
+-}
+-if (!app.requestSingleInstanceLock()) app.quit();
+-else {
+-  app.on('second-instance', () => { const window = nativeWindow || entryWindow; window?.show(); window?.focus(); });
++  busy = false; menus();
++  return state();
++}
++async function verify() {
++  await login(); await openLocal();
++  let result;
++  for (let n = 0; n < 90; n++) {
++    result = await nativeWindow.webContents.executeJavaScript(`({
++      title:document.title, hero:!!document.querySelector('img[data-megmeet-hero-image="r5"]'),
++      sidebar:!!document.querySelector('img[data-megmeet-sidebar-image="r4"]'),
++      headline:document.body.innerText.includes('电亮AI新纪元'),
++      manualWorkspace:/选择工作区|选择文件夹|Choose workspace|Select a folder|Open workspace|Select workspace/i.test(document.body.innerText),
++      nodeExposed:typeof require!=='undefined'||typeof process!=='undefined',
++      text:document.body.innerText.slice(0,3000)
++    })`);
++    if (result.hero && result.sidebar) break;
++    await delay(1000);
++  }
++  result.version = app.getVersion(); result.mode = 'windows-personal-development'; result.dsh = host.release.dsh;
++  result.user = auth.user.user_no; result.statePath = host.dshHome;
++  const evidence = path.join(app.getPath('userData'), 'evidence'); fs.mkdirSync(evidence, { recursive: true });
++  fs.writeFileSync(path.join(evidence, 'desktop-smoke.json'), JSON.stringify(result, null, 2));
++  await nativeWindow.webContents.executeJavaScript('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
++  await delay(400);
++  const image = await nativeWindow.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true }); fs.writeFileSync(path.join(evidence, 'desktop-smoke.png'), image.toPNG());
++  if (!result.hero || !result.sidebar || !result.headline || result.nodeExposed) throw Error('Native desktop checks failed');
++  log.write('WINDOWS_DESKTOP_SMOKE: PASS\n');
++  await logout(); app.exit(0);
++}
++async function verifyLifecycle() {
++  await login();
++  const pendingHost = openLocal();
++  await delay(50);
++  await logout();
++  await pendingHost.catch(() => {});
++  if (host || auth || nativeWindow) throw Error('Logout allowed a late Host to reopen');
++  const pendingLogin = login();
++  await delay(5);
++  await logout();
++  await pendingLogin.catch(() => {});
++  if (host || auth || nativeWindow) throw Error('Logout allowed a late login to restore identity');
++  log.write('DESKTOP_LOGOUT_RACE_CHECK: PASS\n');
++  diagnosticLog(process.stdout).write('DESKTOP_LOGOUT_RACE_CHECK: PASS\n');
++  app.exit(0);
++}
++if (!app.requestSingleInstanceLock()) app.quit();
++else {
++  app.on('second-instance', () => { const window = nativeWindow || entryWindow; window?.show(); window?.focus(); });
+   app.whenReady().then(async () => {
+-    fs.mkdirSync(app.getPath('userData'), { recursive: true });
++    fs.mkdirSync(app.getPath('userData'), { recursive: true });
+     log = diagnosticLog(fs.createWriteStream(path.join(app.getPath('userData'), 'desktop-startup.log'), { flags: 'a' }));
+     deviceSession = createDeviceSession({store: createRememberedStore({
+       directory: path.join(app.getPath('userData'), 'device-login'), safeStorage}), api: authApi});
+-    if (process.argv.includes('--desktop-chat-smoke')) throw Error('Use scripts/personal-runtime-smoke.cjs for native model and history verification; --desktop-chat-smoke is retired.');
+-    for (const [channel, handler] of Object.entries({ status: state, login, local: openLocal, logout, updates: openUpdates }))
+-      ipcMain.handle('entry:' + channel, async (event, ...args) => { validateEntry(event); if (args.length) throw Error('No entry arguments allowed'); return handler(); });
+-    shortcuts=installDesktopShortcuts(()=>nativeWindow,app.getPath('userData'),process.platform==='darwin'?'macos':process.platform==='win32'?'windows':'linux',menus,
+-      ()=>({revision:generation,blocked:busy||!auth||auth.expiresAt<=Date.now()}),
+-      url=>!!host&&!!auth&&auth.expiresAt>Date.now()&&isNativeUrl(url,host.origin));
+-    updatePanel = createUpdateWindow({ electron: require('electron'), icon: appIcon, preferences: safePreferences,
+-      snapshot: updateSnapshot, checkNow: checkForUpdates, installNow: installUpdateNow,
+-      parent: () => nativeWindow || entryWindow });
+-    ipcMain.handle('desktop:open-updates', nativeUpdateHandler({getWindow:()=>nativeWindow,getHost:()=>host,isNativeUrl,open:openUpdates}));
+-    menus(); openEntry(); startUpdates();
++    if (process.argv.includes('--desktop-chat-smoke')) throw Error('Use scripts/personal-runtime-smoke.cjs for native model and history verification; --desktop-chat-smoke is retired.');
++    for (const [channel, handler] of Object.entries({ status: state, login, local: openLocal, logout, updates: openUpdates }))
++      ipcMain.handle('entry:' + channel, async (event, ...args) => { validateEntry(event); if (args.length) throw Error('No entry arguments allowed'); return handler(); });
++    shortcuts=installDesktopShortcuts(()=>nativeWindow,app.getPath('userData'),process.platform==='darwin'?'macos':process.platform==='win32'?'windows':'linux',menus,
++      ()=>({revision:generation,blocked:busy||!auth||auth.expiresAt<=Date.now()}),
++      url=>!!host&&!!auth&&auth.expiresAt>Date.now()&&isNativeUrl(url,host.origin));
++    updatePanel = createUpdateWindow({ electron: require('electron'), icon: appIcon, preferences: safePreferences,
++      snapshot: updateSnapshot, checkNow: checkForUpdates, installNow: installUpdateNow,
++      parent: () => nativeWindow || entryWindow });
++    ipcMain.handle('desktop:open-updates', nativeUpdateHandler({getWindow:()=>nativeWindow,getHost:()=>host,isNativeUrl,open:openUpdates}));
++    menus(); openEntry(); startUpdates();
+     powerMonitor.on('shutdown', () => { systemShutdown = true; updater?.stop(); });
+     powerMonitor.on('resume', () => {
+       if (quitting) return;
++      updater?.resume();
+       sessionExpiry.check();
+       if (auth) void sessionExpiry.refresh();
+       else void restoreRemembered({openWorkspace: true});
+     });
+-    if (lifecycleSmoke) await verifyLifecycle();
++    if (lifecycleSmoke) await verifyLifecycle();
+     else if (smoke) await verify();
+     else void restoreRemembered({openWorkspace: true});
+-  }).catch(async error => {
+-    log?.write('DESKTOP_START_FAILED: ' + String(error.message || error) + '\n');
+-    if (host) await host.stop();
++  }).catch(async error => {
++    log?.write('DESKTOP_START_FAILED: ' + String(error.message || error) + '\n');
++    if (host) await host.stop();
+     await deviceSession?.stop();
+     if (!auth?.remembered) await signOut(auth, { timeout: 3000 }).catch(() => {});
+     auth = undefined;
+-    if (!smoke) dialog.showErrorBox('MEGMEET AI', '启动未完成，请查看本机启动日志。');
+-    app.exit(1);
+-  });
+-}
+-// Closing the only entry window also cancels an in-progress browser login or
+-// Host start through before-quit; it must not strand an invisible signed-in app.
+-app.on('window-all-closed', () => { app.quit(); });
+-app.on('browser-window-created', (_event, window) => {
+-  window.on('query-session-end', () => { systemShutdown = true; updater?.stop(); });
+-});
++    if (!smoke) dialog.showErrorBox('MEGMEET AI', '启动未完成，请查看本机启动日志。');
++    app.exit(1);
++  });
++}
++// Closing the only entry window also cancels an in-progress browser login or
++// Host start through before-quit; it must not strand an invisible signed-in app.
++app.on('window-all-closed', () => { app.quit(); });
++app.on('browser-window-created', (_event, window) => {
++  window.on('query-session-end', () => { systemShutdown = true; updater?.stop(); });
++});
+ app.on('before-quit', event => {
+-  if (quitCleanupComplete) return;
++  if (quitCleanupComplete) return;
+   if (quitting) { event.preventDefault(); return; }
+   quitting = true;
+   sessionExpiry.clear();
+   clearRecoveryTimer();
+-  ++generation; loginAbort?.abort(); hostAbort?.abort();
+-  if (host || auth || sessionRetirement) {
+-    event.preventDefault(); quitting = true;
+-    const previous = auth, previousHost = host; auth = undefined; host = undefined;
++  ++generation; loginAbort?.abort(); hostAbort?.abort();
++  if (host || auth || sessionRetirement) {
++    event.preventDefault(); quitting = true;
++    const previous = auth, previousHost = host; auth = undefined; host = undefined;
+     void Promise.allSettled([previousHost?.stop(), deviceSession?.stop(),
+       previous?.remembered ? Promise.resolve() : signOut(previous, { timeout: 3000 }), sessionRetirement]).finally(() => {
+-      quitCleanupComplete = true; app.quit();
+-    });
++      quitCleanupComplete = true; app.quit();
++    });
+   } else {
+     const pendingDevice = deviceSession?.stop();
+     if (pendingDevice) {
+@@ -440,25 +442,27 @@
+       void pendingDevice.finally(() => {quitCleanupComplete = true; app.quit();});
+     } else quitCleanupComplete = true;
+   }
+-});
+-app.on('will-quit', event => {
+-  if (!updater || updateQuitComplete) { shortcuts?.dispose(); shortcuts = undefined; return; }
+-  event.preventDefault();
+-  if (updateHandoffInFlight) return;
+-  updateHandoffInFlight = true;
++});
++app.on('will-quit', event => {
++  if (!updater || updateQuitComplete || !manualUpdateRequested) { updater?.stop(); shortcuts?.dispose(); shortcuts = undefined; return; }
++  event.preventDefault();
++  if (updateHandoffInFlight) return;
++  updateHandoffInFlight = true;
+   // Normal quit stops our Host; a persisted device login survives the updater.
+-  // Installer handoff rechecks signed metadata and bytes; NSIS waits for exit.
+-  void updater.installAfterQuit({ systemShutdown, applicationPath: path.dirname(app.getPath('exe')) }).then(started => {
+-    if (manualUpdateRequested && !systemShutdown && !started) {
+-      // Keep a usable entry/update window if an explicit installation cannot
+-      // launch. Recreate the stopped updater from its signed on-disk receipt.
+-      manualUpdateRequested = false; updateHandoffInFlight = false;
+-      quitting = false; quitCleanupComplete = false;
++  // Installer handoff rechecks signed metadata and bytes; NSIS waits for exit.
++  const completeHandoff = started => {
++    if (manualUpdateRequested && !systemShutdown && !started) {
++      // Keep a usable entry/update window if an explicit installation cannot
++      // launch. Recreate the stopped updater from its signed on-disk receipt.
++      manualUpdateRequested = false; updateHandoffInFlight = false;
++      quitting = false; quitCleanupComplete = false;
+       deviceSession = createDeviceSession({store: createRememberedStore({
+         directory: path.join(app.getPath('userData'), 'device-login'), safeStorage}), api: authApi});
+       message = '更新安装未能启动。请在软件更新中查看原因并重试。';
+       startUpdates(); openEntry(); openUpdates(); return;
+-    }
+-    updateQuitComplete = true; setImmediate(() => app.quit());
+-  }, () => { updateQuitComplete = true; setImmediate(() => app.quit()); });
+-});
++    }
++    updateQuitComplete = true; setImmediate(() => app.quit());
++  };
++  void Promise.resolve().then(() => updater.installAfterQuit({ systemShutdown, applicationPath: path.dirname(app.getPath('exe')) }))
++    .then(completeHandoff, () => completeHandoff(false));
++});
+--- r40/app/office-policy.json
++++ r41/app/office-policy.json
+@@ -4,6 +4,6 @@
+   "companyMode": "remote",
+   "remote": {
+     "version": "1.0.0",
+-    "manifestSha256": "3eb2b92214a65f8b31ff5b2d2da240e5fc2e46b5b7e357940e271f2a61eec5eb"
++    "manifestSha256": "ebfea030f004f67fa26887e27650c8d43482b12802b4386e93d937c3902d0e0a"
+   }
+ }
+--- r40/app/package.json
++++ r41/app/package.json
+@@ -1,9 +1,9 @@
+ {
+   "name": "megmeet-ai-desktop-local",
+-  "version": "0.12.0",
++  "version": "0.13.0",
+   "private": true,
+   "description": "MEGMEET native DSH desktop development client",
+-  "main": "main.cjs",
++  "main": "bootstrap.cjs",
+   "license": "UNLICENSED",
+   "scripts": {
+     "start": "electron .",
+--- r40/app/process-evidence-probe.cjs
++++ r41/app/process-evidence-probe.cjs
+@@ -0,0 +1,111 @@
++'use strict';
++// One private PowerShell process per acquired account lease. Every request
++// performs a fresh CIM scan; no successful quiescence evidence is cached.
++const path=require('node:path');
++const crypto=require('node:crypto');
++const {spawn}=require('node:child_process');
++const MAX_LINE=4096,MAX_QUEUE=32;
++const SCRIPT=String.raw`
++$ErrorActionPreference='Stop'
++$ProgressPreference='SilentlyContinue'
++$patch=$env:MAIMI_PROBE_ACCOUNT_PATCH
++$runtime=$env:MAIMI_PROBE_RUNTIME_ENTRY
++if(-not [IO.Path]::IsPathRooted($patch) -or -not [IO.Path]::IsPathRooted($runtime)){exit 2}
++$expectedSequence=1
++while($null -ne ($line=[Console]::In.ReadLine())) {
++ try {
++  if($line.Length -gt 256){throw 'invalid'}
++  $request=$line|ConvertFrom-Json
++  $names=@($request.PSObject.Properties.Name|Sort-Object)
++  if(($names -join ',') -ne 'id,schema,sequence' -or $request.schema -ne 1 -or $request.id -notmatch '^[a-f0-9]{32}$' -or $request.sequence -ne $expectedSequence){throw 'invalid'}
++  $unknown=0;$matching=0
++  Get-CimInstance Win32_Process -Filter "Name='node.exe'" | ForEach-Object {
++   if([string]::IsNullOrEmpty($_.CommandLine)){$unknown++}
++   elseif($_.CommandLine.IndexOf($patch,[StringComparison]::OrdinalIgnoreCase) -ge 0 -or $_.CommandLine.IndexOf($runtime,[StringComparison]::OrdinalIgnoreCase) -ge 0){$matching++}
++  }
++  $value=[ordered]@{schema=1;id=$request.id;sequence=$expectedSequence;matching=$matching;unknown=$unknown}
++  [Console]::Out.WriteLine(($value|ConvertTo-Json -Compress))
++  [Console]::Out.Flush()
++  $expectedSequence++
++ } catch {
++  [Console]::Out.WriteLine('{"schema":1,"failure":"PROBE_FAILED"}')
++  [Console]::Out.Flush()
++  exit 3
++ }
++}
++`;
++function refused(code){return Object.assign(new Error(code),{code});}
++function createProcessEvidenceProbe(home,runtimeRoot,options={}) {
++ const platform=options.platform??process.platform;
++ const timeoutMs=options.timeoutMs??15000;
++ if(platform!=='win32'||typeof home!=='string'||typeof runtimeRoot!=='string'||!path.win32.isAbsolute(home)||!path.win32.isAbsolute(runtimeRoot)
++   ||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>15000)throw refused('DSH_PROCESS_PROBE_OPTIONS_INVALID');
++ const environment=options.environment??process.env;
++ const systemRoot=environment.SystemRoot||'C:\\Windows';
++ if(!path.win32.isAbsolute(systemRoot))throw refused('DSH_PROCESS_PROBE_OPTIONS_INVALID');
++ const shell=path.win32.join(systemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe');
++ const launch=options.spawn??spawn;
++ let child;
++ try {child=launch(shell,['-NoLogo','-NoProfile','-NonInteractive','-Command',SCRIPT],{
++  windowsHide:true,shell:false,stdio:['pipe','pipe','pipe'],env:{SystemRoot:systemRoot,PATH:environment.PATH||'',
++   MAIMI_PROBE_ACCOUNT_PATCH:path.win32.join(home,'desktop-profile.patch.json'),
++   MAIMI_PROBE_RUNTIME_ENTRY:path.win32.join(runtimeRoot,'node_modules','@deepseek-ai','dsh','lib','bin.js')}});
++ }catch{throw refused('DSH_PROCESS_PROBE_START_FAILED');}
++ let terminal=null,active=null,sequence=0,buffer=Buffer.alloc(0),killed=false;
++ const queue=[];
++ const dispose=()=>{
++  if(killed)return;killed=true;
++  // Never use a process name, arbitrary PID, taskkill tree, or global sweep.
++  try{child.stdin.destroy();}catch{}
++  if(child.exitCode===null&&child.signalCode===null){try{child.kill();}catch{}}
++ };
++ const fail=code=>{
++  if(terminal)return;terminal=refused(code);buffer=Buffer.alloc(0);
++  if(active){clearTimeout(active.timer);active.reject(terminal);active=null;}
++  for(const pending of queue.splice(0))pending.reject(terminal);
++  dispose();
++ };
++ const pump=()=>{
++  if(terminal||active||!queue.length)return;
++  const pending=queue.shift(),id=crypto.randomBytes(16).toString('hex');
++  if(++sequence>2147483647){queue.unshift(pending);fail('DSH_PROCESS_PROBE_PROTOCOL_INVALID');return;}
++  active={...pending,id,sequence,timer:setTimeout(()=>fail('DSH_PROCESS_PROBE_TIMEOUT'),timeoutMs)};
++  active.timer.unref?.();
++  try{child.stdin.write(JSON.stringify({schema:1,id,sequence})+'\n',error=>{if(error)fail('DSH_PROCESS_PROBE_UNAVAILABLE');});}
++  catch{fail('DSH_PROCESS_PROBE_UNAVAILABLE');}
++ };
++ child.stdout.on('data',chunk=>{
++  if(terminal)return;
++  buffer=Buffer.concat([buffer,Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk)]);
++  if(buffer.length>MAX_LINE){fail('DSH_PROCESS_PROBE_PROTOCOL_INVALID');return;}
++  const newline=buffer.indexOf(10);if(newline<0)return;
++  // The owned worker emits exactly one newline-terminated response per query.
++  // Refuse trailing output instead of treating it as the next fresh result.
++  if(!active||newline!==buffer.length-1){fail('DSH_PROCESS_PROBE_PROTOCOL_INVALID');return;}
++  const line=buffer.subarray(0,newline);buffer=Buffer.alloc(0);
++  let value;
++  try{value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(line));}
++  catch{fail('DSH_PROCESS_PROBE_PROTOCOL_INVALID');return;}
++  if(!value||Array.isArray(value)||Object.keys(value).sort().join(',')!=='id,matching,schema,sequence,unknown'
++   ||value.schema!==1||value.id!==active.id||value.sequence!==active.sequence
++   ||!Number.isSafeInteger(value.matching)||!Number.isSafeInteger(value.unknown)||value.matching<0||value.unknown<0
++   ||value.matching>1000000||value.unknown>1000000){fail('DSH_PROCESS_PROBE_PROTOCOL_INVALID');return;}
++  const current=active;active=null;clearTimeout(current.timer);
++  current.resolve({matching:value.matching,unknown:value.unknown});queueMicrotask(pump);
++ });
++ child.stdout.on('error',()=>fail('DSH_PROCESS_PROBE_UNAVAILABLE'));
++ child.stdin.on('error',()=>fail('DSH_PROCESS_PROBE_UNAVAILABLE'));
++ child.stderr.on('data',()=>fail('DSH_PROCESS_PROBE_UNAVAILABLE'));
++ child.stderr.on('error',()=>fail('DSH_PROCESS_PROBE_UNAVAILABLE'));
++ child.on('error',()=>fail('DSH_PROCESS_PROBE_UNAVAILABLE'));
++ child.on('exit',()=>fail('DSH_PROCESS_PROBE_UNAVAILABLE'));
++ return {
++  query:()=>{
++   if(terminal)return Promise.reject(terminal);
++   if(queue.length>=MAX_QUEUE){fail('DSH_PROCESS_PROBE_QUEUE_LIMIT');return Promise.reject(terminal);}
++   const result=new Promise((resolve,reject)=>queue.push({resolve,reject}));pump();return result;
++  },
++  close:()=>fail('DSH_PROCESS_PROBE_CLOSED'),
++ };
++}
++module.exports={createProcessEvidenceProbe};
+--- r40/app/model-boundary.cjs
++++ r41/app/model-boundary.cjs
+@@ -0,0 +1,79 @@
++'use strict';
++
++const CHAT_MODEL = 'deepseek-v4.1-flash';
++const CHAT_PROVIDER = 'deepseek-official';
++const MAX_CHAT_BYTES = 16 * 1024 * 1024;
++const fail = (code, status) => Object.assign(Error(code), {code, status});
++
++function validateChatBody(bytes, authorized) {
++  if (!Buffer.isBuffer(bytes) || bytes.length > MAX_CHAT_BYTES) throw fail('CHAT_REQUEST_TOO_LARGE', 413);
++  let value;
++  try { value = JSON.parse(bytes.toString('utf8')); } catch { throw fail('CHAT_REQUEST_INVALID', 400); }
++  if (!value || Array.isArray(value) || typeof value !== 'object') throw fail('CHAT_REQUEST_INVALID', 400);
++  if (value.model !== CHAT_MODEL) throw fail('CHAT_MODEL_NOT_ALLOWED', 403);
++  if (!authorized) throw fail('CHAT_MODEL_NOT_AUTHORIZED', 403);
++  return value;
++}
++
++function readChatBody(req, authorized) {
++  return new Promise((resolve, reject) => {
++    let length = 0, done = false; const chunks = [];
++    const finish = (error, bytes) => {
++      if (done) return; done = true; clearTimeout(timer);
++      req.removeListener('data', onData); req.removeListener('end', onEnd);
++      req.removeListener('error', onError); req.removeListener('aborted', onAbort);
++      if (error) {
++        // IncomingMessage may emit ECONNRESET after its aborted event. The
++        // request has already failed; keep that transport error contained.
++        req.once('error', () => {}); req.resume(); reject(error);
++      } else resolve(bytes);
++    };
++    const onData = chunk => { length += chunk.length; if (length > MAX_CHAT_BYTES) finish(fail('CHAT_REQUEST_TOO_LARGE', 413)); else chunks.push(chunk); };
++    const onEnd = () => { try { const bytes = Buffer.concat(chunks); validateChatBody(bytes, authorized()); finish(null, bytes); } catch (error) { finish(error); } };
++    const onError = () => finish(fail('CHAT_REQUEST_INCOMPLETE', 400));
++    const onAbort = () => finish(fail('CHAT_REQUEST_INCOMPLETE', 400));
++    const timer = setTimeout(() => { finish(fail('CHAT_REQUEST_TIMEOUT', 408)); req.destroy(); }, 15000);
++    req.on('data', onData); req.once('end', onEnd); req.once('error', onError); req.once('aborted', onAbort);
++  });
++}
++
++function modelCatalog(value) {
++
++  if (!value || !Array.isArray(value.data) || value.data.length > 1000)
++
++    throw Object.assign(Error('当前账号没有可用模型，请联系管理员。'), { code: 'NO_PERSONAL_MODELS' });
++
++  if (!value.data.length) return { models: [], defaultModel: null, preferredAvailable: false,
++
++    notice: '当前账号暂无授权模型，请联系管理员。' };
++
++  const models = value.data.map(row => {
++
++    if (!row || typeof row.id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/.test(row.id))
++
++      throw Error('账号模型目录无效。');
++
++    const name = typeof row.name === 'string' && row.name.trim() && row.name.length <= 200 ? row.name : row.id;
++
++    const modalities=row.inputModalities;
++
++    if(modalities!==undefined && (!Array.isArray(modalities)||!modalities.includes('text')||modalities.some(x=>x!=='text'&&x!=='image')||new Set(modalities).size!==modalities.length))throw Error('账号模型图片能力声明无效。');
++
++    return { id: row.id, name, ...(modalities?{inputModalities:['text','image'].filter(x=>modalities.includes(x))}:{}) };
++
++  });
++
++  const ids = new Set(models.map(row => row.id));
++
++  if (ids.size !== models.length) throw Error('账号模型目录重复。');
++
++  if (value.default_model != null && !ids.has(value.default_model)) throw Error('默认模型不在当前账号授权范围。');
++
++  const authorized = models.filter(row => row.id === CHAT_MODEL);
++  return { models: authorized, defaultModel: authorized.length ? CHAT_MODEL : null,
++    preferredAvailable: authorized.length === 1,
++    notice: authorized.length ? null : '当前账号暂无指定企业模型的授权，请联系管理员。' };
++
++}
++
++module.exports = {modelCatalog, CHAT_MODEL, CHAT_PROVIDER, MAX_CHAT_BYTES, validateChatBody, readChatBody};
+--- r40/app/model-policy-profile.cjs
++++ r41/app/model-policy-profile.cjs
+@@ -0,0 +1,19 @@
++'use strict';
++const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
++const {pathToFileURL}=require('node:url');
++
++// Native Node cannot import app.asar. Materialize this one shipped module only
++// inside the account directory whose exclusive lease is already held.
++function modelPolicyPatch(home, modelBase, verifiedSource) {
++  const endpoint=new URL(modelBase);
++  if(endpoint.protocol!=='http:'||endpoint.hostname!=='127.0.0.1'||!endpoint.port||endpoint.pathname!=='/__megmeet/model/v1'||endpoint.search||endpoint.hash||endpoint.username||endpoint.password)throw Error('MODEL_POLICY_ENDPOINT_INVALID');
++  const dir=path.join(home,'megmeet-managed-plugins');fs.mkdirSync(dir,{recursive:true});
++  if(!fs.lstatSync(dir).isDirectory()||fs.lstatSync(dir).isSymbolicLink())throw Error('MODEL_POLICY_PATH_INVALID');
++  const target=path.join(dir,'enterprise-model-policy.mjs');
++  if(fs.existsSync(target)&&(!fs.lstatSync(target).isFile()||fs.lstatSync(target).isSymbolicLink()))throw Error('MODEL_POLICY_PATH_INVALID');
++  const temp=target+'.'+crypto.randomUUID()+'.tmp';
++  try{fs.writeFileSync(temp,fs.readFileSync(verifiedSource),{flag:'wx'});fs.renameSync(temp,target);}
++  finally{if(fs.existsSync(temp))fs.unlinkSync(temp);}
++  return [{insert:[{id:'megmeet-model-policy',name:pathToFileURL(target).href,config:{modelBase,apiKeyEnv:'MEGMEET_MODEL_TOKEN'}}]}];
++}
++module.exports={modelPolicyPatch};
+--- r40/app/enterprise-model-policy.mjs
++++ r41/app/enterprise-model-policy.mjs
+@@ -0,0 +1,86 @@
++// Reviewed only against DSH 0.2.0-rc.2. This does not alter independent web search.
++export const COMPANY_CHAT_MODEL = 'deepseek-v4.1-flash';
++export const COMPANY_CHAT_PROVIDER = 'deepseek-official';
++export const inject = ['llm'];
++export const MANAGED_PLUGIN_MUTATIONS = Object.freeze(['setPluginEnabled','setBundleEnabled','removeBundle','installBundle','setVersionExemption','cancelInstall']);
++const denied = () => { throw Object.assign(new Error('公司当前仅开放 DeepSeek V4.1 Flash，请使用企业模型。'), {code:'company_model_policy_refused'}); };
++export function canonicalSelection(value) {
++  if (!value || typeof value !== 'object') denied();
++  return {...value, provider:COMPANY_CHAT_PROVIDER, model:COMPANY_CHAT_MODEL};
++}
++export function assertManagedAdapter(llm, expectedBase) {
++  const adapter = llm.registration(COMPANY_CHAT_PROVIDER)?.adapter;
++  if (!adapter || typeof adapter.current !== 'function' || typeof adapter.modelOf !== 'function' || typeof adapter.profileOf !== 'function') denied();
++  const snapshot = adapter.current();
++  const model = adapter.modelOf(snapshot, COMPANY_CHAT_PROVIDER, COMPANY_CHAT_MODEL);
++  const profile = adapter.profileOf(snapshot, COMPANY_CHAT_PROVIDER);
++  if (model?.baseUrl !== expectedBase || model?.api !== 'openai-completions' || profile?.apiKeyEnv !== 'MEGMEET_MODEL_TOKEN') denied();
++  return snapshot;
++}
++export function apply(ctx, config) {
++  if (config?.apiKeyEnv !== 'MEGMEET_MODEL_TOKEN' || typeof config.modelBase !== 'string'
++      || !/^http:\/\/127\.0\.0\.1:[1-9][0-9]{0,4}\/(?:v1|__megmeet\/model\/v1)$/.test(config.modelBase)
++      || Number(new URL(config.modelBase).port) > 65535) denied();
++  const llm = ctx.llm, base = config.modelBase;
++  // Image admission asks for model capabilities before preparing a call. Old
++  // history can still name its previous route; inspect the same managed model
++  // that will receive the next request, without inventing image support.
++  ctx.effect(() => {
++    const own=Object.hasOwn(llm,'resolveModelInfo'),original=llm.resolveModelInfo;
++    if(typeof original!=='function')denied();
++    const resolve=function(_provider,_model,signal){
++      assertManagedAdapter(llm,base);
++      return original.call(this,COMPANY_CHAT_PROVIDER,COMPANY_CHAT_MODEL,signal);
++    };
++    llm.resolveModelInfo=resolve;
++    return ()=>{if(llm.resolveModelInfo===resolve){if(own)llm.resolveModelInfo=original;else delete llm.resolveModelInfo;}};
++  });
++  // Prepare runs before adapter selection, capability lookup and the new request
++  // header. Legacy session selections are normalized for this new request only.
++  // Existing user/assistant history bytes and reasoning choice are untouched.
++  for (const method of ['resolveCallConfig', 'prepareCall']) ctx.effect(() => {
++    const own = Object.hasOwn(llm, method), original = llm[method];
++    if (typeof original !== 'function') denied();
++    const prepare = function(value, signal) {
++      assertManagedAdapter(llm, base);
++      return original.call(this, canonicalSelection(value), signal);
++    };
++    llm[method] = prepare;
++    return () => { if (llm[method] === prepare) { if (own) llm[method] = original; else delete llm[method]; } };
++  });
++  ctx.effect(() => {
++    const ownProviders=Object.hasOwn(llm,'listProviders'), ownModels=Object.hasOwn(llm,'listModels');
++    const originalProviders=llm.listProviders, originalModels=llm.listModels;
++    if(typeof originalProviders!=='function'||typeof originalModels!=='function')denied();
++    const providers=function(){return originalProviders.call(this).filter(item=>item.id===COMPANY_CHAT_PROVIDER);};
++    const models=async function(provider){
++      if(provider!==COMPANY_CHAT_PROVIDER)return [];
++      assertManagedAdapter(llm,base);
++      return (await originalModels.call(this,provider)).filter(item=>item.id===COMPANY_CHAT_MODEL);
++    };
++    llm.listProviders=providers;llm.listModels=models;
++    return ()=>{
++      if(llm.listProviders===providers){if(ownProviders)llm.listProviders=originalProviders;else delete llm.listProviders;}
++      if(llm.listModels===models){if(ownModels)llm.listModels=originalModels;else delete llm.listModels;}
++    };
++  });
++  // Covers direct stream consumers as well as prepared main/subagent/title/
++  // compaction calls, and fails closed if the same provider is edited to BYO.
++  ctx.on('llm/stream', (options, next) => {
++    if (options?.provider !== COMPANY_CHAT_PROVIDER || options?.model !== COMPANY_CHAT_MODEL) denied();
++    assertManagedAdapter(llm, base);
++    return next();
++  }, {global:true, prepend:true});
++  // Native service boundary also covers the desktop multiplexed RPC carrier.
++  // Read-only inventory and ordinary settings (e.g. token-meter UI) stay usable.
++  // Business skill selection is owned by the project bridge, not this manager.
++  ctx.inject(['pluginManager'], child => child.effect(() => {
++    const manager=child.pluginManager, saved=[];
++    for(const method of MANAGED_PLUGIN_MUTATIONS){
++      if(typeof manager[method]!=='function')denied();
++      const own=Object.hasOwn(manager,method),original=manager[method];
++      const refuse=()=>denied();manager[method]=refuse;saved.push({method,own,original,refuse});
++    }
++    return ()=>{for(const {method,own,original,refuse} of saved)if(manager[method]===refuse){if(own)manager[method]=original;else delete manager[method];}};
++  }));
++}
+--- r40/app/runtime-host.cjs
++++ r41/app/runtime-host.cjs
+@@ -27,6 +27,8 @@
+ const { createOfficeBridge } = require('./office-bridge.cjs');
+ 
+ const { diagnosticLog } = require('./diagnostic-log.cjs');
++const { CHAT_MODEL, readChatBody, modelCatalog } = require('./model-boundary.cjs');
++const { modelPolicyPatch } = require('./dsh-adapter.cjs');
+ 
+ const { pathToFileURL } = require('node:url');
+ 
+@@ -124,51 +126,6 @@
+ 
+ 
+ 
+-function modelCatalog(value) {
+-
+-  if (!value || !Array.isArray(value.data) || value.data.length > 1000)
+-
+-    throw Object.assign(Error('当前账号没有可用模型，请联系管理员。'), { code: 'NO_PERSONAL_MODELS' });
+-
+-  if (!value.data.length) return { models: [], defaultModel: null, preferredAvailable: false,
+-
+-    notice: '当前账号暂无授权模型，请联系管理员。' };
+-
+-  const models = value.data.map(row => {
+-
+-    if (!row || typeof row.id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/.test(row.id))
+-
+-      throw Error('账号模型目录无效。');
+-
+-    const name = typeof row.name === 'string' && row.name.trim() && row.name.length <= 200 ? row.name : row.id;
+-
+-    const modalities=row.inputModalities;
+-
+-    if(modalities!==undefined && (!Array.isArray(modalities)||!modalities.includes('text')||modalities.some(x=>x!=='text'&&x!=='image')||new Set(modalities).size!==modalities.length))throw Error('账号模型图片能力声明无效。');
+-
+-    return { id: row.id, name, ...(modalities?{inputModalities:['text','image'].filter(x=>modalities.includes(x))}:{}) };
+-
+-  });
+-
+-  const ids = new Set(models.map(row => row.id));
+-
+-  if (ids.size !== models.length) throw Error('账号模型目录重复。');
+-
+-  if (value.default_model != null && !ids.has(value.default_model)) throw Error('默认模型不在当前账号授权范围。');
+-
+-  const preferred = ids.has('deepseek-flash-v4.1') ? 'deepseek-flash-v4.1' : (value.default_model ?? models[0].id);
+-
+-  if (!ids.has(preferred)) throw Error('默认模型不在当前账号授权范围。');
+-
+-  const preferredAvailable = ids.has('deepseek-flash-v4.1');
+-
+-  return { models, defaultModel: preferred, preferredAvailable,
+-
+-    notice: null /* A granted fallback is usable; missing the preferred route is not an authorization failure. */ };
+-
+-}
+-
+-
+ 
+ async function startHost(options) {
+ 
+@@ -315,7 +272,7 @@
+ 
+   const json = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); };
+ 
+-  const proxy = (req, res, target, headers) => {
++  const proxy = (req, res, target, headers, checkedBody) => {
+ 
+     const transport = new URL(target).protocol === 'https:' ? https : http;
+ 
+@@ -333,7 +290,7 @@
+ 
+     res.on('close', () => outgoing.destroy());
+ 
+-    req.on('aborted', () => outgoing.destroy()); req.pipe(outgoing);
++    req.on('aborted', () => outgoing.destroy()); if (checkedBody) outgoing.end(checkedBody); else req.pipe(outgoing);
+ 
+   };
+ 
+@@ -499,11 +456,17 @@
+ 
+       if (!['/v1/chat/completions', '/v1/models'].includes(targetPath)) { json(res, 404, {}); return; }
+ 
+-      proxy(req, res, GATEWAY + '/v1/personal-model' + targetPath.slice(3), {
+-
+-        'Content-Type': 'application/json', Authorization: 'Bearer ' + auth.token,
+-
+-      });
++      if (targetPath === '/v1/models') {
++        if (req.method !== 'GET') { json(res, 405, {}); return; }
++        json(res, 200, {data:catalog.models,default_model:catalog.defaultModel}); return;
++      }
++      if (req.method !== 'POST' || req.headers['content-encoding']) { json(res, 400, {error:{message:'CHAT_REQUEST_INVALID'}}); return; }
++      readChatBody(req, () => catalog.models.some(row => row.id === CHAT_MODEL)).then(bytes => {
++        if (Date.now() >= auth.expiresAt) { json(res, 401, {error:{message:'Desktop session expired. Sign in again.'}}); return; }
++        proxy(req, res, GATEWAY + '/v1/personal-model/chat/completions', {
++          'Content-Type':'application/json', 'Content-Length':String(bytes.length), Authorization:'Bearer '+auth.token,
++        }, bytes);
++      }, error => { if (!res.destroyed) json(res, error.status || 400, {error:{message:error.code || 'CHAT_REQUEST_INVALID'}}); });
+ 
+       return;
+ 
+@@ -611,7 +574,7 @@
+ 
+   const patchContents = JSON.stringify([...modelPatch(catalog, origin), {id:'skill-office',config:{node:runtime.node,cli:false}}, officePatch(runtime.root, {
+ 
+-    mode: officeMode, endpoint: origin + '/__megmeet/office', token: officeToken }),toolkitPatch(toolkitRoot,origin+'/__megmeet/tool-execute',toolToken),...desktopSearchPatch(home,origin+'/__megmeet/tool-execute',toolToken)], null, 2);
++    mode: officeMode, endpoint: origin + '/__megmeet/office', token: officeToken }),toolkitPatch(toolkitRoot,origin+'/__megmeet/tool-execute',toolToken),...desktopSearchPatch(home,origin+'/__megmeet/tool-execute',toolToken),...modelPolicyPatch(home,origin+'/__megmeet/model/v1')], null, 2);
+ 
+   try { fs.writeFileSync(patch, patchContents); fs.writeFileSync(community, JSON.stringify(communityPatch(runtime.root))); }
+ 
+--- r40/app/update.html
++++ r41/app/update.html
+@@ -1,4 +1,4 @@
+-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; connect-src 'none'; img-src 'self'"><title>麦米 · 软件更新</title><style>
+-:root{color-scheme:light dark;--bg:#f7faf9;--card:#fff;--text:#203b36;--muted:#687d77;--line:#dde9e4;--accent:#238e7c;--soft:#edf7f3}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px "Segoe UI","Microsoft YaHei",sans-serif;line-height:1.6}main{padding:28px}header{display:flex;align-items:center;gap:13px;margin-bottom:24px}.mark{width:148px;height:auto}h1{font-size:19px;margin:2px 0}p{margin:8px 0;color:var(--muted)}.card{border:1px solid var(--line);border-radius:18px;background:var(--card);padding:22px}h2{font-size:17px;margin:0 0 8px;font-weight:600}.status-detail{min-height:46px}.versions{font-size:13px;display:flex;gap:20px;flex-wrap:wrap;margin-top:17px}progress{display:block;width:100%;height:7px;margin:18px 0 5px;accent-color:var(--accent)}[hidden]{display:none!important}.progress-text{font-size:12px;color:var(--muted)}.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:21px}button{font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 15px;background:var(--card);color:var(--text);cursor:pointer}button.primary{background:var(--accent);color:white;border-color:var(--accent)}button:hover{filter:brightness(.97)}button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}button:disabled{opacity:.5;cursor:default}.foot{font-size:12px;margin:17px 2px 0}.notice{font-size:12px;color:var(--muted)}@media(prefers-color-scheme:dark){:root{--bg:#14221f;--card:#1c2c27;--text:#e1eee8;--muted:#a5b9b0;--line:#354a40;--accent:#4bb99f;--soft:#243d32}}
+-.activity{font-size:12px;color:var(--muted);margin:12px 0 0}.error{font-size:13px;border-left:3px solid #b66c32;background:var(--soft);border-radius:7px;padding:10px 12px;margin-top:14px;color:var(--text)}
+-</style></head><body><main><header><img class="mark" src="assets/megmeet-wordmark.svg" alt="MEGMEET"><div><h1>软件更新</h1><span class="notice">麦米办公助手</span></div></header><section class="card"><div aria-live="polite"><h2 id="title">正在读取更新状态…</h2><p id="detail" class="status-detail"></p></div><progress id="progress" max="100" aria-label="更新文件实际下载进度" hidden></progress><div id="progress-text" class="progress-text" hidden></div><p id="activity" class="activity" hidden></p><div id="error" class="error" role="alert" hidden></div><div class="versions"><span id="current">当前版本 —</span><span id="available" hidden></span></div><div class="actions"><button id="check">检查更新</button><button id="install" class="primary" hidden>立即退出并安装</button></div></section><p class="foot" id="checked"></p><p class="foot">更新会保留已保存的聊天和工作文件。请先结束正在运行的任务，并保留未发送的草稿；安装完成后重新打开麦米。</p></main><script src="update.js"></script></body></html>
++<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; connect-src 'none'; img-src 'self'"><title>麦米 · 软件更新</title><style>
++:root{color-scheme:light dark;--bg:#f7faf9;--card:#fff;--text:#203b36;--muted:#687d77;--line:#dde9e4;--accent:#238e7c;--soft:#edf7f3}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px "Segoe UI","Microsoft YaHei",sans-serif;line-height:1.6}main{padding:28px}header{display:flex;align-items:center;gap:13px;margin-bottom:24px}.mark{width:148px;height:auto}h1{font-size:19px;margin:2px 0}p{margin:8px 0;color:var(--muted)}.card{border:1px solid var(--line);border-radius:18px;background:var(--card);padding:22px}h2{font-size:17px;margin:0 0 8px;font-weight:600}.status-detail{min-height:46px}.versions{font-size:13px;display:flex;gap:20px;flex-wrap:wrap;margin-top:17px}progress{display:block;width:100%;height:7px;margin:18px 0 5px;accent-color:var(--accent)}[hidden]{display:none!important}.progress-text{font-size:12px;color:var(--muted)}.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:21px}button{font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 15px;background:var(--card);color:var(--text);cursor:pointer}button.primary{background:var(--accent);color:white;border-color:var(--accent)}button:hover{filter:brightness(.97)}button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}button:disabled{opacity:.5;cursor:default}.foot{font-size:12px;margin:17px 2px 0}.notice{font-size:12px;color:var(--muted)}@media(prefers-color-scheme:dark){:root{--bg:#14221f;--card:#1c2c27;--text:#e1eee8;--muted:#a5b9b0;--line:#354a40;--accent:#4bb99f;--soft:#243d32}}
++.activity{font-size:12px;color:var(--muted);margin:12px 0 0}.error{font-size:13px;border-left:3px solid #b66c32;background:var(--soft);border-radius:7px;padding:10px 12px;margin-top:14px;color:var(--text)}
++</style></head><body><main><header><img class="mark" src="assets/megmeet-wordmark.svg" alt="MEGMEET"><div><h1>软件更新</h1><span class="notice">麦米办公助手</span></div></header><section class="card"><div aria-live="polite"><h2 id="title">正在读取更新状态…</h2><p id="detail" class="status-detail"></p></div><progress id="progress" max="100" aria-label="更新文件实际下载进度" hidden></progress><div id="progress-text" class="progress-text" hidden></div><p id="activity" class="activity" hidden></p><div id="error" class="error" role="alert" hidden></div><div class="versions"><span id="current">当前版本 —</span><span id="available" hidden></span></div><div class="actions"><button id="check">检查更新</button><button id="install" class="primary" hidden>更新并重启</button></div></section><p class="foot" id="checked"></p><p class="foot">更新会保留已保存的聊天和工作文件。请先结束正在运行的任务，并保留未发送的草稿；安装时会显示进度，完成后自动打开新版本。</p></main><script src="update.js"></script></body></html>
+--- r40/app/update.js
++++ r41/app/update.js
+@@ -1,104 +1,104 @@
+-'use strict';
+-(function (factory) {
+-  const ui=factory();
+-  if(typeof module==='object'&&module.exports)module.exports=ui;
+-  else ui.mount({document,window,api:window.megmeetUpdate});
+-})(function () {
+-  const busyStates=new Set(['checking','connecting','downloading','verifying','installing','disabled']);
+-  const labels={idle:['自动检查更新','正在准备读取公司的软件发布信息。'],checking:['正在检查更新','正在核对公司发布的新版本。'],connecting:['正在连接下载服务','已发现新版本，正在建立下载连接。'],downloading:['正在下载更新','可以继续使用麦米；下载完成前不会安装。'],verifying:['正在验证更新','正在核对下载文件的完整性，验证通过后才可以安装。'],ready:['更新已准备好','正常退出麦米时会自动安装，也可以现在退出并安装。'],current:['已是最新版本','当前版本已与公司发布版本核对。'],unavailable:['本次更新未完成','可以点击重试，现有版本仍可使用。'],installing:['正在交接安装','请等待安装完成后重新打开麦米，避免重复安装。'],'install-failed':['上次更新未完成','可以重试检查；现有版本不会因此被删除。'],disabled:['本地开发版','此版本不接收公司发布的自动更新。']};
+-  const errors={'storage-full':'磁盘可用空间不足，请释放空间后重试。','storage-permission':'无法写入本机更新目录，请检查目录权限或联系公司支持。','tls-verification':'未能验证更新服务证书，请联系公司网络支持。','signature-rejected':'更新签名校验未通过，已停止安装，请联系管理员。','clock-or-expired':'发布信息已过期或电脑时间不正确，请校对时间后重试。','rollback-rejected':'发布顺序校验未通过，已停止安装，请联系管理员。','integrity-rejected':'下载文件校验未通过，请重新检查更新。','portable-install-required':'当前为免安装版。请先安装公司发布的安装包，再使用自动更新。','network-timeout':'连接更新服务超时，请检查公司网络后重试。','check-timeout':'检查新版本超时，请确认公司网络可用后重试。','connection-timeout':'连接下载服务超时，请检查公司网络后重试。','download-stalled':'下载较长时间没有收到新数据，已停止本次下载。请检查网络后重试。','download-timeout':'下载超过本次允许的等待时间，已停止。请检查网络后重试。','verification-timeout':'更新文件核验超时，暂不能安装。请重试或联系公司支持。','check-unavailable':'暂时无法读取公司更新信息，请检查公司网络后重试。','download-unavailable':'更新下载未完成，请检查网络后重试。','installer-launch-failed':'安装器未能启动。若公司安全软件拦截，请联系公司支持开通权限后重试。'};
+-  const version=value=>typeof value==='string'&&/^\d{1,6}\.\d{1,6}\.\d{1,6}$/.test(value)?value:'—';
+-  const finite=value=>Number.isFinite(value)&&value>=0;
+-  const duration=seconds=>seconds>=60?Math.floor(seconds/60)+' 分 '+Math.floor(seconds%60)+' 秒':Math.floor(seconds)+' 秒';
+-  const mb=bytes=>(bytes/1048576).toFixed(1)+' MB';
+-  function view(snapshot, {now=Date.now(),action=false,unavailable=false,localError=''}={}) {
+-    const s=snapshot&&typeof snapshot==='object'?snapshot:{};
+-    const known=Object.prototype.hasOwnProperty.call(labels,s.status),status=known?s.status:'unavailable';
+-    const [baseTitle,baseDetail]=labels[status];
+-    const p=s.progress,valid=p&&Number.isSafeInteger(p.received)&&Number.isSafeInteger(p.total)&&p.total>0&&p.received>=0&&p.received<=p.total;
+-    const percent=valid?Math.floor(p.received*100/p.total):null;
+-    const stopped=['unavailable','install-failed'].includes(status),showProgress=['connecting','downloading','verifying'].includes(status)||(stopped&&valid);
+-    let detail=errors[s.errorCode]||baseDetail,activity='',progressText='';
+-    if(status==='ready'&&s.errorCode)detail='此前下载的更新已核验，可以安装；但本次检查未成功，暂未确认是否还有更新版本。';
+-    if(finite(s.operationStartedAt)&&s.operationStartedAt<=now&&['checking','connecting','downloading','verifying'].includes(status))activity='本次已用 '+duration((now-s.operationStartedAt)/1000);
+-    if(showProgress){
+-      if(valid){
+-        progressText=(stopped?'本次停在 ':'')+percent+'% · '+mb(p.received)+' / '+mb(p.total);
+-        if(status==='downloading'&&finite(p.bytesPerSecond)&&p.bytesPerSecond>0){
+-          progressText+=' · '+mb(p.bytesPerSecond)+'/秒';
+-          if(finite(p.remainingSeconds))progressText+=' · 预计还需 '+duration(p.remainingSeconds);
+-        }
+-      }else progressText=status==='connecting'?'连接建立后显示实际下载进度。':status==='verifying'?'正在核验文件，尚未开始安装。':'等待接收更新文件…';
+-      if(status==='verifying')activity='文件已下载，正在核验；下载完成不代表已安装。';
+-    }
+-    if(status==='downloading'&&finite(s.lastProgressAt)&&s.lastProgressAt<=now&&now-s.lastProgressAt>=10000){
+-      activity='已有 '+duration((now-s.lastProgressAt)/1000)+' 未收到新的下载数据，正在等待网络响应。';
+-      if(valid)progressText=percent+'% · '+mb(p.received)+' / '+mb(p.total);
+-    }
+-    if(s.cleanupPending===true){activity='正在结束上次更新连接，请稍候；完成后可以重试。';detail=detail.replace('已停止','已请求停止');}
+-    if(unavailable){detail='暂时无法读取本机更新状态。后台下载是否继续尚未确认，请稍后重试。';activity='';}
+-    return {status,title:unavailable?'更新状态暂时无法读取':baseTitle,detail,
+-      error:localError||(!known?'更新状态异常，请重新检查。':''),activity,showProgress:showProgress&&!unavailable,
+-      progress:percent,progressText,current:'当前版本 '+version(s.currentVersion),
+-      available:version(s.availableVersion)==='—'?'':'公司发布版本 '+version(s.availableVersion),
+-      checked:finite(s.checkedAt)?'上次检查：'+new Date(s.checkedAt).toLocaleString():'',
+-      checkDisabled:action||s.busy===true||s.cleanupPending===true||(!unavailable&&busyStates.has(status)),
+-      checkLabel:unavailable||localError||stopped?'重试检查':'检查更新',
+-      installVisible:!unavailable&&s.canInstall===true&&!s.busy&&!s.cleanupPending&&['ready','install-failed'].includes(status),
+-      installDisabled:action||unavailable};
+-  }
+-  function mount({document,window,api,now=Date.now,schedule=setTimeout,unschedule=clearTimeout,ipcTimeoutMs=8000,pollMs=900}) {
+-    const el=id=>document.getElementById(id);
+-    let alive=true,timer,snapshot=null,action=false,unavailable=false,localError='',epoch=0,polling=false;
+-    const slots=new Map(),deadlines=new Set();
+-    const render=()=>{
+-      if(!alive)return;
+-      const v=view(snapshot,{now:now(),action,unavailable,localError});
+-      for(const id of ['title','detail','activity','progress-text','current','available','checked','error'])el(id).textContent=v[id==='progress-text'?'progressText':id];
+-      el('available').hidden=!v.available;el('activity').hidden=!v.activity;el('error').hidden=!v.error;
+-      el('progress').hidden=!v.showProgress;el('progress-text').hidden=!v.showProgress;
+-      if(v.progress===null)el('progress').removeAttribute('value');else el('progress').value=v.progress;
+-      el('check').disabled=v.checkDisabled;el('check').textContent=v.checkLabel;
+-      el('install').hidden=!v.installVisible;el('install').disabled=v.installDisabled;
+-    };
+-    function request(kind){
+-      if(slots.has(kind))return slots.get(kind).visible;
+-      const record={epoch};slots.set(kind,record);
+-      const raw=Promise.resolve().then(()=>{if(!api||typeof api[kind]!=='function')throw Error('IPC_UNAVAILABLE');return api[kind]();});
+-      record.visible=new Promise((resolve,reject)=>{
+-        const deadline=schedule(()=>{deadlines.delete(deadline);reject(Error('IPC_TIMEOUT'));},ipcTimeoutMs);deadlines.add(deadline);
+-        raw.then(resolve,reject).finally(()=>{unschedule(deadline);deadlines.delete(deadline);if(slots.get(kind)===record)slots.delete(kind);});
+-      });
+-      // A timed-out slot is retained until the underlying IPC settles, so
+-      // repeated polling cannot accumulate never-returning IPC calls.
+-      record.visible.catch(()=>{});return record.visible;
+-    }
+-    async function refresh(){
+-      const generation=epoch;
+-      try{const promise=request('status'),issued=slots.get('status')?.epoch;const value=await promise;if(!alive||generation!==epoch||issued!==epoch)return;snapshot=value;unavailable=false;}
+-      catch{if(alive&&generation===epoch)unavailable=true;}
+-      render();
+-    }
+-    async function run(kind){
+-      if(action||!alive)return;
+-      action=true;localError='';const generation=++epoch;render();
+-      try{
+-        const value=await request(kind);if(!alive||generation!==epoch)return;
+-        if(kind==='check'){snapshot=value;unavailable=false;}
+-        else if(value?.accepted===true){snapshot={...snapshot,status:'installing',canInstall:false};}
+-      }catch{if(alive&&generation===epoch){localError=kind==='check'?'检查请求未完成，请重试。':'未能提交安装请求，请重试。';unavailable=true;}}
+-      finally{if(alive&&generation===epoch){action=false;render();void refresh();}}
+-    }
+-    async function poll(){
+-      if(!alive||polling)return;polling=true;
+-      try{await refresh();}finally{polling=false;if(alive)timer=schedule(poll,document.hidden?4000:pollMs);}
+-    }
+-    const onCheck=()=>void run('check'),onInstall=()=>void run('install');
+-    const onVisible=()=>{if(!alive||document.hidden)return;unschedule(timer);void poll();};
+-    function close(){alive=false;epoch++;unschedule(timer);for(const deadline of deadlines)unschedule(deadline);deadlines.clear();document.removeEventListener('visibilitychange',onVisible);el('check').removeEventListener('click',onCheck);el('install').removeEventListener('click',onInstall);}
+-    el('check').addEventListener('click',onCheck);el('install').addEventListener('click',onInstall);
+-    document.addEventListener('visibilitychange',onVisible);window.addEventListener('beforeunload',close,{once:true});
+-    render();void poll();return {refresh,close};
+-  }
+-  return {view,mount};
+-});
++'use strict';
++(function (factory) {
++  const ui=factory();
++  if(typeof module==='object'&&module.exports)module.exports=ui;
++  else ui.mount({document,window,api:window.megmeetUpdate});
++})(function () {
++  const busyStates=new Set(['checking','connecting','downloading','verifying','installing','disabled']);
++  const labels={idle:['自动检查更新','正在准备读取公司的软件发布信息。'],checking:['正在检查更新','正在核对公司发布的新版本。'],connecting:['正在连接下载服务','已发现新版本，正在建立下载连接。'],downloading:['正在下载更新','可以继续使用麦米；下载完成后由你确认安装。'],verifying:['正在验证更新','正在核对下载文件的完整性，验证通过后才可以安装。'],ready:['更新已准备好','已自动下载并校验。点击更新并重启即可安装；稍后再装也不影响使用。'],current:['已是最新版本','当前版本已与公司发布版本核对。'],unavailable:['本次更新未完成','可以点击重试，现有版本仍可使用。'],installing:['正在启动安装','安装窗口将显示进度，完成后自动打开新版本。请勿重复安装。'],'install-failed':['上次更新未完成','可以重试检查；现有版本不会因此被删除。'],disabled:['本地开发版','此版本不接收公司发布的自动更新。']};
++  const errors={'storage-full':'磁盘可用空间不足，请释放空间后重试。','storage-permission':'无法写入本机更新目录，请检查目录权限或联系公司支持。','tls-verification':'未能验证更新服务证书，请联系公司网络支持。','signature-rejected':'更新签名校验未通过，已停止安装，请联系管理员。','clock-or-expired':'发布信息已过期或电脑时间不正确，请校对时间后重试。','rollback-rejected':'发布顺序校验未通过，已停止安装，请联系管理员。','integrity-rejected':'下载文件校验未通过，请重新检查更新。','portable-install-required':'当前为免安装版。请先安装公司发布的安装包，再使用自动更新。','network-timeout':'连接更新服务超时，请检查公司网络后重试。','check-timeout':'检查新版本超时，请确认公司网络可用后重试。','connection-timeout':'连接下载服务超时，请检查公司网络后重试。','download-stalled':'下载较长时间没有收到新数据，已停止本次下载。请检查网络后重试。','download-timeout':'下载超过本次允许的等待时间，已停止。请检查网络后重试。','verification-timeout':'更新文件核验超时，暂不能安装。请重试或联系公司支持。','check-unavailable':'暂时无法读取公司更新信息，请检查公司网络后重试。','download-unavailable':'更新下载未完成，请检查网络后重试。','installer-launch-failed':'安装器未能启动。若公司安全软件拦截，请联系公司支持开通权限后重试。'};
++  const version=value=>typeof value==='string'&&/^\d{1,6}\.\d{1,6}\.\d{1,6}$/.test(value)?value:'—';
++  const finite=value=>Number.isFinite(value)&&value>=0;
++  const duration=seconds=>seconds>=60?Math.floor(seconds/60)+' 分 '+Math.floor(seconds%60)+' 秒':Math.floor(seconds)+' 秒';
++  const mb=bytes=>(bytes/1048576).toFixed(1)+' MB';
++  function view(snapshot, {now=Date.now(),action=false,unavailable=false,localError=''}={}) {
++    const s=snapshot&&typeof snapshot==='object'?snapshot:{};
++    const known=Object.prototype.hasOwnProperty.call(labels,s.status),status=known?s.status:'unavailable';
++    const [baseTitle,baseDetail]=labels[status];
++    const p=s.progress,valid=p&&Number.isSafeInteger(p.received)&&Number.isSafeInteger(p.total)&&p.total>0&&p.received>=0&&p.received<=p.total;
++    const percent=valid?Math.floor(p.received*100/p.total):null;
++    const stopped=['unavailable','install-failed'].includes(status),showProgress=['connecting','downloading','verifying'].includes(status)||(stopped&&valid);
++    let detail=errors[s.errorCode]||baseDetail,activity='',progressText='';
++    if(status==='ready'&&s.errorCode)detail='此前下载的更新已核验，可以安装；但本次检查未成功，暂未确认是否还有更新版本。';
++    if(finite(s.operationStartedAt)&&s.operationStartedAt<=now&&['checking','connecting','downloading','verifying'].includes(status))activity='本次已用 '+duration((now-s.operationStartedAt)/1000);
++    if(showProgress){
++      if(valid){
++        progressText=(stopped?'本次停在 ':'')+percent+'% · '+mb(p.received)+' / '+mb(p.total);
++        if(status==='downloading'&&finite(p.bytesPerSecond)&&p.bytesPerSecond>0){
++          progressText+=' · '+mb(p.bytesPerSecond)+'/秒';
++          if(finite(p.remainingSeconds))progressText+=' · 预计还需 '+duration(p.remainingSeconds);
++        }
++      }else progressText=status==='connecting'?'连接建立后显示实际下载进度。':status==='verifying'?'正在核验文件，尚未开始安装。':'等待接收更新文件…';
++      if(status==='verifying')activity='文件已下载，正在核验；下载完成不代表已安装。';
++    }
++    if(status==='downloading'&&finite(s.lastProgressAt)&&s.lastProgressAt<=now&&now-s.lastProgressAt>=10000){
++      activity='已有 '+duration((now-s.lastProgressAt)/1000)+' 未收到新的下载数据，正在等待网络响应。';
++      if(valid)progressText=percent+'% · '+mb(p.received)+' / '+mb(p.total);
++    }
++    if(s.cleanupPending===true){activity='正在结束上次更新连接，请稍候；完成后可以重试。';detail=detail.replace('已停止','已请求停止');}
++    if(unavailable){detail='暂时无法读取本机更新状态。后台下载是否继续尚未确认，请稍后重试。';activity='';}
++    return {status,title:unavailable?'更新状态暂时无法读取':baseTitle,detail,
++      error:localError||(!known?'更新状态异常，请重新检查。':''),activity,showProgress:showProgress&&!unavailable,
++      progress:percent,progressText,current:'当前版本 '+version(s.currentVersion),
++      available:version(s.availableVersion)==='—'?'':'公司发布版本 '+version(s.availableVersion),
++      checked:finite(s.checkedAt)?'上次检查：'+new Date(s.checkedAt).toLocaleString():'',
++      checkDisabled:action||s.busy===true||s.cleanupPending===true||(!unavailable&&busyStates.has(status)),
++      checkLabel:unavailable||localError||stopped?'重试检查':'检查更新',
++      installVisible:!unavailable&&s.canInstall===true&&!s.busy&&!s.cleanupPending&&['ready','install-failed'].includes(status),
++      installDisabled:action||unavailable};
++  }
++  function mount({document,window,api,now=Date.now,schedule=setTimeout,unschedule=clearTimeout,ipcTimeoutMs=8000,pollMs=900}) {
++    const el=id=>document.getElementById(id);
++    let alive=true,timer,snapshot=null,action=false,unavailable=false,localError='',epoch=0,polling=false;
++    const slots=new Map(),deadlines=new Set();
++    const render=()=>{
++      if(!alive)return;
++      const v=view(snapshot,{now:now(),action,unavailable,localError});
++      for(const id of ['title','detail','activity','progress-text','current','available','checked','error'])el(id).textContent=v[id==='progress-text'?'progressText':id];
++      el('available').hidden=!v.available;el('activity').hidden=!v.activity;el('error').hidden=!v.error;
++      el('progress').hidden=!v.showProgress;el('progress-text').hidden=!v.showProgress;
++      if(v.progress===null)el('progress').removeAttribute('value');else el('progress').value=v.progress;
++      el('check').disabled=v.checkDisabled;el('check').textContent=v.checkLabel;
++      el('install').hidden=!v.installVisible;el('install').disabled=v.installDisabled;
++    };
++    function request(kind){
++      if(slots.has(kind))return slots.get(kind).visible;
++      const record={epoch};slots.set(kind,record);
++      const raw=Promise.resolve().then(()=>{if(!api||typeof api[kind]!=='function')throw Error('IPC_UNAVAILABLE');return api[kind]();});
++      record.visible=new Promise((resolve,reject)=>{
++        const deadline=schedule(()=>{deadlines.delete(deadline);reject(Error('IPC_TIMEOUT'));},ipcTimeoutMs);deadlines.add(deadline);
++        raw.then(resolve,reject).finally(()=>{unschedule(deadline);deadlines.delete(deadline);if(slots.get(kind)===record)slots.delete(kind);});
++      });
++      // A timed-out slot is retained until the underlying IPC settles, so
++      // repeated polling cannot accumulate never-returning IPC calls.
++      record.visible.catch(()=>{});return record.visible;
++    }
++    async function refresh(){
++      const generation=epoch;
++      try{const promise=request('status'),issued=slots.get('status')?.epoch;const value=await promise;if(!alive||generation!==epoch||issued!==epoch)return;snapshot=value;unavailable=false;}
++      catch{if(alive&&generation===epoch)unavailable=true;}
++      render();
++    }
++    async function run(kind){
++      if(action||!alive)return;
++      action=true;localError='';const generation=++epoch;render();
++      try{
++        const value=await request(kind);if(!alive||generation!==epoch)return;
++        if(kind==='check'){snapshot=value;unavailable=false;}
++        else if(value?.accepted===true){snapshot={...snapshot,status:'installing',canInstall:false};}
++      }catch{if(alive&&generation===epoch){localError=kind==='check'?'检查请求未完成，请重试。':'未能提交安装请求，请重试。';unavailable=true;}}
++      finally{if(alive&&generation===epoch){action=false;render();void refresh();}}
++    }
++    async function poll(){
++      if(!alive||polling)return;polling=true;
++      try{await refresh();}finally{polling=false;if(alive)timer=schedule(poll,document.hidden?4000:pollMs);}
++    }
++    const onCheck=()=>void run('check'),onInstall=()=>void run('install');
++    const onVisible=()=>{if(!alive||document.hidden)return;unschedule(timer);void poll();};
++    function close(){alive=false;epoch++;unschedule(timer);for(const deadline of deadlines)unschedule(deadline);deadlines.clear();document.removeEventListener('visibilitychange',onVisible);el('check').removeEventListener('click',onCheck);el('install').removeEventListener('click',onInstall);}
++    el('check').addEventListener('click',onCheck);el('install').addEventListener('click',onInstall);
++    document.addEventListener('visibilitychange',onVisible);window.addEventListener('beforeunload',close,{once:true});
++    render();void poll();return {refresh,close};
++  }
++  return {view,mount};
++});
+--- r40/app/updater.cjs
++++ r41/app/updater.cjs
+@@ -191,7 +191,8 @@
+ }
+ function createUpdater({ currentVersion, directory, policy, onStatus = () => {},
+   getFeed = fetchFeed, download = downloadInstaller, launch = launchInstaller, now = Date.now,
+-  inspectProcess = inspectInstallerProcess, timeouts = DEFAULT_TIMEOUTS }) {
++  inspectProcess = inspectInstallerProcess, timeouts = DEFAULT_TIMEOUTS,
++  schedule = setTimeout, unschedule = clearTimeout }) {
+   versionParts(currentVersion);
+   directory = path.resolve(directory);
+   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+@@ -200,7 +201,7 @@
+   const attemptFile = path.join(directory, 'install-attempt.json');
+   const limits = { ...DEFAULT_TIMEOUTS, ...timeouts };
+   for (const value of Object.values(limits)) check(Number.isSafeInteger(value) && value > 0 && value <= 3600000, 'Invalid update timeout');
+-  let stopped = false, inFlight, ready, timer, abort, status = 'idle';
++  let stopped = false, started = false, failedChecks = 0, nextCheckAt, installationResult, inFlight, ready, timer, abort, status = 'idle';
+   let retryTimer, availableVersion, progress, checkedAt, errorCode, lastDetail;
+   let busy = false, cleanupPending = false, operationStartedAt, lastProgressAt;
+   function snapshot() {
+@@ -208,7 +209,7 @@
+       ...(progress ? { progress: { ...progress } } : {}), checkedAt, errorCode,
+       busy, cleanupPending, operationStartedAt, lastProgressAt,
+       canInstall: !stopped && !busy && !!ready && ['ready', 'install-failed'].includes(status),
+-      automaticInstall: 'on-normal-exit' });
++      automaticInstall: 'user-requested', automaticCheck: true, automaticDownload: true, nextCheckAt, installationResult });
+   }
+   function emit(value, detail) {
+     status = value; lastDetail = detail;
+@@ -258,6 +259,11 @@
+     const record = signedRecord(attemptFile);
+     if (!record) return undefined;
+     if (compareVersions(record.item.version, currentVersion) <= 0) {
++      installationResult = { status: 'confirmed', expectedVersion: record.item.version,
++        actualVersion: currentVersion, confirmedAt: now() };
++      // A process handoff is not success: only the newly running application's
++      // real package version can acknowledge the completed installation.
++      atomicJson(path.join(directory, 'installed.json'), installationResult);
+       removeOwnedFile(attemptFile); return undefined;
+     }
+     if (!Number.isSafeInteger(record.attemptedAt) || record.attemptedAt > now() + 300000) return undefined;
+@@ -374,12 +380,25 @@
+     if (stopped) return Promise.resolve();
+     if (!inFlight) {
+       busy = true; operationStartedAt = now(); cleanupPending = false;
+-      inFlight = performCheck().finally(() => { inFlight = undefined; busy = false; cleanupPending = false; if (!stopped) emit(status, lastDetail); });
++      inFlight = performCheck().finally(() => {
++        inFlight = undefined; busy = false; cleanupPending = false;
++        if (!stopped) {
++          if (started) {
++            const failed = status === 'unavailable' || !!errorCode;
++            failedChecks = failed ? Math.min(failedChecks + 1, 5) : 0;
++            const interval = failed ? Math.min(5 * 60000 * 2 ** (failedChecks - 1), 3600000) : 2 * 3600000;
++            unschedule(timer); nextCheckAt = now() + interval;
++            timer = schedule(() => { timer = undefined; void checkNow(); }, interval); timer.unref?.();
++          }
++          emit(status, lastDetail);
++        }
++      });
+     }
+     return inFlight;
+   }
+-  function start() { if (timer || stopped) return; void checkNow(); timer = setInterval(() => { void checkNow(); }, 6 * 3600000); timer.unref?.(); }
+-  function stop() { stopped = true; clearInterval(timer); clearTimeout(retryTimer); abort?.abort(); }
++  function start() { if (started || stopped) return; started = true; void checkNow(); }
++  function resume() { if (started && !stopped && (!checkedAt || now() - checkedAt >= 5 * 60000)) void checkNow(); }
++  function stop() { stopped = true; unschedule(timer); nextCheckAt = undefined; clearTimeout(retryTimer); abort?.abort(); }
+   // This method is called only after Electron's normal quit cleanup. It checks
+   // signed metadata and actual executable bytes again; no shell command text.
+   async function installAfterQuit({ systemShutdown = false, applicationPath } = {}) {
+@@ -403,7 +422,7 @@
+       emit('install-failed', 'installer-launch-failed'); return false;
+     }
+   }
+-  return { start, stop, checkNow, installAfterQuit, get status() { return status; }, get snapshot() { return snapshot(); } };
++  return { start, stop, resume, checkNow, installAfterQuit, get status() { return status; }, get snapshot() { return snapshot(); } };
+ }
+ function launchInstaller(file, applicationPath) {
+   check(process.platform === 'win32' && typeof applicationPath === 'string' && path.isAbsolute(applicationPath), 'Installer requires an installed Windows application');
+@@ -414,8 +433,8 @@
+   return new Promise((resolve, reject) => {
+     // NSIS /D must be last and unquoted; it consumes the remaining command line
+     // including spaces. No shell is involved, and the path is owned by main.
+-    const child = spawn(file, ['/S', '--updated', '/currentuser', '/D=' + applicationPath], {
+-      detached: true, windowsHide: true, windowsVerbatimArguments: true, stdio: 'ignore', shell: false });
++    const child = spawn(file, ['--updated', '/currentuser', '/D=' + applicationPath], {
++      detached: true, windowsHide: false, windowsVerbatimArguments: true, stdio: 'ignore', shell: false });
+     child.once('error', reject);
+     child.once('spawn', () => { child.unref(); resolve({ pid: child.pid }); });
+   });

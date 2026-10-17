@@ -1,0 +1,6 @@
+from pathlib import Path
+p=Path('output/dsh020-rc2-r41-20261008/runtime/verify-runtime.mjs');s=p.read_text(encoding='utf-8-sig').replace("import {constants} from 'node:fs';","import {constants} from 'node:fs';\nimport {createRequire} from 'node:module';\nconst require=createRequire('/opt/dsh/package.json');").replace("await import('/opt/dsh/node_modules/@deepseek-ai/node-addon-require-builtin/lib/index.js');","require('node-addon-require-builtin');")
+s=s.replace("console.log(JSON.stringify({status:'VERIFIED'", "try{await access('/opt/dsh/node_modules/@deepseek-ai/libreoffice-kit-wasm');throw Error('LOCAL_OFFICE_RUNTIME_NOT_EXPECTED');}catch(e){if(e.code!=='ENOENT')throw e;}\nconsole.log(JSON.stringify({status:'VERIFIED'")
+p.write_text(s,encoding='utf-8')
+p=Path('output/dsh020-rc2-r41-20261008/runtime/assemble-linux.py');s=p.read_text(encoding='utf-8-sig').replace("shutil.copytree(UP/'node_modules',D/'node_modules',dirs_exist_ok=True,symlinks=True)","shutil.copytree(UP/'node_modules',D/'node_modules',dirs_exist_ok=True,symlinks=True)\n# Fixed optional package only; enterprise Office bridge uses shared service.\noffice_wasm=D/'node_modules/@deepseek-ai/libreoffice-kit-wasm'\nif office_wasm.exists():shutil.rmtree(office_wasm)")
+p.write_text(s,encoding='utf-8')

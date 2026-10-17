@@ -1,0 +1,28 @@
+{
+  "schema": "maimi-opensandbox-upstream-pins-v1",
+  "release": "release-1.1.1",
+  "commit": "531700ca18a7fa5fab6a2f25d6dc68a76eddab12",
+  "tag_object": "7b4ff96b552b442dda206e6e4b6da2b2f7dcc439",
+  "tag_signature_verified": false,
+  "tag_signature_reason": "unsigned",
+  "release_url": "https://github.com/opensandbox-group/OpenSandbox/releases/tag/release-1.1.1",
+  "source_url": "https://codeload.github.com/opensandbox-group/OpenSandbox/zip/refs/tags/release-1.1.1",
+  "archive_sha256": "8d2490a31e3ab8b0bbaf3dd8546203726aff4ae4f7e413cd2b6950e95f1c8644",
+  "files": {
+    "server/opensandbox_server/services/docker/container_ops.py": "fb852b4f88142e814ae4ef3f45503553e8f3f468bfab839cfff6f8cb165f1b13",
+    "server/opensandbox_server/services/docker/docker_service.py": "b688b393a1ca24b63b6ffbcaf125cafb4445ef720d10f5264da08db0d3a0a451",
+    "server/opensandbox_server/config.py": "9ddfbaf1e745581ca40716a97eb5fb6fad914a22a1b178e904a23b3d6f9b7a4d",
+    "server/opensandbox_server/api/proxy.py": "09e9ffaa83ec8894322a044a033d0e3d6fa683164b45cc53fd8245e44dc9ca93",
+    "sdks/sandbox/python/src/opensandbox/sandbox.py": "3d56d53ab631b9365f2336536ac4ba1a078a88c715ff32bb561133d026fa2741",
+    "sdks/sandbox/python/src/opensandbox/manager.py": "54801d0e8641bd635d819e96a9b75acb0a4dc9318ce0f11123d2913533d489c6",
+    "sdks/sandbox/python/src/opensandbox/config/connection.py": "832046cf36aec726bb296e9756d4342dda0fc90fd5e33304535b29afd76c7137",
+    "sdks/sandbox/python/src/opensandbox/adapters/command_adapter.py": "c2a16d45ea4df89f8f2442d8c30eed0fd0c91fc79688408c75249df50fed71fc",
+    "sdks/sandbox/python/src/opensandbox/adapters/filesystem_adapter.py": "b0cfb0f2d79b7452c2ea48a5a01ba023c1bfe4112678eb00bd13543aeac96a88",
+    "components/execd/bootstrap.sh": "f0e2b43e3c5a96d7bfd3d57ab3b5a50c33f609d13243b1b53f2b727c6adcc5c7"
+  },
+  "server_normalized_sha256": {
+    "container_ops.py": "fb852b4f88142e814ae4ef3f45503553e8f3f468bfab839cfff6f8cb165f1b13",
+    "docker_service.py": "b688b393a1ca24b63b6ffbcaf125cafb4445ef720d10f5264da08db0d3a0a451"
+  },
+  "source_verification": "OFFICIAL_REPOSITORY_HTTPS_AND_CONTENT_PIN_NOT_SIGNED_RELEASE"
+}

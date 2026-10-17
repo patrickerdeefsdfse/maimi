@@ -1,0 +1,21 @@
+'use strict';
+const {app,BrowserWindow}=require('electron');
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
+app.setName('MEGMEET Distribution Preview');
+app.setPath('userData',fs.mkdtempSync(path.join(os.tmpdir(),'megmeet-download-preview-')));
+app.on('window-all-closed',()=>{});
+(async()=>{
+ await app.whenReady();
+ const out=path.resolve(__dirname,'../../desktop-local/evidence/download-page-0.5.0');fs.mkdirSync(out,{recursive:true});
+ const window=new BrowserWindow({width:1280,height:900,show:false,webPreferences:{sandbox:true,nodeIntegration:false,contextIsolation:true}});
+ await window.loadURL('http://127.0.0.1:18092/maimi/');
+ await new Promise(r=>setTimeout(r,1500));
+ const state=await window.webContents.executeJavaScript(`({title:document.title,text:document.body.innerText,href:document.querySelector('#download').getAttribute('href'),disabled:document.querySelector('#download').getAttribute('aria-disabled'),width:document.documentElement.scrollWidth,viewport:innerWidth,iconLoaded:document.querySelector('.app-icon').naturalWidth>0,nodeExposed:typeof require!=='undefined'})`);
+ assert.equal(state.title,'麦米办公助手');assert.equal(state.iconLoaded,true);assert.equal(state.nodeExposed,false);assert.equal(state.width,state.viewport);
+ fs.writeFileSync(path.join(out,'desktop.png'),(await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true})).toPNG());
+ window.setSize(390,844);await new Promise(r=>setTimeout(r,700));
+ assert.equal(await window.webContents.executeJavaScript('document.documentElement.scrollWidth<=innerWidth'),true);
+ fs.writeFileSync(path.join(out,'mobile.png'),(await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true})).toPNG());
+ fs.writeFileSync(path.join(out,'result.json'),JSON.stringify(state,null,2));
+ console.log('DISTRIBUTION_PAGE_DESKTOP_MOBILE: PASS');app.exit(0);
+})().catch(e=>{console.error(e);app.exit(1);});

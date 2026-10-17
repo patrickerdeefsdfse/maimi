@@ -1,0 +1,33 @@
+# Candidate only. Do not copy into the live server or start it yet.
+# Provider remains enabled=false until real runsc/isolation/cleanup/capacity proofs.
+# API key comes from an owner-only secret via OPENSANDBOX_SERVER_API_KEY;
+# never copy it into sandbox_env, model context, worker mounts, or GitLab.
+[server]
+host = "127.0.0.1"
+port = 18080
+max_sandbox_timeout_seconds = 3600
+
+[runtime]
+type = "docker"
+# Replace with independently pulled/verified official execd image digest.
+execd_image = "REQUIRED_OFFICIAL_EXECD_IMAGE_AT_SHA256"
+execd_run_as_init = true
+
+[secure_runtime]
+type = "gvisor"
+docker_runtime = "runsc"
+
+[docker]
+network_mode = "maimi-sandbox-r64"
+publish_host = "127.0.0.1"
+port_range_min = 41000
+port_range_max = 41100
+drop_capabilities = ["ALL"]
+no_new_privileges = true
+pids_limit = 512
+sandbox_binds = []
+sandbox_env = {}
+
+# Launching the ordinary upstream CLI omits the local storage policy hook.
+# Future installation must explicitly run server_policy:build_app as an ASGI
+# factory, with fixed source pins; it is not enough to copy this configuration.

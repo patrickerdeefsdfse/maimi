@@ -1,0 +1,11 @@
+# Only when existing nginx-https already joins common-net.
+services:
+  downloads:
+    networks:
+      distribution: {}
+      common-net:
+        aliases: [megmeet-maimi-downloads]
+networks:
+  common-net:
+    external: true
+    name: common-net

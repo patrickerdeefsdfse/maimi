@@ -1,0 +1,95 @@
+name: megmeet-dev-retrieval
+
+# Local development only. Join the existing internal network; publish no ports.
+services:
+  milvus:
+    image: ${LOCAL_MILVUS_IMAGE:-milvusdb/milvus:v2.6.24}
+    platform: linux/amd64
+    command: [milvus, run, standalone]
+    restart: 'no'
+    networks: [local-only]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 1536m
+    memswap_limit: 1536m
+    cpus: 2
+    pids_limit: 512
+    stop_grace_period: 60s
+    environment:
+      ETCD_USE_EMBED: 'true'
+      ETCD_DATA_DIR: /var/lib/milvus/etcd
+      ETCD_CONFIG_PATH: /milvus/configs/embedEtcd.yaml
+      COMMON_STORAGETYPE: local
+      DEPLOY_MODE: STANDALONE
+      GOMEMLIMIT: 768MiB
+      OMP_NUM_THREADS: '2'
+    volumes:
+      - milvus-data:/var/lib/milvus
+      - ./embedEtcd.yaml:/milvus/configs/embedEtcd.yaml:ro
+      - ./milvus.yaml:/milvus/configs/user.yaml:ro
+    healthcheck:
+      test: [CMD, curl, -fsS, --max-time, '3', 'http://127.0.0.1:9091/healthz']
+      interval: 5s
+      timeout: 4s
+      retries: 36
+      start_period: 30s
+
+  elasticsearch:
+    image: ${LOCAL_ELASTIC_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:8.19.21}
+    platform: linux/amd64
+    restart: 'no'
+    networks: [local-only]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 2
+    pids_limit: 256
+    stop_grace_period: 60s
+    environment:
+      discovery.type: single-node
+      cluster.name: megmeet-local-retrieval
+      node.name: local-es
+      xpack.security.enabled: 'true'
+      xpack.security.http.ssl.enabled: 'false'
+      xpack.security.transport.ssl.enabled: 'false'
+      xpack.license.self_generated.type: basic
+      xpack.ml.enabled: 'false'
+      ingest.geoip.downloader.enabled: 'false'
+      ES_JAVA_OPTS: -Xms384m -Xmx384m
+      # Public synthetic fixture, never a company credential.
+      ELASTIC_PASSWORD: local-synthetic-search-only
+    ulimits:
+      nofile: {soft: 65535, hard: 65535}
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [CMD-SHELL, 'curl -fsS --max-time 3 -u "elastic:$$ELASTIC_PASSWORD" "http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=2s" >/dev/null']
+      interval: 5s
+      timeout: 4s
+      retries: 36
+      start_period: 30s
+
+  probe:
+    image: megmeet-dev-mock:local
+    platform: linux/amd64
+    profiles: [test]
+    restart: 'no'
+    networks: [local-only]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    user: '10001:10001'
+    entrypoint: [python, /probe/smoke.py]
+    command: [verify]
+    volumes:
+      - ./smoke.py:/probe/smoke.py:ro
+
+volumes:
+  milvus-data:
+  elasticsearch-data:
+
+networks:
+  local-only:
+    external: true
+    name: megmeet-dev-local_local-only

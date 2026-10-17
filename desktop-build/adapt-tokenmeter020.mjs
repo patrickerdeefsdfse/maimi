@@ -1,0 +1,22 @@
+import fs from 'node:fs';import path from 'node:path';import {createHash} from 'node:crypto';import {fileURLToPath} from 'node:url';
+const root=path.dirname(fileURLToPath(import.meta.url)),repo=path.resolve(root,'../../..'),runtime='C:/Users/LI YUHAO/.codex/tmp/dsh020-r41-desktop/runtime-win32-x64';
+const original=path.join(repo,'output/dsh-rc2-implementation-20260928/ui/runtime-win32-x64/node_modules/@dshp/token-meter');
+const dest=path.join(root,'overlays/@dshp/token-meter'),sha=b=>createHash('sha256').update(b).digest('hex'),j=p=>JSON.parse(fs.readFileSync(p));
+const transformations={IconChevronDownOutline14:'IconChevronDownOutlineRegular',IconLoadingOutline16:'IconLoadingOutlineRegular',IconRefreshOutline14:'IconRefreshOutlineRegular'};
+const before=fs.readFileSync(path.join(original,'lib/client.js'));let after=before.toString('utf8');
+const primitives=fs.readFileSync(path.join(runtime,'node_modules/@deepseek-ai/dsh-client-ui-primitives/lib/index.js'),'utf8');
+for(const [old,current] of Object.entries(transformations)){if(!after.includes(old)||!primitives.includes(current))throw Error('TOKENMETER_ADAPTATION_SEAM');after=after.replaceAll(old,current);}
+const packageBefore=fs.readFileSync(path.join(original,'package.json')),pkg=JSON.parse(packageBefore);
+if(pkg.name!=='@dshp/token-meter'||pkg.version!=='0.8.0'||pkg.peerDependencies['@deepseek-ai/dsh-client-ui-primitives']!=='^0.1.5-rc.1')throw Error('TOKENMETER_ORIGINAL_MISMATCH');
+pkg.peerDependencies['@deepseek-ai/dsh-client-ui-primitives']='0.2.0-rc.2';pkg.megmeetReviewedRuntime='0.2.0-rc.2';pkg.megmeetAdaptation='tokenmeter-ui-icons-020-r41';
+const packageAfter=JSON.stringify(pkg,null,2)+'\n';fs.mkdirSync(path.join(dest,'lib'),{recursive:true});fs.writeFileSync(path.join(dest,'lib/client.js'),after);fs.writeFileSync(path.join(dest,'package.json'),packageAfter);
+const changes={'lib/client.js':{originalSha256:sha(before),sha256:sha(after)},'package.json':{originalSha256:sha(packageBefore),sha256:sha(packageAfter)}};
+for(const rel of Object.keys(changes))fs.copyFileSync(path.join(dest,rel),path.join(runtime,'node_modules/@dshp/token-meter',rel));
+const community=j(path.join(runtime,'community-manifest.json'));const item=community.plugins.find(p=>p.name==='@dshp/token-meter');
+for(const [rel,v] of Object.entries(changes))item.files[rel]=v.sha256;
+community.megmeetAdaptations=[{package:pkg.name,version:pkg.version,runtime:pkg.megmeetReviewedRuntime,transformations,files:changes}];
+fs.writeFileSync(path.join(runtime,'community-manifest.json'),JSON.stringify(community,null,2)+'\n');
+const release=j(path.join(runtime,'release-manifest.json'));release.community.manifestSha256=sha(fs.readFileSync(path.join(runtime,'community-manifest.json')));delete release.releaseId;release.releaseId=sha(JSON.stringify(release));fs.writeFileSync(path.join(runtime,'release-manifest.json'),JSON.stringify(release,null,2)+'\n');
+const manifest=j(path.join(runtime,'runtime-manifest.json'));manifest.releaseSha256=sha(fs.readFileSync(path.join(runtime,'release-manifest.json')));fs.writeFileSync(path.join(runtime,'runtime-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
+fs.writeFileSync(path.join(root,'evidence/tokenmeter-adaptation.json'),JSON.stringify({status:'ADAPTED_REAL_UI_TEST_PENDING',package:pkg.name,version:pkg.version,runtime:pkg.megmeetReviewedRuntime,transformations,files:changes,profileExemptionsWritten:false,upstreamGuardUnchanged:true},null,2)+'\n');
+console.log('TOKENMETER020_EXACT_ADAPTATION_READY');

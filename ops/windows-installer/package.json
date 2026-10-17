@@ -1,0 +1,6 @@
+{
+  "name": "megmeet-windows-installer-tools",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": { "electron-builder": "26.15.3" }
+}

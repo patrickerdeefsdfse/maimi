@@ -1,0 +1,11 @@
+# Small synthetic development data only; this is below production sizing.
+mq:
+  type: woodpecker
+woodpecker:
+  storage:
+    type: local
+    rootPath: /var/lib/milvus/woodpecker
+common:
+  storageType: local
+log:
+  level: warn

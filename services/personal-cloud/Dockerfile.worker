@@ -1,0 +1,23 @@
+ARG DSH_BASE_IMAGE=megmeet-dev-dsh:0.1.6-alpha.2-upstream-ui
+FROM ${DSH_BASE_IMAGE} AS office-adapter-stage
+USER root
+COPY desktop-local/scripts/stage-office-remote.cjs /opt/stage/desktop-local/scripts/
+COPY dev-local/dsh/office-adapter /opt/stage/dev-local/dsh/office-adapter
+COPY dev-local/dsh/office-remote /opt/stage/dev-local/dsh/office-remote
+RUN node /opt/stage/desktop-local/scripts/stage-office-remote.cjs /opt/remote-office-adapter
+
+FROM ${DSH_BASE_IMAGE}
+USER root
+COPY services/personal-cloud/guard-runtime.mjs services/personal-cloud/worker.mjs services/personal-cloud/catalog.mjs /opt/personal-cloud/
+COPY services/personal-cloud/task-authority.mjs services/personal-cloud/task-control-plugin.mjs /opt/personal-cloud/
+COPY services/personal-cloud/vision-control-plugin.mjs services/personal-cloud/vision-admission.mjs /opt/personal-cloud/
+COPY services/personal-cloud/idle-control.mjs services/personal-cloud/web-control-plugin.mjs services/personal-cloud/web-bridge.mjs /opt/personal-cloud/
+COPY services/personal-cloud/office-bridge.mjs /opt/personal-cloud/
+COPY --from=office-adapter-stage /opt/remote-office-adapter /opt/dsh/office-adapter
+COPY toolkit/session-tools.mjs /opt/dsh/toolkit/
+COPY toolkit/adapter/index.mjs /opt/dsh/toolkit/adapter/
+COPY services/personal-cloud/history-native.mjs services/personal-cloud/history-server.mjs /opt/personal-cloud/
+RUN node /opt/personal-cloud/guard-runtime.mjs && mkdir -p /workspace && chown node:node /workspace
+USER node
+WORKDIR /workspace
+CMD ["node", "/opt/personal-cloud/worker.mjs"]

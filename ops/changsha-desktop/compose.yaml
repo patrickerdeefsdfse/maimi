@@ -1,0 +1,152 @@
+name: megmeet-desktop-server
+
+# Independent company-server services, plus per-employee native Host overlay.
+# No shared employee TokenKey, synthetic IAM or personal desktop history upload.
+x-service: &service
+  image: megmeet-ai-gateway:sso-20260921-r11
+  platform: linux/amd64
+  restart: unless-stopped
+  read_only: true
+  user: '10001:10001'
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  tmpfs: ['/tmp:rw,nosuid,noexec,size=32m,mode=1777']
+
+x-database-env: &database-env
+  DATABASE_URL: postgresql://${POSTGRES_USER:-megmeet}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-megmeet_ai}
+  PYTHONDONTWRITEBYTECODE: '1'
+
+services:
+  postgres:
+    # Offline tag; start-server.sh verifies platform image ID against manifest.
+    image: megmeet-desktop-postgres:16-20260918
+    platform: linux/amd64
+    restart: unless-stopped
+    networks: [data]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-megmeet}
+      POSTGRES_DB: ${POSTGRES_DB:-megmeet_ai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: megmeet-desktop-redis:7-20260918
+    platform: linux/amd64
+    restart: unless-stopped
+    user: redis
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [data]
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  db-migrate:
+    <<: *service
+    restart: 'no'
+    networks: [data]
+    command: [python, -m, app.migrate]
+    environment:
+      <<: *database-env
+      MIGRATIONS_DIR: /app/migrations
+    volumes:
+      - ../../db/migrations:/app/migrations:ro
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  gateway:
+    <<: *service
+    networks: [data, outbound]
+    # TokenKey route verified on 2026-09-20. Production IAM uses company DNS;
+    # the old test-IAM address must not be reused for this different hostname.
+    extra_hosts:
+      tokenkey.megmeet.com: "10.4.1.112"
+    command: [uvicorn, app.main:app, --host, '0.0.0.0', --port, '8080', --no-access-log]
+    ports: ['127.0.0.1:18091:8080']
+    environment:
+      <<: *database-env
+      REDIS_URL: redis://redis:6379/0
+      AUTH_MODE: iam_direct
+      AUTH_REQUIRED: 'true'
+      IAM_DEV_MODE: 'false'
+      IAM_IDENTITY_MODE: sso_tokenkey
+      IAM_BASE_URL: ${IAM_BASE_URL:-https://iam.megmeet.com}
+      IAM_AUTHORIZATION_BASE_URL: ${IAM_AUTHORIZATION_BASE_URL:-https://iam.megmeet.com}
+      IAM_CLIENT_ID: ${IAM_CLIENT_ID:?set IAM_CLIENT_ID}
+      IAM_CLIENT_SECRET_FILE: /run/secrets/iam-client-secret
+      IAM_TOKEN_ENCRYPTION_KEY_FILE: /run/secrets/iam-token-encryption-key
+      IAM_PUBLIC_ORIGIN: https://platform-ai.megmeet.com
+      IAM_REDIRECT_URI: https://platform-ai.megmeet.com/v1/iam/callback
+      IAM_POST_LOGIN_PATH: /maimi/web/
+      IAM_LOGOUT_RETURN_URI: https://platform-ai.megmeet.com/v1/iam/session
+      IAM_SESSION_TTL_SECONDS: '7200'
+      PERSONAL_KEY_ADAPTER: tokenkey
+      PERSONAL_KEY_TOKENKEY_URL: https://tokenkey.megmeet.com/api/external/user-credentials
+      PERSONAL_KEY_SERVICE_SECRET_FILE: /run/secrets/personal-key-service-secret
+      PERSONAL_MODEL_BASE_URL: https://tokenkey.megmeet.com/v1
+      TOKENKEY_ENABLED: 'false'
+      DSH_ENABLED: 'false'
+      BROWSER_SMOKE_ENABLED: 'false'
+      MIGRATIONS_REQUIRED_VERSION: 014_personal_storage_lifecycle.sql
+      PLATFORM_FILE_ROOT: /var/lib/megmeet/files
+      CLOUD_WORKSPACE_STORAGE_LIMIT_BYTES: ${CLOUD_WORKSPACE_STORAGE_LIMIT_BYTES:-268435456}
+      CLOUD_TASK_GLOBAL_LIMIT: ${CLOUD_TASK_GLOBAL_LIMIT:-8}
+      CLOUD_TASK_WORKSPACE_LIMIT: ${CLOUD_TASK_WORKSPACE_LIMIT:-4}
+      CLOUD_TASK_EMPLOYEE_LIMIT: ${CLOUD_TASK_EMPLOYEE_LIMIT:-2}
+      CLOUD_TASK_TIMEOUT_SECONDS: ${CLOUD_TASK_TIMEOUT_SECONDS:-120}
+    volumes:
+      - platform-files:/var/lib/megmeet/files
+      - type: bind
+        source: ${IAM_CLIENT_SECRET_SOURCE:?set IAM_CLIENT_SECRET_SOURCE}
+        target: /run/secrets/iam-client-secret
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${IAM_TOKEN_ENCRYPTION_KEY_SOURCE:?set IAM_TOKEN_ENCRYPTION_KEY_SOURCE}
+        target: /run/secrets/iam-token-encryption-key
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${PERSONAL_KEY_SERVICE_SECRET_SOURCE:?set PERSONAL_KEY_SERVICE_SECRET_SOURCE}
+        target: /run/secrets/personal-key-service-secret
+        read_only: true
+        bind: {create_host_path: false}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  retention-worker:
+    <<: *service
+    networks: [data]
+    command: [python, -m, app.retention_worker]
+    environment:
+      <<: *database-env
+      RETENTION_INTERVAL_SECONDS: '300'
+      RETENTION_BATCH_SIZE: '500'
+    depends_on:
+      postgres: {condition: service_healthy}
+      db-migrate: {condition: service_completed_successfully}
+
+networks:
+  data: {internal: true}
+  outbound: {}
+
+volumes:
+  postgres-data:
+  redis-data:
+  platform-files:

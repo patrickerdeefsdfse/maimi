@@ -1,0 +1,114 @@
+{
+  "DOWNLOAD_PINS": {
+    "manifest": "85d2a6398cb255b7d203b64bc5e2747ce2aa95db3940e5449d47dd27cc1c8a6c",
+    "r41_manifest": "289c84c2d5b4fd9a22b5acc9cd3cd2e011912a58905795f10835338f3ab44a9c",
+    "release": {
+      "filename": "MEGMEET-AI-Setup-0.13.0-x64.exe",
+      "schema_version": 1,
+      "sha256": "9b514d01af9283d1918e50d6d9c46cb86f87aebcdb8177dea6cd0c97e42be1d5",
+      "size_bytes": 304515585,
+      "status": "published",
+      "version": "0.13.0"
+    },
+    "zip": {
+      "filename": "MEGMEET-Download-AutoUpdate-0.13.0-r41-20261008.zip",
+      "sha256": "75e20e5c74f8a9b44dec823351b48793e436470c686049a6aa8230e1c514e8e6",
+      "size_bytes": 305933646
+    }
+  },
+  "EMPTY_OVERLAYS": [
+    "PERSONAL_CLOUD_WORKER_OVERLAY_DIR",
+    "PERSONAL_CLOUD_HISTORY_OVERLAY_DIR",
+    "PERSONAL_CLOUD_WORKFLOW_OVERLAY_DIR",
+    "PERSONAL_CLOUD_RUNTIME_FOLLOWUP_OVERLAY_DIR",
+    "PERSONAL_CLOUD_CANARY_WORKER_IMAGE",
+    "PERSONAL_CLOUD_CANARY_OWNERS",
+    "PERSONAL_CLOUD_CANARY_OVERLAY_DIR"
+  ],
+  "IDS": {
+    "db-migrate": "44291dfffc58682e8b791ba45f3285ca92f56c30623afcf824b4537a801b89d4",
+    "downloads": "ca7c24c2520a79e74d82c5ca52f12a980c66946d9de539ddd34ecccc8ee1ab87",
+    "gateway": "cc8c4607232f6666be2eef1af564e57f80578cc40f41fc1a7910b561f973b0df",
+    "office-service": "e7444311557bcb1e34c5a623fb2f286453ea8841989c59f917a41f4a69681300",
+    "personal-cloud-manager": "8fe120c75a0919eb7656b5d6c189811cdf10ba036adc1a2d3c4aacd1c6cd4dc3",
+    "postgres": "03663601f0917f3d85a8ac246810c33f7acf82343800da3a83b61ed663ca5199",
+    "redis": "a6b499d6f8f7413bac09cd1bd7d31d718d782f0abe3eec5c9b647ba1b704b97f",
+    "retention-worker": "d0899a25f26f83f02fce45fffff3e8d99247d40d29ff3dfc880ea6f501f92ba7"
+  },
+  "MANIFEST": "289c84c2d5b4fd9a22b5acc9cd3cd2e011912a58905795f10835338f3ab44a9c",
+  "TARGETS": {
+    "/app/app/desktop_auth.py": {
+      "file": "public/desktop_auth.py",
+      "sha256": "97c3c6597f113f20b5df11cc98cefa23848f01dd258dbbf4f458aefdc6f5de41"
+    },
+    "/app/app/desktop_device_auth.py": {
+      "file": "public/desktop_device_auth.py",
+      "sha256": "36242c30e507e079af48b08d66e3d7af606b68438f22221888b2ba3c4c671f67"
+    },
+    "/app/app/iam_oauth.py": {
+      "file": "public/iam_oauth.py",
+      "sha256": "df8df1a96e763c93bcd386ea7d2778e92d04e0cda15739c4c7b0bdb19197f3f9"
+    },
+    "/app/app/main.py": {
+      "file": "public/main.py",
+      "sha256": "2feacd73940e288bcc170bea63f33dc72e8189db725717f2fe98b4dc54b70353"
+    },
+    "/app/app/persistent_login.py": {
+      "file": "public/persistent_login.py",
+      "sha256": "04b28638fa75b044b9cb6782ebbf1785c2fa92e6ef74098d49f1e925062fe14c"
+    },
+    "/app/app/personal_cloud.py": {
+      "file": "public/personal_cloud.py",
+      "sha256": "7088ced6067d68846a1341ca6a31d27cc4a4a33f627c87caaaed624e63e978a6"
+    },
+    "/app/app/personal_cloud_static.py": {
+      "file": "public/personal_cloud_static.py",
+      "sha256": "69df9a4b4d533d76785f1512b644474da4b7baeff77ce09b739ed2468a10dc19"
+    },
+    "/app/app/personal_cloud_web.py": {
+      "file": "public/personal_cloud_web.py",
+      "sha256": "50abe2ca423f51441abffd878392517dcedeeb42874e58f59c342a02832d4e8d"
+    },
+    "/app/app/personal_model_proxy.py": {
+      "file": "public/personal_model_proxy.py",
+      "sha256": "ae61d7d7d43af322508be6305124e7c29703d9fc35c488ffd1949ad679824153"
+    },
+    "/app/app/project_platform.py": {
+      "file": "public/project_platform.py",
+      "sha256": "d10ce3d4caf95dfbfd4ca3b7061c43cea5e03d43ad41f1acec0d7ea050efe378"
+    },
+    "/app/maimi_projects/card_batch.py": {
+      "file": "public/maimi_projects/card_batch.py",
+      "sha256": "6fb9990e61f412b5b534c58e4902cd206fbf2594b33d42d9b8d82d213637bed1"
+    },
+    "/app/maimi_projects/card_renderer.py": {
+      "file": "public/maimi_projects/card_renderer.py",
+      "sha256": "07d9aaa17a1782a9ad0d19d9d3d9fab66d11814bc72d3e59dbb5fb8cb554f8d5"
+    },
+    "/app/maimi_projects/disk_alerts.py": {
+      "file": "public/maimi_projects/disk_alerts.py",
+      "sha256": "0fba882a4b81c103ba7c492bf6d2618a14b4d22e8588183eafd4d6041fe2e96e"
+    },
+    "/app/maimi_projects/disk_semantics.py": {
+      "file": "public/maimi_projects/disk_semantics.py",
+      "sha256": "d98ad04493d4e7affe0c93780f446be6cc70c3ee7b9ed59109566be48435c13a"
+    },
+    "/app/maimi_projects/monitor.py": {
+      "file": "public/maimi_projects/monitor.py",
+      "sha256": "5af9ba89d972dda09986597f0a899d7a95ef9a157227293cce90d20d8499cc57"
+    },
+    "/app/maimi_projects/monitor_projection.py": {
+      "file": "public/maimi_projects/monitor_projection.py",
+      "sha256": "7d5eea49d2a65ec7dd37ec1947f6c786fac5895e508b775ce2d4240dbc19e8c9"
+    },
+    "/app/maimi_projects/service.py": {
+      "file": "public/maimi_projects/service.py",
+      "sha256": "facf130820c34047f313a2b0849db62e6997f8dd57e727766331787d2f8b287e"
+    },
+    "/opt/personal-cloud/manager.py": {
+      "file": "public/manager.py",
+      "sha256": "302a4666e9ce8ea7b292a2bbc4ae4bd929e30488042c9ef72155836908192bb8"
+    }
+  },
+  "WORKER_IMAGE": "sha256:54bcb969297e7d878ed19a38a80eb470787321eb891247ea9f23122b7525f389"
+}

@@ -1,0 +1,62 @@
+{
+  "notices": [
+    {
+      "package": "@deepseek-ai/dsh-api-workspace-controller",
+      "path": "third_party/runtime-notices/@deepseek-ai/dsh-api-workspace-controller/LICENSE",
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+    },
+    {
+      "package": "@deepseek-ai/dsh-client-ui-chat",
+      "path": "third_party/runtime-notices/@deepseek-ai/dsh-client-ui-chat/LICENSE",
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+    },
+    {
+      "package": "@deepseek-ai/dsh-client-ui-conversation",
+      "path": "third_party/runtime-notices/@deepseek-ai/dsh-client-ui-conversation/LICENSE",
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+    },
+    {
+      "package": "@deepseek-ai/dsh-client-ui-settings-models",
+      "path": "third_party/runtime-notices/@deepseek-ai/dsh-client-ui-settings-models/LICENSE",
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+    },
+    {
+      "package": "@deepseek-ai/dsh-client-ui-workspace",
+      "path": "third_party/runtime-notices/@deepseek-ai/dsh-client-ui-workspace/LICENSE",
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+    },
+    {
+      "package": "@dshp/file-change-viewer",
+      "path": "third_party/runtime-notices/@dshp/file-change-viewer/LICENSE",
+      "sha256": "e84e34a3d3a8436a64d1fae3bdb75bd83b91316c0cd7503563d0b029871169d2"
+    },
+    {
+      "package": "@dshp/token-meter",
+      "path": "third_party/runtime-notices/@dshp/token-meter/LICENSE",
+      "sha256": "e84e34a3d3a8436a64d1fae3bdb75bd83b91316c0cd7503563d0b029871169d2"
+    },
+    {
+      "package": "@dshp/web-style",
+      "path": "third_party/runtime-notices/@dshp/web-style/LICENSE",
+      "sha256": "e84e34a3d3a8436a64d1fae3bdb75bd83b91316c0cd7503563d0b029871169d2"
+    },
+    {
+      "package": "@dshp/widget-kit",
+      "path": "third_party/runtime-notices/@dshp/widget-kit/LICENSE",
+      "sha256": "e84e34a3d3a8436a64d1fae3bdb75bd83b91316c0cd7503563d0b029871169d2"
+    }
+  ],
+  "packages_with_checked_in_overlays": [
+    "@deepseek-ai/dsh-api-workspace-controller",
+    "@deepseek-ai/dsh-client-ui-chat",
+    "@deepseek-ai/dsh-client-ui-conversation",
+    "@deepseek-ai/dsh-client-ui-settings-models",
+    "@deepseek-ai/dsh-client-ui-workspace",
+    "@dshp/file-change-viewer",
+    "@dshp/token-meter",
+    "@dshp/web-style",
+    "@dshp/widget-kit"
+  ],
+  "packages_without_notice_in_pinned_archive": [],
+  "schema": "maimi-runtime-notices-v1"
+}

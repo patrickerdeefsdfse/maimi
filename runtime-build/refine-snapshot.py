@@ -1,0 +1,11 @@
+from pathlib import Path
+p=Path('output/dsh020-rc2-r41-20261008/runtime/overlay/opt/personal-cloud/history-runtime-snapshot.mjs')
+s=p.read_text(encoding='utf-8')
+s=s.replace('export async function preserveRuntimeGeneration({stateRoot,context,items,deleted,maxBytes,onCheckpoint=async()=>{}}){','export async function preserveRuntimeGeneration(options){\n try{return await preserve(options);}catch(error){\n  if(["ENOSPC","EDQUOT","EACCES","EROFS","EIO"].includes(error.code))I.fail("RUNTIME_SNAPSHOT_STORAGE_UNAVAILABLE");\n  throw error;\n }\n}\nasync function preserve({stateRoot,context,items,deleted,maxBytes,onCheckpoint=async()=>{}}){')
+s=s.replace(' await I.safeDirectory(backups);\n for(const entry of record.items){',' await I.safeDirectory(backups);\n if((await readdir(backups)).some(n=>!record.items.some(e=>I.digest(e.sessionId)===n)))I.fail("RUNTIME_SNAPSHOT_INVALID");\n for(const entry of record.items){')
+s=s.replace("   await I.safeDirectory(parent);await I.safeDirectory(payload);", "   await I.safeDirectory(parent);await I.safeDirectory(payload);\n   if((await readdir(parent)).some(n=>n!=='payload'))I.fail('RUNTIME_SNAPSHOT_INVALID');")
+s=s.replace("  for(const f of entry.files){", "  if((await readdir(parent)).some(n=>n!=='payload'&&!entry.files.some(f=>f.name+'.partial'===n)))I.fail('RUNTIME_SNAPSHOT_INVALID');\n  for(const f of entry.files){",1)
+p.write_text(s,encoding='utf-8')
+p=Path('output/dsh020-rc2-r41-20261008/runtime/overlay/opt/personal-cloud/history-native.mjs')
+s=p.read_text(encoding='utf-8').replace('// Runtime compatibility and persisted format are separate contracts. These two\n// releases share format 3; future packages still require an explicit review.','// Runtime compatibility and persisted format are separate contracts. This\n// exact release is audited for V4; newer packages require explicit review.')
+p.write_text(s,encoding='utf-8')

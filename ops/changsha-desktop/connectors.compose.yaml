@@ -1,0 +1,18 @@
+# Optional overlay for a future candidate release. Existing r9/r10 images do
+# not contain these connectors; do not add this to their deployment commands.
+services:
+  gateway:
+    environment:
+      DINGTALK_CLIENT_ID: ${DINGTALK_CLIENT_ID:-}
+      DINGTALK_CORP_ID: ${DINGTALK_CORP_ID:-}
+      DINGTALK_CLIENT_SECRET_FILE: /run/connectors/dingtalk-client-secret
+      DINGTALK_ACCOUNT_MAP_FILE: /run/connectors/dingtalk-accounts.json
+      DINGTALK_ROBOT_CODE: ${DINGTALK_ROBOT_CODE:-}
+      DINGTALK_OAUTH_SCOPES: ${DINGTALK_OAUTH_SCOPES:-openid corpid Contact.User.Read Calendar.Event.Read Calendar.Event.Write Todo.Todo.Write}
+      BRAVE_SEARCH_API_KEY_FILE: ${BRAVE_SEARCH_API_KEY_FILE:-}
+    volumes:
+      - type: bind
+        source: ${CONNECTOR_CONFIG_SOURCE:?set CONNECTOR_CONFIG_SOURCE only when enabling connectors overlay}
+        target: /run/connectors
+        read_only: true
+        bind: {create_host_path: false}

@@ -1,0 +1,60 @@
+# Optional local candidate; only a new verified release may ship this overlay.
+# Old r11 images do not contain the Gateway office bridge; never overlay old ZIPs.
+services:
+  gateway:
+    networks:
+      office: {}
+    environment:
+      OFFICE_SERVICE_URL: http://office-service:8093
+      OFFICE_SERVICE_SECRET_FILE: /run/secrets/office-service-secret
+    volumes:
+      - type: bind
+        source: ${OFFICE_SERVICE_SECRET_SOURCE:?run configure-office.sh first}
+        target: /run/secrets/office-service-secret
+        read_only: true
+        bind: {create_host_path: false}
+    depends_on:
+      office-service: {condition: service_healthy}
+  office-service:
+    image: megmeet-office-service:shared-20260921-candidate
+    networks: [office]
+    restart: unless-stopped
+    user: '10001:10001'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    # Initial sizing, not a capacity claim. Verify host RAM before tuning.
+    mem_limit: ${OFFICE_MEMORY_LIMIT:-8g}
+    cpus: ${OFFICE_CPU_LIMIT:-2}
+    pids_limit: 256
+    stop_grace_period: 20s
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=64m,mode=1777
+      - /var/lib/megmeet-office/jobs:rw,nosuid,noexec,size=${OFFICE_SPOOL_BYTES:-2147483648},uid=10001,gid=10001,mode=0700
+    environment:
+      OFFICE_SERVICE_SECRET_FILE: /run/secrets/office-service-secret
+      OFFICE_JOB_ROOT: /var/lib/megmeet-office/jobs
+      OFFICE_ENGINE_PATH: /opt/office/engine.py
+      OFFICE_PYTHON: /opt/office/venv/bin/python
+      OFFICE_CONCURRENCY: ${OFFICE_CONCURRENCY:-2}
+      OFFICE_QUEUE_LIMIT: ${OFFICE_QUEUE_LIMIT:-16}
+      # Worker enforces one running job per owner; this bounds unfinished jobs.
+      OFFICE_OWNER_PENDING: ${OFFICE_OWNER_PENDING:-4}
+      OFFICE_MAX_JOBS: ${OFFICE_MAX_JOBS:-64}
+      OFFICE_SPOOL_BYTES: ${OFFICE_SPOOL_BYTES:-2147483648}
+      OFFICE_TTL_SECONDS: ${OFFICE_TTL_SECONDS:-900}
+      OFFICE_TIMEOUT_SECONDS: ${OFFICE_TIMEOUT_SECONDS:-120}
+      OFFICE_CHILD_MEMORY_BYTES: ${OFFICE_CHILD_MEMORY_BYTES:-3221225472}
+    volumes:
+      - type: bind
+        source: ${OFFICE_SERVICE_SECRET_SOURCE:?run configure-office.sh first}
+        target: /run/secrets/office-service-secret
+        read_only: true
+        bind: {create_host_path: false}
+    healthcheck:
+      test: [CMD, /opt/office/venv/bin/python, -I, -B, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8093/health',timeout=3).read()"]
+      interval: 10s
+      timeout: 4s
+      retries: 12
+networks:
+  office: {internal: true}

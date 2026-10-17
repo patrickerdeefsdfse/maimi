@@ -1,0 +1,64 @@
+# Prepared deployment overlay, not applied to the company server.
+# Supply the application's approved registration values and server secret files.
+x-iam-directory-env: &iam-directory-env
+  IAM_DIRECTORY_ORG_URL: ${IAM_DIRECTORY_ORG_URL:?set IAM_DIRECTORY_ORG_URL}
+  IAM_DIRECTORY_ACCOUNT_URL: ${IAM_DIRECTORY_ACCOUNT_URL:?set IAM_DIRECTORY_ACCOUNT_URL}
+  IAM_DIRECTORY_API_KEY: ${IAM_DIRECTORY_API_KEY:?set IAM_DIRECTORY_API_KEY}
+  IAM_DIRECTORY_API_SECRET_FILE: /run/secrets/iam-directory-api-secret
+  IAM_DIRECTORY_SNAPSHOT_FILE: /var/lib/megmeet/iam/directory.json
+  IAM_DIRECTORY_SNAPSHOT_MAX_AGE_SECONDS: ${IAM_DIRECTORY_SNAPSHOT_MAX_AGE_SECONDS:-300}
+  IAM_DIRECTORY_SYNC_INTERVAL_SECONDS: ${IAM_DIRECTORY_SYNC_INTERVAL_SECONDS:-120}
+  IAM_DIRECTORY_ALLOW_HTTP: 'false'
+  PYTHONDONTWRITEBYTECODE: '1'
+
+services:
+  gateway:
+    environment:
+      <<: *iam-directory-env
+      AUTH_MODE: iam_direct
+      AUTH_REQUIRED: 'true'
+      IAM_DEV_MODE: 'false'
+      IAM_BASE_URL: ${IAM_BASE_URL:?set IAM_BASE_URL}
+      IAM_AUTHORIZATION_BASE_URL: ${IAM_AUTHORIZATION_BASE_URL:?set IAM_AUTHORIZATION_BASE_URL}
+      IAM_CLIENT_ID: ${IAM_CLIENT_ID:?set IAM_CLIENT_ID}
+      IAM_CLIENT_SECRET_FILE: /run/secrets/iam-client-secret
+      IAM_PUBLIC_ORIGIN: ${IAM_PUBLIC_ORIGIN:?set IAM_PUBLIC_ORIGIN}
+      IAM_REDIRECT_URI: ${IAM_REDIRECT_URI:?register IAM_REDIRECT_URI}
+      IAM_POST_LOGIN_PATH: ${IAM_POST_LOGIN_PATH:-/v1/iam/session}
+      IAM_LOGOUT_RETURN_URI: ${IAM_LOGOUT_RETURN_URI:?set IAM_LOGOUT_RETURN_URI}
+      IAM_SESSION_TTL_SECONDS: ${IAM_SESSION_TTL_SECONDS:-7200}
+    command: [uvicorn, app.main:app, --host, '0.0.0.0', --port, '8080', --no-access-log]
+    volumes:
+      - type: bind
+        source: ${IAM_CLIENT_SECRET_SOURCE:?set IAM_CLIENT_SECRET_SOURCE}
+        target: /run/secrets/iam-client-secret
+        read_only: true
+        bind: {create_host_path: false}
+      - iam-directory:/var/lib/megmeet/iam:ro
+    depends_on:
+      iam-directory: {condition: service_healthy}
+
+  iam-directory:
+    image: ${GATEWAY_IMAGE:-megmeet-ai-gateway:local}
+    profiles: [core]
+    restart: unless-stopped
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    environment: *iam-directory-env
+    command: [python, -m, app.iam_directory, --watch]
+    volumes:
+      - type: bind
+        source: ${IAM_DIRECTORY_SECRET_SOURCE:?set IAM_DIRECTORY_SECRET_SOURCE}
+        target: /run/secrets/iam-directory-api-secret
+        read_only: true
+        bind: {create_host_path: false}
+      - iam-directory:/var/lib/megmeet/iam
+    healthcheck:
+      test: [CMD, python, -m, app.iam_directory, --check]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  iam-directory:

@@ -1,0 +1,201 @@
+name: ${COMPOSE_PROJECT_NAME:-megmeet-ai-new}
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    profiles: [core]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-megmeet_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-megmeet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    ports: ["127.0.0.1:${POSTGRES_PORT:-15432}:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7}
+    profiles: [core]
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["127.0.0.1:${REDIS_PORT:-16379}:6379"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  db-migrate:
+    build: ./services/gateway
+    image: ${GATEWAY_IMAGE:-megmeet-ai-gateway:local}
+    profiles: [core]
+    restart: "no"
+    command: ["python", "-m", "app.migrate"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-megmeet}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-megmeet_ai}
+      MIGRATIONS_DIR: /app/migrations
+    volumes:
+      - ./db/migrations:/app/migrations:ro
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  gateway:
+    build: ./services/gateway
+    image: ${GATEWAY_IMAGE:-megmeet-ai-gateway:local}
+    profiles: [core]
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-megmeet}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-megmeet_ai}
+      REDIS_URL: redis://redis:6379/0
+      # New installations use the current IAM document. The direct-IAM overlay
+      # supplies registration, server secrets and directory synchronization.
+      AUTH_MODE: ${AUTH_MODE:-iam_direct}
+      AUTH_REQUIRED: ${AUTH_REQUIRED:-false}
+      AUTH_QUERY_USER_URL: ${AUTH_QUERY_USER_URL:-https://platformai-test.megmeet.com/v1/auth/query-user}
+      AUTH_VERIFY_ACCESS_URL: ${AUTH_VERIFY_ACCESS_URL:-https://platformai-test.megmeet.com/v1/endpoint/verify-access}
+      AUTH_TLS_VERIFY: ${AUTH_TLS_VERIFY:-true}
+      BROWSER_SMOKE_ENABLED: ${BROWSER_SMOKE_ENABLED:-false}
+      DSH_ENABLED: ${DSH_ENABLED:-false}
+      DSH_PROFILE: ${DSH_PROFILE:-sdk}
+      DSH_WORKSPACE_ROOT: ${DSH_WORKSPACE_ROOT:-/var/lib/megmeet/workspaces}
+      DSH_HOME_ROOT: ${DSH_HOME_ROOT:-/var/lib/megmeet/dsh}
+      HOME: ${DSH_RUNTIME_HOME:-/var/lib/megmeet/dsh}
+      XDG_CACHE_HOME: ${DSH_CACHE_HOME:-/var/lib/megmeet/dsh/.cache}
+      DSH_MAX_TOKENS: ${DSH_MAX_TOKENS:-4096}
+      DSH_PROVIDER_MAP_JSON: ${DSH_PROVIDER_MAP_JSON:-{"tokenkey":"deepseek-official"}}
+      TOKENKEY_ENABLED: ${TOKENKEY_ENABLED:-true}
+      TOKENKEY_BASE_URL: ${TOKENKEY_BASE_URL:-https://tokenkey.megmeet.com/v1}
+      TOKENKEY_API_KEY_FILE: ${TOKENKEY_API_KEY_FILE:-/run/secrets/tokenkey-api-key}
+      TOKENKEY_TIMEOUT_SECONDS: ${TOKENKEY_TIMEOUT_SECONDS:-120}
+      TOKENKEY_TLS_VERIFY: ${TOKENKEY_TLS_VERIFY:-true}
+      MIGRATIONS_REQUIRED_VERSION: ${MIGRATIONS_REQUIRED_VERSION:-005_history_write.sql}
+      MODEL_CATALOG_JSON: ${MODEL_CATALOG_JSON:-}
+      MODEL_CATALOG_CACHE_SECONDS: ${MODEL_CATALOG_CACHE_SECONDS:-15}
+    ports: ["127.0.0.1:${GATEWAY_PORT:-18080}:8080"]
+    extra_hosts:
+      - "${TOKENKEY_HOST:-tokenkey.megmeet.com}:${TOKENKEY_IP:-10.4.1.112}"
+      - "platformai-test.megmeet.com:10.4.0.202"
+    volumes:
+      - gateway-workspaces:/var/lib/megmeet/workspaces
+      - gateway-dsh:/var/lib/megmeet/dsh
+      - ${TOKENKEY_SECRET_FILE:-/data/ai-platform/secrets/model-tokenkey-api-key}:/run/secrets/tokenkey-api-key:ro
+    networks:
+      - default
+      - common-net
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  dsh-web-host:
+    image: ${DSH_HOST_IMAGE:-${GATEWAY_IMAGE:-megmeet-ai-gateway:local}}
+    profiles: [dsh-web-test]
+    restart: unless-stopped
+    environment:
+      DSH_HOME: ${DSH_WEB_HOME:-/var/lib/megmeet/dsh}
+      HOME: ${DSH_WEB_HOME:-/var/lib/megmeet/dsh}
+      DSH_TELEMETRY_DISABLED: "1"
+      DSH_WEB_PORT: ${DSH_WEB_PORT:-3085}
+      DSH_BRIDGE_PORT: ${DSH_BRIDGE_PORT:-3084}
+      DSH_TRUSTED_HOSTS: ${DSH_TRUSTED_HOSTS:-platform-ai.megmeet.com,platform-ai.megmeet.com:443}
+      TOKENKEY_BASE_URL: ${TOKENKEY_BASE_URL:-https://tokenkey.megmeet.com/v1}
+      TOKENKEY_API_KEY_FILE: /run/secrets/tokenkey-api-key
+    command: ["python", "/opt/megmeet/dsh-web-host/start.py"]
+    extra_hosts:
+      - "${TOKENKEY_HOST:-tokenkey.megmeet.com}:${TOKENKEY_IP:-10.4.1.112}"
+      - "platformai-test.megmeet.com:10.4.0.202"
+    volumes:
+      - gateway-workspaces:/var/lib/megmeet/workspaces
+      - gateway-dsh:/var/lib/megmeet/dsh
+      - ./services/dsh-web-host/start.py:/opt/megmeet/dsh-web-host/start.py:ro
+      - ${TOKENKEY_SECRET_FILE:-/data/ai-platform/secrets/model-tokenkey-api-key}:/run/secrets/tokenkey-api-key:ro
+    expose: ["3084"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1', 3084), 3); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      gateway: {condition: service_started}
+    networks:
+      - default
+      - common-net
+
+  retention-worker:
+    build: ./services/gateway
+    profiles: [core]
+    restart: unless-stopped
+    command: ["python", "-m", "app.retention_worker"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-megmeet}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-megmeet_ai}
+      RETENTION_INTERVAL_SECONDS: ${RETENTION_INTERVAL_SECONDS:-3600}
+      RETENTION_BATCH_SIZE: ${RETENTION_BATCH_SIZE:-500}
+    depends_on:
+      postgres: {condition: service_healthy}
+      db-migrate: {condition: service_completed_successfully}
+
+  etcd:
+    image: ${ETCD_IMAGE:-quay.io/coreos/etcd:v3.5.15}
+    profiles: [vector]
+    command: >-
+      etcd --advertise-client-urls=http://127.0.0.1:2379
+      --listen-client-urls=http://0.0.0.0:2379
+      --data-dir=/etcd
+    volumes: [etcd-data:/etcd]
+
+  minio:
+    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2024-06-13T15-53-26Z}
+    profiles: [vector]
+    command: ["minio", "server", "/minio_data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin-local-only
+    volumes: [minio-data:/minio_data]
+
+  milvus:
+    image: ${MILVUS_IMAGE:-milvusdb/milvus:v2.4.13}
+    profiles: [vector]
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    ports: ["127.0.0.1:${MILVUS_PORT:-19530}:19530"]
+    depends_on: [etcd, minio]
+    volumes: [milvus-data:/var/lib/milvus]
+
+  elasticsearch:
+    image: ${ELASTIC_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:8.15.3}
+    profiles: [search]
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports: ["127.0.0.1:${ELASTIC_PORT:-19200}:9200"]
+    volumes: [elasticsearch-data:/usr/share/elasticsearch/data]
+
+volumes:
+  postgres-data:
+  redis-data:
+  etcd-data:
+  minio-data:
+  milvus-data:
+  elasticsearch-data:
+  gateway-workspaces:
+  gateway-dsh:
+
+networks:
+  common-net:
+    external: true

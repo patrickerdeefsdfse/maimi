@@ -1,0 +1,292 @@
+name: megmeet-dev-local
+
+# Deliberately independent of ../compose.yaml and its company network/secrets.
+x-runtime: &runtime
+  networks: [local-only]
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+
+x-iam-directory-environment: &iam-directory-environment
+  IAM_DIRECTORY_ORG_URL: http://mock-company:8081/esc-idm/api/v1/org/listAll
+  IAM_DIRECTORY_ACCOUNT_URL: http://mock-company:8081/esc-idm/api/v1/account/listAll
+  IAM_DIRECTORY_ALLOW_HTTP: 'true'
+  IAM_DIRECTORY_API_KEY: synthetic-directory-key
+  IAM_DIRECTORY_API_SECRET_FILE: /app/local-iam-directory-secret.txt
+  IAM_DIRECTORY_SNAPSHOT_FILE: /var/lib/megmeet/iam/directory.json
+  IAM_DIRECTORY_SNAPSHOT_MAX_AGE_SECONDS: '300'
+  IAM_DIRECTORY_SYNC_INTERVAL_SECONDS: '120'
+  PYTHONDONTWRITEBYTECODE: '1'
+
+services:
+  postgres:
+    image: ${LOCAL_POSTGRES_IMAGE:-postgres:16}
+    platform: linux/amd64
+    networks: [local-only]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: megmeet_dev
+      POSTGRES_USER: megmeet_dev
+      POSTGRES_PASSWORD: local-synthetic-database-only
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U megmeet_dev -d megmeet_dev']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    <<: *runtime
+    image: ${LOCAL_REDIS_IMAGE:-redis:7}
+    platform: linux/amd64
+    user: redis
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  mock-company:
+    <<: *runtime
+    image: megmeet-dev-mock:local
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.mock
+      args:
+        PYTHON_IMAGE: ${LOCAL_PYTHON_IMAGE:-python:3.12-slim}
+    read_only: true
+    user: '10001:10001'
+    environment:
+      PYTHONDONTWRITEBYTECODE: '1'
+    volumes:
+      - ./mock_company.py:/app/mock_company.py:ro
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=2).read()"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  db-migrate:
+    <<: *runtime
+    image: megmeet-dev-gateway:local
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: dev-local/Dockerfile.gateway
+      args:
+        PYTHON_IMAGE: ${LOCAL_PYTHON_IMAGE:-python:3.12-slim}
+    restart: 'no'
+    command: [python, -m, app.migrate]
+    environment:
+      DATABASE_URL: postgresql://megmeet_dev:local-synthetic-database-only@postgres:5432/megmeet_dev
+      MIGRATIONS_DIR: /app/migrations
+      PYTHONDONTWRITEBYTECODE: '1'
+    volumes:
+      - ../services/gateway/app:/app/app:ro
+      - ../db/migrations:/app/migrations:ro
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  gateway:
+    <<: *runtime
+    networks: [local-only, cloud-workers]
+    image: megmeet-dev-gateway:local
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: dev-local/Dockerfile.gateway
+      args:
+        PYTHON_IMAGE: ${LOCAL_PYTHON_IMAGE:-python:3.12-slim}
+    read_only: true
+    command: [uvicorn, app.main:app, --host, '0.0.0.0', --port, '8080', --no-access-log]
+    environment:
+      <<: *iam-directory-environment
+      DATABASE_URL: postgresql://megmeet_dev:local-synthetic-database-only@postgres:5432/megmeet_dev
+      REDIS_URL: redis://redis:6379/0
+      AUTH_REQUIRED: 'true'
+      AUTH_MODE: iam_direct
+      IAM_DEV_MODE: 'true'
+      IAM_BASE_URL: http://mock-company:8081
+      IAM_AUTHORIZATION_BASE_URL: http://127.0.0.1:28090
+      IAM_CLIENT_ID: synthetic-client
+      IAM_CLIENT_SECRET_FILE: /app/local-iam-client-secret.txt
+      IAM_TOKEN_ENCRYPTION_KEY_FILE: /app/local-iam-token-encryption-key.txt
+      IAM_REDIRECT_URI: http://127.0.0.1:28090/v1/iam/callback
+      IAM_PUBLIC_ORIGIN: http://127.0.0.1:28090
+      IAM_POST_LOGIN_PATH: /v1/iam/session
+      IAM_LOGOUT_RETURN_URI: http://127.0.0.1:28090/v1/iam/session
+      PERSONAL_KEY_ADAPTER: tokenkey
+      PERSONAL_KEY_TOKENKEY_URL: http://mock-company:8081/api/external/user-credentials
+      PERSONAL_MODEL_BASE_URL: http://mock-company:8081/personal-model/v1
+      PERSONAL_MODEL_SIMULATION: 'true'
+      HYBRID_TEST_FIXTURES: 'true'
+      PERSONAL_KEY_SERVICE_SECRET_FILE: /app/local-personal-key-secret.txt
+      PERSONAL_CLOUD_MANAGER_URL: http://personal-cloud-manager:8092
+      PERSONAL_CLOUD_MANAGER_SECRET_FILE: /app/local-personal-cloud-manager-secret.txt
+      BROWSER_SMOKE_ENABLED: 'false'
+      DSH_ENABLED: 'false'
+      TOKENKEY_ENABLED: 'true'
+      TOKENKEY_BASE_URL: http://mock-company:8081/v1
+      TOKENKEY_API_KEY_FILE: /app/local-synthetic-key.txt
+      TOKENKEY_TIMEOUT_SECONDS: '10'
+      TOKENKEY_TLS_VERIFY: 'true'
+      MIGRATIONS_REQUIRED_VERSION: 014_personal_storage_lifecycle.sql
+      PLATFORM_FILE_ROOT: /var/lib/megmeet/files
+      CLOUD_WORKSPACE_STORAGE_LIMIT_BYTES: ${CLOUD_WORKSPACE_STORAGE_LIMIT_BYTES:-268435456}
+      CLOUD_TASK_GLOBAL_LIMIT: ${CLOUD_TASK_GLOBAL_LIMIT:-8}
+      CLOUD_TASK_WORKSPACE_LIMIT: ${CLOUD_TASK_WORKSPACE_LIMIT:-4}
+      CLOUD_TASK_EMPLOYEE_LIMIT: ${CLOUD_TASK_EMPLOYEE_LIMIT:-2}
+      CLOUD_TASK_TIMEOUT_SECONDS: ${CLOUD_TASK_TIMEOUT_SECONDS:-120}
+      PYTHONDONTWRITEBYTECODE: '1'
+      HTTP_PROXY: ''
+      HTTPS_PROXY: ''
+      ALL_PROXY: ''
+      NO_PROXY: '*'
+      http_proxy: ''
+      https_proxy: ''
+      all_proxy: ''
+      no_proxy: '*'
+    volumes:
+      - ../services/gateway/app:/app/app:ro
+      - ./local-synthetic-key.txt:/app/local-synthetic-key.txt:ro
+      - ./local-iam-client-secret.txt:/app/local-iam-client-secret.txt:ro
+      - ./local-iam-token-encryption-key.txt:/app/local-iam-token-encryption-key.txt:ro
+      - ./local-personal-key-secret.txt:/app/local-personal-key-secret.txt:ro
+      - ./local-personal-cloud-manager-secret.txt:/app/local-personal-cloud-manager-secret.txt:ro
+      - iam-directory:/var/lib/megmeet/iam:ro
+      - platform-files:/var/lib/megmeet/files
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-migrate: {condition: service_completed_successfully}
+      mock-company: {condition: service_healthy}
+      iam-directory: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=3).read()"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  retention-worker:
+    <<: *runtime
+    image: megmeet-dev-gateway:local
+    command: [python, -m, app.retention_worker]
+    networks: [local-only, cloud-workers]
+    environment:
+      DATABASE_URL: postgresql://megmeet_dev:local-synthetic-database-only@postgres:5432/megmeet_dev
+      PERSONAL_CLOUD_HISTORY_ENABLED: 'true'
+      PERSONAL_CLOUD_MANAGER_URL: http://personal-cloud-manager:8092
+      PERSONAL_CLOUD_MANAGER_SECRET_FILE: /run/secrets/personal-cloud-manager
+      RETENTION_INTERVAL_SECONDS: '300'
+      PYTHONDONTWRITEBYTECODE: '1'
+    volumes:
+      - ../services/gateway/app:/app/app:ro
+      - ./local-personal-cloud-manager-secret.txt:/run/secrets/personal-cloud-manager:ro
+    depends_on:
+      db-migrate: {condition: service_completed_successfully}
+  personal-cloud-manager:
+    image: megmeet-personal-cloud-manager:local
+    build:
+      context: ..
+      dockerfile: services/personal-cloud/Dockerfile.manager
+    networks: [cloud-workers]
+    restart: unless-stopped
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    environment:
+      PERSONAL_CLOUD_MANAGER_SECRET_FILE: /run/secrets/personal-cloud-manager
+      PERSONAL_CLOUD_WORKER_IMAGE: megmeet-personal-dsh:local
+      PERSONAL_CLOUD_WORKER_NETWORK: megmeet-dev-local_cloud-workers
+      PERSONAL_CLOUD_MANAGER_NAMESPACE: megmeet-personal-dev-v1
+      PERSONAL_CLOUD_MAX_ACTIVE_HOSTS: ${PERSONAL_CLOUD_MAX_ACTIVE_HOSTS:-2}
+      PERSONAL_CLOUD_IDLE_SECONDS: ${PERSONAL_CLOUD_IDLE_SECONDS:-300}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./local-personal-cloud-manager-secret.txt:/run/secrets/personal-cloud-manager:ro
+    tmpfs: ['/tmp:rw,nosuid,noexec,size=16m']
+
+  iam-directory:
+    <<: *runtime
+    image: megmeet-dev-gateway:local
+    platform: linux/amd64
+    read_only: true
+    command: [python, -m, app.iam_directory, --watch]
+    environment: *iam-directory-environment
+    volumes:
+      - ../services/gateway/app:/app/app:ro
+      - ./local-iam-directory-secret.txt:/app/local-iam-directory-secret.txt:ro
+      - iam-directory:/var/lib/megmeet/iam
+    depends_on:
+      mock-company: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -m, app.iam_directory, --check]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  dsh:
+    <<: *runtime
+    image: megmeet-dev-dsh:0.1.6-alpha.2-upstream-ui
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: dev-local/dsh/Dockerfile
+    read_only: true
+    init: true
+    mem_limit: 1200m
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,nosuid,size=128m,mode=1777
+    volumes:
+      - dsh-data:/state
+    depends_on:
+      mock-company: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3084/__megmeet/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  edge:
+    <<: *runtime
+    image: ${LOCAL_NGINX_IMAGE:-nginx:alpine}
+    platform: linux/amd64
+    networks: [local-only, edge-loopback]
+    user: '10001:10001'
+    read_only: true
+    entrypoint: [nginx]
+    command: [-g, 'daemon off;']
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,mode=1777
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - '127.0.0.1:${LOCAL_GATEWAY_PORT:-28090}:8080'
+      - '127.0.0.1:28084:8084'
+    depends_on:
+      gateway: {condition: service_healthy}
+      dsh: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8080/health']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres-data:
+  redis-data:
+  dsh-data:
+  iam-directory:
+  platform-files:
+
+networks:
+  cloud-workers:
+    internal: true
+  local-only:
+    internal: true
+  edge-loopback:
+    driver: bridge

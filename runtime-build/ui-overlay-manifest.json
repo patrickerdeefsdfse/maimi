@@ -1,0 +1,38 @@
+{
+  "schema": "megmeet-dsh020-ui-adaptation-v1",
+  "dsh": "0.2.0-rc.2",
+  "status": "SYNTAX_VERIFIED_BROWSER_PENDING",
+  "adaptations": [
+    {
+      "name": "megmeet-020-compat",
+      "package": "@deepseek-ai/dsh-client-ui-brand-official",
+      "originalSha256": "22bb7e181a8d93372e1d14927b201612b09a02c84ea3d0f36933cfff1de47d71",
+      "adaptedSha256": "dfb12b7ef747faf8ee2b8ebc2121d2400c79a43322557d9b23f15f491ecd400f"
+    },
+    {
+      "name": "megmeet-020-compat",
+      "package": "@deepseek-ai/dsh-client-ui-conversation",
+      "originalSha256": "8d5c8223197d52d69eb0587f88a8a051fc172985553915f1de361544653a68b0",
+      "adaptedSha256": "717433c7bb9e87df6d95485431fbe695647b7fd75a424052cdeb55e4b7256736"
+    },
+    {
+      "name": "megmeet-020-compat",
+      "package": "@deepseek-ai/dsh-client-ui-workspace",
+      "originalSha256": "e784543780fb8ac7c38c853afd26b9b1713c6907eec2b07eff37461e07bd3be9",
+      "adaptedSha256": "d192ee0f93e97bfeb2870bc1e3919ae14ae7efd89ae53ee02819706e43bda1b0"
+    },
+    {
+      "name": "megmeet-020-compat",
+      "package": "@deepseek-ai/dsh-client-ui-settings-models",
+      "originalSha256": "7674ed0ba2eef60fa7db91b4bf8cea4dc23e1f0a2f3dd1e6a2a67ad4c0d005fa",
+      "adaptedSha256": "bc3cda77e41fa0a1dd1addc22c7bb515a0d029b67ed4a5129104663a750a21c8"
+    },
+    {
+      "name": "megmeet-020-compat",
+      "package": "@deepseek-ai/dsh-client-ui-chat",
+      "originalSha256": "575de08018f49053a58680fbd62d5b9832a93aafc385217cc4331d5fed6d0dc0",
+      "adaptedSha256": "24fa936d74fd89124e7f5e5eac3096a19211dbf01d3fb7f7767f5dfbc179396d"
+    }
+  ],
+  "companyRequests": 0
+}

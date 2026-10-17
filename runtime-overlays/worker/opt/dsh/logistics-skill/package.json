@@ -1,0 +1,23 @@
+{
+  "description": "麦米原生物流查询技能；使用当前会话授权的企业物流连接器。",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./index.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.mjs",
+    "skills"
+  ],
+  "main": "index.mjs",
+  "name": "@megmeet/dsh-logistics-skill",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.4",
+    "@deepseek-ai/dsh-skill": "0.2.0-rc.2"
+  },
+  "private": true,
+  "type": "module",
+  "version": "1.0.0"
+}

@@ -1,0 +1,15 @@
+# Allowlist build input; do not send production .env, archives, secrets or data.
+**
+!services/
+!services/gateway/
+!services/gateway/requirements.txt
+!services/gateway/app/
+!services/gateway/app/**
+!dev-local/
+!dev-local/install_dependencies.py
+!dev-local/locks/
+!dev-local/locks/.gitkeep
+!dev-local/locks/requirements.installed.txt
+!dev-local/locks/runtime-manifest.json
+**/__pycache__/**
+**/*.pyc

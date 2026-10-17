@@ -1,0 +1,210 @@
+{
+  "ORIGINAL": {
+    "table": {
+      "relkind": "r",
+      "relpersistence": "p",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false
+    },
+    "columns": [
+      {
+        "name": "owner_key",
+        "type": "character(32)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "session_id",
+        "type": "character varying(80)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "artifact_id",
+        "type": "character varying(64)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "source",
+        "type": "character varying(20)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "reference_hash",
+        "type": "character(64)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "encrypted_payload",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "file_bytes",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "clock_timestamp()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "project_artifacts_file_bytes_check",
+        "type": "c",
+        "definition": "CHECK (((file_bytes >= 0) AND (file_bytes <= 33554432)))",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      },
+      {
+        "name": "project_artifacts_owner_key_session_id_fkey",
+        "type": "f",
+        "definition": "FOREIGN KEY (owner_key, session_id) REFERENCES platform.project_scopes(owner_key, session_id) ON DELETE CASCADE",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      },
+      {
+        "name": "project_artifacts_owner_key_session_id_source_reference_has_key",
+        "type": "u",
+        "definition": "UNIQUE (owner_key, session_id, source, reference_hash)",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      },
+      {
+        "name": "project_artifacts_pkey",
+        "type": "p",
+        "definition": "PRIMARY KEY (owner_key, session_id, artifact_id)",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      },
+      {
+        "name": "project_artifacts_source_check",
+        "type": "c",
+        "definition": "CHECK (((source)::text = ANY ((ARRAY['native_message'::character varying, 'project_output'::character varying])::text[])))",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      }
+    ],
+    "user_triggers": []
+  },
+  "MIGRATED": {
+    "table": {
+      "relkind": "r",
+      "relpersistence": "p",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false
+    },
+    "columns": [
+      {
+        "name": "owner_key",
+        "type": "character(32)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "session_id",
+        "type": "character varying(80)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "artifact_id",
+        "type": "character varying(64)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "source",
+        "type": "character varying(20)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "reference_hash",
+        "type": "character(64)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "encrypted_payload",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "file_bytes",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "clock_timestamp()"
+      },
+      {
+        "name": "output_kind",
+        "type": "character varying(32)",
+        "not_null": true,
+        "default": "'ordinary'::character varying"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "project_artifacts_file_limit_v2",
+        "type": "c",
+        "definition": "CHECK (((file_bytes >= 0) AND ((((output_kind)::text = 'ordinary'::text) AND (file_bytes <= 33554432)) OR (((output_kind)::text = 'card-print-v1'::text) AND ((source)::text = 'project_output'::text) AND (file_bytes <= 134217728)))))",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      },
+      {
+        "name": "project_artifacts_owner_key_session_id_fkey",
+        "type": "f",
+        "definition": "FOREIGN KEY (owner_key, session_id) REFERENCES platform.project_scopes(owner_key, session_id) ON DELETE CASCADE",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      },
+      {
+        "name": "project_artifacts_owner_key_session_id_source_reference_has_key",
+        "type": "u",
+        "definition": "UNIQUE (owner_key, session_id, source, reference_hash)",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      },
+      {
+        "name": "project_artifacts_pkey",
+        "type": "p",
+        "definition": "PRIMARY KEY (owner_key, session_id, artifact_id)",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      },
+      {
+        "name": "project_artifacts_source_check",
+        "type": "c",
+        "definition": "CHECK (((source)::text = ANY ((ARRAY['native_message'::character varying, 'project_output'::character varying])::text[])))",
+        "validated": true,
+        "deferrable": false,
+        "initially_deferred": false
+      }
+    ],
+    "user_triggers": []
+  }
+}

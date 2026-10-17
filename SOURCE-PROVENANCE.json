@@ -1,0 +1,34 @@
+{
+  "schema": "maimi-github-source-provenance-v2",
+  "snapshot_date": "2026-10-17",
+  "purpose": "PRIVATE_SOURCE_ARCHIVE_NO_DEPLOYMENT",
+  "baseline_gitlab_source_commit": "1e95c774b8775852171c7768e2db5f61aea6d27f",
+  "baseline_gitlab_docs_commit": "275d775333dbebfecb10b0a5792e0a2b308afdce",
+  "applied_public_source_increments": [
+    "r54",
+    "r56",
+    "r59",
+    "r61",
+    "r62"
+  ],
+  "application_cloud_version": "r62-service-entry",
+  "published_desktop": "0.13.0",
+  "dsh_runtime": "0.2.0-rc.2",
+  "service_business_acceptance": "FAILED_INPUT_UI_NOT_VISIBLE",
+  "experimental_unreleased": [
+    "r63-service-entry",
+    "r64-sandbox"
+  ],
+  "secrets_business_attachments_database_or_chat_included": false,
+  "company_ppt_template_included": true,
+  "frozen_source_modified": false,
+  "current_complete_compose_validated": false,
+  "clean_machine_rebuild_validated": false,
+  "upstream_full_dsh_source_included": false,
+  "new_ci_or_deployment_enabled": false,
+  "derived_export_changes": [
+    "logistics_skill_synthetic_examples",
+    "matching_runtime_and_manager_document_pins",
+    "portable_service_test_paths_and_r62_card_expectation"
+  ]
+}

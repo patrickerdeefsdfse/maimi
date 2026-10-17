@@ -1,0 +1,12 @@
+# Use only when the existing nginx-https container already joins common-net.
+services:
+  gateway:
+    networks:
+      data: {}
+      outbound: {}
+      common-net:
+        aliases: [megmeet-desktop-20260918-gateway]
+networks:
+  common-net:
+    external: true
+    name: common-net

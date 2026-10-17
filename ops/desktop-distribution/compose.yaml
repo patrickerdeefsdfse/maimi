@@ -1,0 +1,40 @@
+name: megmeet-desktop-distribution
+services:
+  downloads:
+    image: megmeet-ai-gateway:sso-20260921-r11
+    platform: linux/amd64
+    pull_policy: never
+    restart: unless-stopped
+    user: '10001:10001'
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 128m
+    pids_limit: 64
+    cpus: 0.5
+    tmpfs: ['/tmp:rw,nosuid,noexec,size=16m,mode=1777']
+    entrypoint: []
+    command: [uvicorn, app:app, --app-dir, /opt/distribution, --host, '0.0.0.0', --port, '8080', --no-access-log]
+    environment:
+      DIST_SITE_ROOT: /srv/megmeet-distribution
+      PYTHONDONTWRITEBYTECODE: '1'
+    ports: ['127.0.0.1:18092:8080']
+    volumes:
+      - type: bind
+        source: ./app.py
+        target: /opt/distribution/app.py
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ./site
+        target: /srv/megmeet-distribution
+        read_only: true
+        bind: {create_host_path: false}
+    networks: [distribution]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/maimi/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+networks:
+  distribution: {internal: true}

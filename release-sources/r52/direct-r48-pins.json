@@ -1,0 +1,58 @@
+{
+  "activation": {
+    "image_id": "sha256:1b81dbea832e39b5475aa37d8a4fabdd23cbec9b28b45618f46bca27dfbaf080",
+    "release_manifest_sha256": "633e8e59822d027d0e0eed828b8fb8cc2f3f806a9395c448b66a6d9c7fb46745",
+    "runtime": "0.2.0-rc.2",
+    "schema": "megmeet-runtime-activation-r41-v1",
+    "status": "ACTIVE"
+  },
+  "manifest_sha256": "dc0d9cd8db2a922544ac67ac61f38630cfab2b2c0317b0c2787a37140cb3b1fd",
+  "payload_sha256": "7f12cb7ed29d8c7dbff1e250b196f2518364e7643806f80f32dc16e1a7457c08",
+  "receipt": {
+    "backup_directory": "/data/megmeet-skills-logistics-r48-20261012/.skills-logistics-switch-20261012T054429Z-cf344713",
+    "baseline_sha256": "c25f30b5c9f145928750ba6a4a085caa9e0d0aa8fe2e8e4a055401be28a53e02",
+    "changed_services": [
+      "gateway",
+      "personal-cloud-manager"
+    ],
+    "closed_retention_seconds": 7200,
+    "current_service_ids": {
+      "db-migrate": "44291dfffc58682e8b791ba45f3285ca92f56c30623afcf824b4537a801b89d4",
+      "downloads": "ca7c24c2520a79e74d82c5ca52f12a980c66946d9de539ddd34ecccc8ee1ab87",
+      "gateway": "fd08bc1b17c8bf5ac866a0499dd2be51c96e2fda7fe84024c4154bce51f39fe6",
+      "office-service": "e7444311557bcb1e34c5a623fb2f286453ea8841989c59f917a41f4a69681300",
+      "personal-cloud-manager": "df115a7d14d4e609965a61c8e7d2a86f72ce484be540f6687dca2718684b0408",
+      "postgres": "03663601f0917f3d85a8ac246810c33f7acf82343800da3a83b61ed663ca5199",
+      "redis": "a6b499d6f8f7413bac09cd1bd7d31d718d782f0abe3eec5c9b647ba1b704b97f",
+      "retention-worker": "d0899a25f26f83f02fce45fffff3e8d99247d40d29ff3dfc880ea6f501f92ba7"
+    },
+    "database_changed": false,
+    "desktop_publication_pending": true,
+    "desktop_version": "0.13.0",
+    "effective_mode": "r48-skills-logistics",
+    "employee_acceptance": "PENDING",
+    "images_changed": false,
+    "manager_restarted": true,
+    "maximum_hosts": 0,
+    "original_service_ids": {
+      "db-migrate": "44291dfffc58682e8b791ba45f3285ca92f56c30623afcf824b4537a801b89d4",
+      "downloads": "ca7c24c2520a79e74d82c5ca52f12a980c66946d9de539ddd34ecccc8ee1ab87",
+      "gateway": "2a78911de9a93011e51b693d320fddae9e449a4d227dce32ffcae881564f660b",
+      "office-service": "e7444311557bcb1e34c5a623fb2f286453ea8841989c59f917a41f4a69681300",
+      "personal-cloud-manager": "fc49d14e9107ddeb9e29aec8aedefbb1c07a0d790eb2b9e794a75d8054192aa1",
+      "postgres": "03663601f0917f3d85a8ac246810c33f7acf82343800da3a83b61ed663ca5199",
+      "redis": "a6b499d6f8f7413bac09cd1bd7d31d718d782f0abe3eec5c9b647ba1b704b97f",
+      "retention-worker": "d0899a25f26f83f02fce45fffff3e8d99247d40d29ff3dfc880ea6f501f92ba7"
+    },
+    "payload_sha256": "7f12cb7ed29d8c7dbff1e250b196f2518364e7643806f80f32dc16e1a7457c08",
+    "persistent_login": true,
+    "previous_mode": "r47-fast-entry",
+    "release": "20261012-r48-skills-logistics",
+    "schema": "skills-logistics-r48-receipt-v1",
+    "status": "APPLIED",
+    "tokenkey_cache_preserved": true,
+    "tonggong_restarted": false,
+    "worker_runtime": "0.2.0-rc.2",
+    "workers_disconnected": true
+  }
+}

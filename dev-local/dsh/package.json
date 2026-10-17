@@ -1,0 +1,9 @@
+{
+  "name": "megmeet-dsh-native-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.1.6-alpha.2"
+  },
+  "description": "Pinned upstream DSH runtime; company adaptations built separately"
+}

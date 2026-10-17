@@ -1,0 +1,25 @@
+{
+  "scope": "local synthetic development, not production sizing",
+  "images": {
+    "milvus": {
+      "tag": "milvusdb/milvus:v2.6.24",
+      "digest": "milvusdb/milvus@sha256:c55810ca95c97437cc003f913b835524600fb95a14ce04955a92517c3ccab73f",
+      "platform_image_id": "sha256:692f183d6b6471f0835dab13d83923defcc7790b8fc31044e25a36af9193a62b"
+    },
+    "elasticsearch": {
+      "tag": "docker.elastic.co/elasticsearch/elasticsearch:8.19.21",
+      "digest": "docker.elastic.co/elasticsearch/elasticsearch@sha256:cbf5cd6cfe5532a9c02d510c66d238bf329cd51fe3d57170a2a880aca7d47419",
+      "platform_image_id": "sha256:2b93783c2d1a0ade4d18cd6656fb4fe7a90890cc8a2ecd199eaa0f35a16be813"
+    }
+  },
+  "source_sha256": {
+    "capture.py": "0a4d616714fee365ad3d65afc43a8cc154919058e8582de0e98883da1e23a80b",
+    "compose.yaml": "1692e9bce7476e8ac1cf418d4a715a669f0f895e1d063f7fc2fd14f7a04a3063",
+    "embedEtcd.yaml": "2ad68e577c7daa2856ea2fe77e371aa55492bf6b8c0383fa6b2ee6d42360835f",
+    "images.env": "e559eca90687829db02ac56370bd2c08501b39d9efdfd3466c8e42f8829968d4",
+    "milvus.yaml": "b372e1ee0c7daffe8ba0d194aa65dc236c0ba1f9c02651860ba23f6ac25c2b0e",
+    "run.sh": "c460ddeca301c92eb5868543a225f04a2ac8878c5c53badb93bdd4d8bd50c695",
+    "smoke.py": "5f448cf8b77a96448109587ef7d1f10dabf2aef039fddf17f20c5349899a6fd4"
+  },
+  "production_deployed": false
+}

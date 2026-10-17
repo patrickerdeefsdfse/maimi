@@ -1,0 +1,1 @@
+module.exports={DESKTOP_IPC:{"shortcutsInput":"dsh-desktop:shortcuts-input","shortcutsCloseWindow":"dsh-desktop:shortcuts-close-window","shortcutsGet":"dsh-desktop:shortcuts-get","shortcutsEdit":"dsh-desktop:shortcuts-edit","shortcutsChanged":"dsh-desktop:shortcuts-changed","shortcutsRecording":"dsh-desktop:shortcuts-recording"}};

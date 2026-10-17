@@ -1,0 +1,540 @@
+{
+  "schema": "r43-preserved-project-tables-v1",
+  "tables": [
+    "project_scopes",
+    "project_session_state",
+    "project_jobs",
+    "project_invocation_revocations"
+  ],
+  "source_catalog_script_sha256": "0f2cf7ea4a0f0e26d644c722736f5b1cff832da8d233ea6cd4309f92c0101e8a",
+  "queries": {
+    "tables": "SELECT c.relname,c.relkind,c.relpersistence,c.relrowsecurity,c.relforcerowsecurity\n            FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace\n            WHERE n.nspname='platform' AND c.relname=ANY(%s) ORDER BY c.relname",
+    "columns": "SELECT c.relname,a.attnum,a.attname,pg_catalog.format_type(a.atttypid,a.atttypmod),\n            a.attnotnull,a.attidentity,a.attgenerated,pg_catalog.pg_get_expr(d.adbin,d.adrelid)\n            FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace\n            JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid\n            LEFT JOIN pg_catalog.pg_attrdef d ON d.adrelid=c.oid AND d.adnum=a.attnum\n            WHERE n.nspname='platform' AND c.relname=ANY(%s) AND a.attnum>0 AND NOT a.attisdropped\n            ORDER BY c.relname,a.attnum",
+    "constraints": "SELECT c.relname,k.conname,k.contype,k.convalidated,k.condeferrable,k.condeferred,\n            pg_catalog.pg_get_constraintdef(k.oid,true)\n            FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace\n            JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid\n            WHERE n.nspname='platform' AND c.relname=ANY(%s) ORDER BY c.relname,k.conname",
+    "indexes": "SELECT c.relname,i.indisvalid,i.indisready,pg_catalog.pg_get_indexdef(i.indexrelid)\n            FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace\n            JOIN pg_catalog.pg_index i ON i.indrelid=c.oid\n            WHERE n.nspname='platform' AND c.relname=ANY(%s) ORDER BY c.relname,pg_catalog.pg_get_indexdef(i.indexrelid)",
+    "triggers": "SELECT c.relname,t.tgenabled,pg_catalog.pg_get_triggerdef(t.oid,true)\n            FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace\n            JOIN pg_catalog.pg_trigger t ON t.tgrelid=c.oid\n            WHERE n.nspname='platform' AND c.relname=ANY(%s) AND NOT t.tgisinternal\n            ORDER BY c.relname,t.tgname"
+  },
+  "catalog": {
+    "tables": [
+      [
+        "project_invocation_revocations",
+        "r",
+        "p",
+        false,
+        false
+      ],
+      [
+        "project_jobs",
+        "r",
+        "p",
+        false,
+        false
+      ],
+      [
+        "project_scopes",
+        "r",
+        "p",
+        false,
+        false
+      ],
+      [
+        "project_session_state",
+        "r",
+        "p",
+        false,
+        false
+      ]
+    ],
+    "columns": [
+      [
+        "project_invocation_revocations",
+        1,
+        "owner_key",
+        "character(32)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_invocation_revocations",
+        2,
+        "session_id",
+        "character varying(80)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_invocation_revocations",
+        3,
+        "invocation_id",
+        "character varying(128)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_invocation_revocations",
+        4,
+        "lease_hash",
+        "character(64)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_invocation_revocations",
+        5,
+        "expires_at",
+        "timestamp with time zone",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        1,
+        "owner_key",
+        "character(32)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        2,
+        "session_id",
+        "character varying(80)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        3,
+        "job_id",
+        "uuid",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        4,
+        "request_id",
+        "uuid",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        5,
+        "invocation_id",
+        "character varying(128)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        6,
+        "lease_hash",
+        "character(64)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        7,
+        "connector",
+        "character varying(50)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        8,
+        "action",
+        "character varying(80)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        9,
+        "input_hash",
+        "character(64)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        10,
+        "process_id",
+        "character varying(64)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        11,
+        "status",
+        "character varying(20)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        12,
+        "deadline",
+        "timestamp with time zone",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        13,
+        "created_at",
+        "timestamp with time zone",
+        true,
+        "",
+        "",
+        "clock_timestamp()"
+      ],
+      [
+        "project_jobs",
+        14,
+        "updated_at",
+        "timestamp with time zone",
+        true,
+        "",
+        "",
+        "clock_timestamp()"
+      ],
+      [
+        "project_jobs",
+        15,
+        "encrypted_result",
+        "text",
+        false,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_jobs",
+        16,
+        "error_code",
+        "character varying(100)",
+        false,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_scopes",
+        1,
+        "owner_key",
+        "character(32)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_scopes",
+        2,
+        "session_id",
+        "character varying(80)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_scopes",
+        3,
+        "epoch",
+        "uuid",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_scopes",
+        4,
+        "fence",
+        "bigint",
+        true,
+        "",
+        "",
+        "0"
+      ],
+      [
+        "project_session_state",
+        1,
+        "owner_key",
+        "character(32)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_session_state",
+        2,
+        "session_id",
+        "character varying(80)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_session_state",
+        3,
+        "state_key",
+        "character varying(160)",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_session_state",
+        4,
+        "encrypted_payload",
+        "text",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_session_state",
+        5,
+        "payload_bytes",
+        "integer",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_session_state",
+        6,
+        "version",
+        "bigint",
+        true,
+        "",
+        "",
+        "1"
+      ],
+      [
+        "project_session_state",
+        7,
+        "fence",
+        "bigint",
+        true,
+        "",
+        "",
+        null
+      ],
+      [
+        "project_session_state",
+        8,
+        "expires_at",
+        "timestamp with time zone",
+        false,
+        "",
+        "",
+        null
+      ]
+    ],
+    "constraints": [
+      [
+        "project_invocation_revocations",
+        "project_invocation_revocations_owner_key_session_id_fkey",
+        "f",
+        true,
+        false,
+        false,
+        "FOREIGN KEY (owner_key, session_id) REFERENCES platform.project_scopes(owner_key, session_id) ON DELETE CASCADE"
+      ],
+      [
+        "project_invocation_revocations",
+        "project_invocation_revocations_pkey",
+        "p",
+        true,
+        false,
+        false,
+        "PRIMARY KEY (owner_key, session_id, invocation_id)"
+      ],
+      [
+        "project_jobs",
+        "project_jobs_job_id_key",
+        "u",
+        true,
+        false,
+        false,
+        "UNIQUE (job_id)"
+      ],
+      [
+        "project_jobs",
+        "project_jobs_owner_key_session_id_fkey",
+        "f",
+        true,
+        false,
+        false,
+        "FOREIGN KEY (owner_key, session_id) REFERENCES platform.project_scopes(owner_key, session_id) ON DELETE CASCADE"
+      ],
+      [
+        "project_jobs",
+        "project_jobs_pkey",
+        "p",
+        true,
+        false,
+        false,
+        "PRIMARY KEY (owner_key, session_id, request_id)"
+      ],
+      [
+        "project_jobs",
+        "project_jobs_status_check",
+        "c",
+        true,
+        false,
+        false,
+        "CHECK (status::text = ANY (ARRAY['running'::character varying, 'cancelling'::character varying, 'completed'::character varying, 'failed'::character varying, 'cancelled'::character varying, 'interrupted'::character varying]::text[]))"
+      ],
+      [
+        "project_scopes",
+        "project_scopes_fence_check",
+        "c",
+        true,
+        false,
+        false,
+        "CHECK (fence >= 0)"
+      ],
+      [
+        "project_scopes",
+        "project_scopes_owner_key_fkey",
+        "f",
+        true,
+        false,
+        false,
+        "FOREIGN KEY (owner_key) REFERENCES platform.personal_cloud_retention(owner_key)"
+      ],
+      [
+        "project_scopes",
+        "project_scopes_pkey",
+        "p",
+        true,
+        false,
+        false,
+        "PRIMARY KEY (owner_key, session_id)"
+      ],
+      [
+        "project_scopes",
+        "project_scopes_session_id_check",
+        "c",
+        true,
+        false,
+        false,
+        "CHECK (session_id::text ~ '^(session-)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'::text)"
+      ],
+      [
+        "project_session_state",
+        "project_session_state_owner_key_session_id_fkey",
+        "f",
+        true,
+        false,
+        false,
+        "FOREIGN KEY (owner_key, session_id) REFERENCES platform.project_scopes(owner_key, session_id) ON DELETE CASCADE"
+      ],
+      [
+        "project_session_state",
+        "project_session_state_payload_bytes_check",
+        "c",
+        true,
+        false,
+        false,
+        "CHECK (payload_bytes >= 0 AND payload_bytes <= 4194304)"
+      ],
+      [
+        "project_session_state",
+        "project_session_state_pkey",
+        "p",
+        true,
+        false,
+        false,
+        "PRIMARY KEY (owner_key, session_id, state_key)"
+      ]
+    ],
+    "indexes": [
+      [
+        "project_invocation_revocations",
+        true,
+        true,
+        "CREATE UNIQUE INDEX project_invocation_revocations_pkey ON platform.project_invocation_revocations USING btree (owner_key, session_id, invocation_id)"
+      ],
+      [
+        "project_jobs",
+        true,
+        true,
+        "CREATE INDEX project_jobs_running ON platform.project_jobs USING btree (status, deadline)"
+      ],
+      [
+        "project_jobs",
+        true,
+        true,
+        "CREATE UNIQUE INDEX project_jobs_job_id_key ON platform.project_jobs USING btree (job_id)"
+      ],
+      [
+        "project_jobs",
+        true,
+        true,
+        "CREATE UNIQUE INDEX project_jobs_pkey ON platform.project_jobs USING btree (owner_key, session_id, request_id)"
+      ],
+      [
+        "project_scopes",
+        true,
+        true,
+        "CREATE UNIQUE INDEX project_scopes_pkey ON platform.project_scopes USING btree (owner_key, session_id)"
+      ],
+      [
+        "project_session_state",
+        true,
+        true,
+        "CREATE UNIQUE INDEX project_session_state_pkey ON platform.project_session_state USING btree (owner_key, session_id, state_key)"
+      ]
+    ],
+    "triggers": []
+  },
+  "catalog_sha256": "ed46e86320164873309b4d3804a765babc9eb96ba5919e23b727ad3c37b5a725"
+}

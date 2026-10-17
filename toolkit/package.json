@@ -1,0 +1,9 @@
+{
+  "name": "@megmeet/office-connectors",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DSH-independent employee connectors and desktop interaction engine",
+  "dependencies": { "playwright-core": "1.63.0" },
+  "scripts": { "test": "node --test tests/*.test.mjs" }
+}

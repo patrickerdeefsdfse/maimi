@@ -1,0 +1,8 @@
+ARG R26_BASE_IMAGE
+FROM ${R26_BASE_IMAGE}
+USER root
+COPY app /app/app
+COPY maimi_projects /app/maimi_projects
+COPY dingtalk-cli /opt/dingtalk-cli
+RUN chmod 0755 /opt/dingtalk-cli/dws && chmod -R a+rX /app/app /opt/dingtalk-cli && /opt/dingtalk-cli/dws version
+USER 10001:10001

@@ -1,0 +1,32 @@
+import fs from 'node:fs';import path from 'node:path';import {createHash} from 'node:crypto';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';
+const root=path.dirname(fileURLToPath(import.meta.url)),app=path.join(root,'app'),repo=path.resolve(root,'../../..'),runtime='C:/Users/LI YUHAO/.codex/tmp/dsh020-r41-desktop/runtime-win32-x64';
+const sha=b=>createHash('sha256').update(b).digest('hex'),json=f=>JSON.parse(fs.readFileSync(f)),require=createRequire(import.meta.url);
+let source=fs.readFileSync(path.join(repo,'output/batch-improvements-20261008/desktop/app/dsh-adapter.cjs'),'utf8');
+const one=(a,b)=>{if(source.split(a).length!==2)throw Error('ADAPTER_SEAM:'+a.slice(0,90));source=source.replace(a,()=>b);};
+const assembly=json(path.join(root,'evidence/runtime-assembly.json')),ui=json(path.join(root,'candidate-ui.json'));
+const expectedPackagesSha=sha(JSON.stringify(Object.keys(assembly.packages).sort().map(k=>[k,assembly.packages[k]])));
+one("const VERSION = '0.1.7-rc.2';","const VERSION = '0.2.0-rc.2';\nconst PACKAGE_SET_SHA256 = '"+expectedPackagesSha+"';");
+one("nativeRpc: 'dsh-named-rpc-0.1.7-rc.2'","nativeRpc: 'dsh-named-rpc-0.2.0-rc.2'");
+one("const MIGRATION = 'offline-owned-v4-rc2-admission-v1';","const MIGRATION = 'offline-owned-v4-020-admission-v1';");
+one("set.extension.version === '3.6.0'","set.extension.version === '3.7.0'");
+source=source.replaceAll("version === '2.1.0'","version === '2.2.0'");
+one('Object.keys(set.packages).length === 273','sha(JSON.stringify(Object.keys(set.packages).sort().map(k => [k,set.packages[k]]))) === PACKAGE_SET_SHA256');
+for(const [pkg,old] of [['dsh-client-ui-workspace','854722447794b79607651e6c75d0652db1aba376324f468ab8cd6ecdfe7d177f'],['dsh-client-ui-settings-models','67ebf868e5278f9e260d164b048a8abb320a4de16d63c05b6dad7302071abaa2']])one(old,ui.adaptations.find(x=>x.package==='@deepseek-ai/'+pkg).originalSha256);
+one("item.name === 'megmeet-rc2-compat'","item.name === 'megmeet-020-compat'");
+one("  verifiedHelper('history-native.mjs');", "  verifiedHelper('history-native.mjs');\n  verifiedHelper('history-migration.mjs');\n  verifiedHelper('history-runtime-snapshot.mjs');");
+const names=['enterprise-model-policy.mjs','catalog.mjs','managed-profile.mjs','history-migration.mjs','history-native.mjs','history-runtime-snapshot.mjs','community-profile.mjs','history-admission-rc2.mjs','enterprise-profile.mjs'];
+const helpers=Object.fromEntries(names.map(n=>[n,sha(fs.readFileSync(path.join(app,n)))]));
+if(!fs.readFileSync(path.join(app,'history-native.mjs'),'utf8').includes("0.2.0-rc.2"))throw Error('REVIEWED_HISTORY_020_REQUIRED');
+if(!fs.readFileSync(path.join(app,'enterprise-profile.mjs'),'utf8').includes("0.2.0-rc.2"))throw Error('REVIEWED_ENTERPRISE_020_REQUIRED');
+source=source.replace(/const HELPERS = \{[^\n]+\};/,'const HELPERS = '+JSON.stringify(helpers)+';');fs.writeFileSync(path.join(app,'dsh-adapter.cjs'),source);
+source=source.replace('module.exports = { VERSION,', `function modelPolicyPatch(home, modelBase) {
+  return require('./model-policy-profile.cjs').modelPolicyPatch(home, modelBase, verifiedHelper('enterprise-model-policy.mjs'));
+}
+module.exports = { modelPolicyPatch, VERSION,`);
+fs.writeFileSync(path.join(app,'dsh-adapter.cjs'),source);
+const adapter=require(path.join(app,'dsh-adapter.cjs'));const checked=adapter.validateRuntime(runtime,{full:true,requireCompatibility:false});
+fs.writeFileSync(path.join(runtime,'compatibility-manifest.json'),JSON.stringify(checked.compatibility,null,2)+'\n');
+const manifest=json(path.join(runtime,'runtime-manifest.json'));manifest.compatibilitySha256=sha(fs.readFileSync(path.join(runtime,'compatibility-manifest.json')));fs.writeFileSync(path.join(runtime,'runtime-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
+adapter.validateRuntime(runtime,{full:true});require(path.join(app,'toolkit-boundary.cjs')).verifyToolkit(runtime);
+fs.writeFileSync(path.join(root,'evidence/runtime-sealed.json'),JSON.stringify({status:'INTEGRITY_SEALED_RUNTIME_TESTS_REQUIRED',dsh:'0.2.0-rc.2',desktop:'0.13.0',packageCount:Object.keys(assembly.packages).length,packageSetSha256:expectedPackagesSha,adapterSha256:sha(source),companyRequests:0},null,2)+'\n');
+console.log('DSH020_ADAPTER_INTEGRITY_SEALED');

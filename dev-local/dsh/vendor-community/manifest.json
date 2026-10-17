@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "upstream": "https://github.com/Yinxe/deepseek-harness-plugins",
+  "commit": "b9ea3d7625a7ec40cf191094e7b83571ba5c0a79",
+  "dsh": "0.1.6-alpha.2",
+  "plugins": [
+    {
+      "name": "@dshp/file-change-viewer",
+      "version": "0.2.0",
+      "directory": "file-change-viewer",
+      "files": {
+        "package.json": "9a8c6456feb0165fbcea4e29b090f06fe42a88b719090ab30112fc8adbc7b3a6",
+        "README.md": "d2bce825c9122b7b313c3827a1c871e267202438b833bd14924e843441391356",
+        "cordis.patch.yml": "80f6771a8121dd4d5d720b91bcaf2d8b9bdac6d1f1dcb206e6a39022d6cc8642",
+        "lib/client.js": "528078e16dc66225e4afde8941de7f0772e35b6e41c02e2ed5ba9697b19e26a7",
+        "lib/host.js": "b8b67e613b9c376d177f324234e08ec15b13c8dc8705b053e4fc9fc42212c876",
+        "LICENSE": "e84e34a3d3a8436a64d1fae3bdb75bd83b91316c0cd7503563d0b029871169d2"
+      }
+    },
+    {
+      "name": "@dshp/web-style",
+      "version": "0.2.0",
+      "directory": "web-style",
+      "files": {
+        "package.json": "af17271ff73dcb71d321056175f68c23e1081c47b61fd7bb9f4091a2e0047bf3",
+        "README.md": "6e9da0fae671279131ded8948c951a7889de7a371ed29d7fb8a1a94bda78a62d",
+        "cordis.patch.yml": "97cf7a6930da711d55ad67890a1a5f58a30c1d7510f74dff67719b9b124f91e0",
+        "lib/client.js": "d475ff61c9b5d05c38393829a96ca3b94fc066d0194fa970b69c3b750c1c524a",
+        "lib/host.js": "9c7f06e5ad88c604e6896f9b490f85c6673858b3ca8fb57e16a905c2eb2cb547",
+        "LICENSE": "e84e34a3d3a8436a64d1fae3bdb75bd83b91316c0cd7503563d0b029871169d2"
+      }
+    },
+    {
+      "name": "@dshp/widget-kit",
+      "version": "0.11.0",
+      "directory": "widget-kit",
+      "files": {
+        "package.json": "fe1266f6a10e473f9877f6e3948fc2250ff61dba4300ca134e439744f3806237",
+        "README.md": "31846df2089eae02359869aa2c67848ed69e0625c4abddc1d9b5f4aef1baa31e",
+        "cordis.patch.yml": "5897eb009136f33063989d3504ce190a998207c46d37fc88823a15caed267fb0",
+        "lib/client.js": "9191bfa4b36d6b3df9143f8986f6414e22c627deb5fddd56c62cf0a855fbb22b",
+        "lib/host.js": "78cd5ace155f107df48356b6394f9ecb3f262c728eef9c8ad6a2cc5ed4a710b6",
+        "LICENSE": "e84e34a3d3a8436a64d1fae3bdb75bd83b91316c0cd7503563d0b029871169d2"
+      }
+    },
+    {
+      "name": "@dshp/token-meter",
+      "version": "0.8.0",
+      "directory": "token-meter",
+      "files": {
+        "package.json": "d4c8363ddbfa3f081a9f36e6d5fb2be320ec03bc045fccb36ee817c904795972",
+        "README.md": "a2e01377ee0190f2e36abcb6ae9db0ebbb576d16fe49c5b8d4f62e1c1c3dfff7",
+        "cordis.patch.yml": "8b90b54e0ac43efdd116a06802fc9301860698c46fc846f6a6c95bd38b1796a4",
+        "lib/client.js": "ee59fee556146f8ded57b68ded7992157e3dba041e96372c4539f00925ac9042",
+        "lib/host.js": "501e42c55ee78b91751bee3cc81754c02aab7cc2a16f1a5102ab398e306e27c8",
+        "LICENSE": "e84e34a3d3a8436a64d1fae3bdb75bd83b91316c0cd7503563d0b029871169d2"
+      }
+    }
+  ]
+}

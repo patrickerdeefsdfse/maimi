@@ -1,0 +1,13 @@
+# Local fixture profile. Company deployment must supply its own identity/key adapter.
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash-v4.1
+- id: llm-deepseek
+  config:
+    protocol: chat-completions
+    apiKeyEnv: DEEPSEEK_API_KEY
+    baseURL: http://mock-company:8081/v1
+    models:
+      - id: deepseek-flash-v4.1
+        name: DeepSeek V4.1 Flash (local simulation)

@@ -1,0 +1,118 @@
+{
+  "status": "ADAPTED_REAL_UI_TEST_PENDING",
+  "adaptations": [
+    {
+      "package": "@dshp/file-change-viewer",
+      "version": "0.2.0",
+      "runtime": "0.2.0-rc.2",
+      "primitivesReferences": [
+        "CodeBlock",
+        "DiffBlock",
+        "diffTotals",
+        "IconPlusOutline16",
+        "Pill",
+        "IconCodeOutline16",
+        "IconBranchOutline16",
+        "DisclosureRow",
+        "FileTypeIcon",
+        "JsonBlock",
+        "StateDot",
+        "IconEditOutline16",
+        "IconChevronDownOutline14",
+        "Menu",
+        "Button",
+        "IconRefreshOutline14"
+      ],
+      "transformations": {
+        "IconPlusOutline16": "IconPlusOutlineRegular",
+        "IconCodeOutline16": "IconCodeOutlineRegular",
+        "IconBranchOutline16": "IconBranchOutlineRegular",
+        "IconEditOutline16": "IconEditOutlineRegular",
+        "IconChevronDownOutline14": "IconChevronDownOutlineRegular",
+        "IconRefreshOutline14": "IconRefreshOutlineRegular"
+      },
+      "files": {
+        "lib/client.js": {
+          "originalSha256": "528078e16dc66225e4afde8941de7f0772e35b6e41c02e2ed5ba9697b19e26a7",
+          "sha256": "51d8b7cb4866d7b3d2fdb228cbbcd867e81239d7fda6129eb854c2f9e86c3220"
+        },
+        "package.json": {
+          "originalSha256": "9a8c6456feb0165fbcea4e29b090f06fe42a88b719090ab30112fc8adbc7b3a6",
+          "sha256": "d051e8579ffb97b14693fdc9c35d44ad86392c07b2cb92806fd6be677cbf698e"
+        }
+      }
+    },
+    {
+      "package": "@dshp/web-style",
+      "version": "0.2.0",
+      "runtime": "0.2.0-rc.2",
+      "primitivesReferences": [],
+      "transformations": {},
+      "files": {
+        "lib/client.js": {
+          "originalSha256": "d475ff61c9b5d05c38393829a96ca3b94fc066d0194fa970b69c3b750c1c524a",
+          "sha256": "d475ff61c9b5d05c38393829a96ca3b94fc066d0194fa970b69c3b750c1c524a"
+        },
+        "package.json": {
+          "originalSha256": "af17271ff73dcb71d321056175f68c23e1081c47b61fd7bb9f4091a2e0047bf3",
+          "sha256": "cb6d29c140aa88991ce68e091e661950c2c90d0794cf64432d3070fcbfbf4ed1"
+        }
+      }
+    },
+    {
+      "package": "@dshp/widget-kit",
+      "version": "0.11.0",
+      "runtime": "0.2.0-rc.2",
+      "primitivesReferences": [
+        "Button",
+        "Menu",
+        "useAnchoredPosition",
+        "Switch",
+        "Tooltip"
+      ],
+      "transformations": {},
+      "files": {
+        "lib/client.js": {
+          "originalSha256": "9191bfa4b36d6b3df9143f8986f6414e22c627deb5fddd56c62cf0a855fbb22b",
+          "sha256": "9191bfa4b36d6b3df9143f8986f6414e22c627deb5fddd56c62cf0a855fbb22b"
+        },
+        "package.json": {
+          "originalSha256": "fe1266f6a10e473f9877f6e3948fc2250ff61dba4300ca134e439744f3806237",
+          "sha256": "3db70d427be6f13e1728453d6600389c93a5cb6461cee16d72d5dfb3cf212d70"
+        }
+      }
+    },
+    {
+      "package": "@dshp/token-meter",
+      "version": "0.8.0",
+      "runtime": "0.2.0-rc.2",
+      "primitivesReferences": [
+        "Button",
+        "IconChevronDownOutline14",
+        "Menu",
+        "Tooltip",
+        "IconLoadingOutline16",
+        "IconRefreshOutline14",
+        "CodeBlock",
+        "RiskConfirmation"
+      ],
+      "transformations": {
+        "IconChevronDownOutline14": "IconChevronDownOutlineRegular",
+        "IconLoadingOutline16": "IconLoadingOutlineRegular",
+        "IconRefreshOutline14": "IconRefreshOutlineRegular"
+      },
+      "files": {
+        "lib/client.js": {
+          "originalSha256": "ee59fee556146f8ded57b68ded7992157e3dba041e96372c4539f00925ac9042",
+          "sha256": "84973b669eac64e6469ae654ececc1eb7a9f2a249966e4c288a4fb2e35964479"
+        },
+        "package.json": {
+          "originalSha256": "d4c8363ddbfa3f081a9f36e6d5fb2be320ec03bc045fccb36ee817c904795972",
+          "sha256": "ead5bd89cde3ce9c5d05817084f122eb3e5704c0cde7b79e74715307570833bb"
+        }
+      }
+    }
+  ],
+  "profileExemptionsWritten": false,
+  "upstreamGuardsUnchanged": true
+}

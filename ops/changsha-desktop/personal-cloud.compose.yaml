@@ -1,0 +1,52 @@
+# Candidate overlay; no company deployment has been performed.
+# Worker/manager images must be included and verified in the offline bundle.
+services:
+  gateway:
+    networks: [data, outbound, cloud-workers]
+    environment:
+      PERSONAL_CLOUD_MANAGER_URL: http://personal-cloud-manager:8092
+      PERSONAL_CLOUD_MANAGER_SECRET_FILE: /run/secrets/personal-cloud-manager
+    volumes:
+      - type: bind
+        source: ${PERSONAL_CLOUD_MANAGER_SECRET_SOURCE:?set PERSONAL_CLOUD_MANAGER_SECRET_SOURCE}
+        target: /run/secrets/personal-cloud-manager
+        read_only: true
+        bind: {create_host_path: false}
+  personal-cloud-manager:
+    image: megmeet-personal-cloud-manager:20260921-r11
+    networks: [cloud-workers]
+    restart: unless-stopped
+    user: '0:0'
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    tmpfs: ['/tmp:rw,nosuid,noexec,size=16m']
+    environment:
+      PERSONAL_CLOUD_MANAGER_SECRET_FILE: /run/secrets/personal-cloud-manager
+      PERSONAL_CLOUD_WORKER_IMAGE: megmeet-personal-dsh:20260921-r11
+      PERSONAL_CLOUD_WORKER_NETWORK: megmeet-desktop-server_cloud-workers
+      PERSONAL_CLOUD_MANAGER_NAMESPACE: megmeet-personal-server-v1
+      PERSONAL_CLOUD_MAX_ACTIVE_HOSTS: ${PERSONAL_CLOUD_MAX_ACTIVE_HOSTS:-2}
+      PERSONAL_CLOUD_IDLE_SECONDS: ${PERSONAL_CLOUD_IDLE_SECONDS:-300}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - type: bind
+        source: ${PERSONAL_CLOUD_MANAGER_SECRET_SOURCE:?set PERSONAL_CLOUD_MANAGER_SECRET_SOURCE}
+        target: /run/secrets/personal-cloud-manager
+        read_only: true
+        bind: {create_host_path: false}
+  retention-worker:
+    networks: [data, cloud-workers]
+    environment:
+      PERSONAL_CLOUD_HISTORY_ENABLED: 'true'
+      PERSONAL_CLOUD_HISTORY_BATCH: '10'
+      PERSONAL_CLOUD_MANAGER_URL: http://personal-cloud-manager:8092
+      PERSONAL_CLOUD_MANAGER_SECRET_FILE: /run/secrets/personal-cloud-manager
+    volumes:
+      - type: bind
+        source: ${PERSONAL_CLOUD_MANAGER_SECRET_SOURCE:?set PERSONAL_CLOUD_MANAGER_SECRET_SOURCE}
+        target: /run/secrets/personal-cloud-manager
+        read_only: true
+        bind: {create_host_path: false}
+networks:
+  cloud-workers: {internal: true}

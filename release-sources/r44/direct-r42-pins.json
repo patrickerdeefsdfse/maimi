@@ -1,0 +1,81 @@
+{
+  "baseline_sha256": "d76468ff160c6b325cd0f8f2f4a6e6a2eb82f6d845c1977802bb9fe0d5cf8094",
+  "files": {
+    "baseline-pins.json": {
+      "sha256": "0cf27c9bb878ee5a09896d766e412736e903fe83b24da1a61638293a633cc945",
+      "size_bytes": 3551
+    },
+    "public/app/personal_search.py": {
+      "sha256": "592dfd8410502dc10e850d74916f23c4b2bb155685fc27a693bf0071ff07b152",
+      "size_bytes": 28398
+    },
+    "public/app/project_platform.py": {
+      "sha256": "90ce2e71832e6eadb8d7431a05eb80658f222783e1f48053b4e97975473615b0",
+      "size_bytes": 72886
+    },
+    "public/maimi_projects/card_batch.py": {
+      "sha256": "778c74e3d50f28085785715020425f7b0884fecf56f2a202df41d79835c17a9e",
+      "size_bytes": 5909
+    },
+    "public/maimi_projects/card_renderer.py": {
+      "sha256": "2cb2365a90c594d984cc4ae8062de75b04466fa9c7f02a654267a72ccb83a981",
+      "size_bytes": 22764
+    },
+    "public/maimi_projects/service.py": {
+      "sha256": "a9291a50006d4b4dda162633c658423f2b0efa4c0d4feb2992ba1911caf2bec6",
+      "size_bytes": 43154
+    }
+  },
+  "ids": {
+    "db-migrate": "44291dfffc58682e8b791ba45f3285ca92f56c30623afcf824b4537a801b89d4",
+    "downloads": "ca7c24c2520a79e74d82c5ca52f12a980c66946d9de539ddd34ecccc8ee1ab87",
+    "gateway": "6153182747b727d715d8e0c31a000ba93039a2104c1c861dc48549940501de5a",
+    "office-service": "e7444311557bcb1e34c5a623fb2f286453ea8841989c59f917a41f4a69681300",
+    "personal-cloud-manager": "6628cf3c17468e10f24edd1ad66ce1a4390c76b92a9a7f44051565fac70f51a1",
+    "postgres": "03663601f0917f3d85a8ac246810c33f7acf82343800da3a83b61ed663ca5199",
+    "redis": "a6b499d6f8f7413bac09cd1bd7d31d718d782f0abe3eec5c9b647ba1b704b97f",
+    "retention-worker": "d0899a25f26f83f02fce45fffff3e8d99247d40d29ff3dfc880ea6f501f92ba7"
+  },
+  "manifest_sha256": "6a735d09aab6ea29df9b2ce05adf1fdc4ebaed8b741710a3869bd6c5d50d1bc1",
+  "schema": "r43-direct-r42-fixed-pins-v1",
+  "source_pins": {
+    "gateway": {
+      "/app/app/auth_middleware.py": "7e7371481c7f7101bc3ae99c13588e4e715405ad971e4ee29582878132cb4ee9",
+      "/app/app/connector_official_search.py": "5e61c4caa74f32e5879fec102011e819283be2b246ad5ae8a6acdf3c61d52ea1",
+      "/app/app/desktop_auth.py": "97c3c6597f113f20b5df11cc98cefa23848f01dd258dbbf4f458aefdc6f5de41",
+      "/app/app/desktop_device_auth.py": "36242c30e507e079af48b08d66e3d7af606b68438f22221888b2ba3c4c671f67",
+      "/app/app/drawing_office.py": "d500689e4bc531c429e38957ad0542f3c4eed4ffeae1a02cd74bb3ea17463b0a",
+      "/app/app/enterprise_connectors.py": "3ae266f8fac2de5975714a001c352a41be4c362dde49e68065e1c99a3e691d54",
+      "/app/app/iam_oauth.py": "df8df1a96e763c93bcd386ea7d2778e92d04e0cda15739c4c7b0bdb19197f3f9",
+      "/app/app/main.py": "2feacd73940e288bcc170bea63f33dc72e8189db725717f2fe98b4dc54b70353",
+      "/app/app/persistent_login.py": "04b28638fa75b044b9cb6782ebbf1785c2fa92e6ef74098d49f1e925062fe14c",
+      "/app/app/personal_cloud.py": "7088ced6067d68846a1341ca6a31d27cc4a4a33f627c87caaaed624e63e978a6",
+      "/app/app/personal_cloud_plugin_static.py": "93aec0833d5dc526c4faa8108d4fd2b67042716a5e06de6b7a62e3702cccad02",
+      "/app/app/personal_cloud_static.py": "69df9a4b4d533d76785f1512b644474da4b7baeff77ce09b739ed2468a10dc19",
+      "/app/app/personal_cloud_web.py": "50abe2ca423f51441abffd878392517dcedeeb42874e58f59c342a02832d4e8d",
+      "/app/app/personal_model_proxy.py": "ae61d7d7d43af322508be6305124e7c29703d9fc35c488ffd1949ad679824153",
+      "/app/app/personal_search.py": "592dfd8410502dc10e850d74916f23c4b2bb155685fc27a693bf0071ff07b152",
+      "/app/app/project_platform.py": "90ce2e71832e6eadb8d7431a05eb80658f222783e1f48053b4e97975473615b0",
+      "/app/maimi_projects/card_batch.py": "778c74e3d50f28085785715020425f7b0884fecf56f2a202df41d79835c17a9e",
+      "/app/maimi_projects/card_renderer.py": "2cb2365a90c594d984cc4ae8062de75b04466fa9c7f02a654267a72ccb83a981",
+      "/app/maimi_projects/disk_alerts.py": "0fba882a4b81c103ba7c492bf6d2618a14b4d22e8588183eafd4d6041fe2e96e",
+      "/app/maimi_projects/disk_semantics.py": "d98ad04493d4e7affe0c93780f446be6cc70c3ee7b9ed59109566be48435c13a",
+      "/app/maimi_projects/heatcost_flow.py": "c758dced7c7c6bdac31fee095a77c60bf3d0012e25ef410259e4f50dec2ff48f",
+      "/app/maimi_projects/monitor.py": "5af9ba89d972dda09986597f0a899d7a95ef9a157227293cce90d20d8499cc57",
+      "/app/maimi_projects/monitor_projection.py": "7d5eea49d2a65ec7dd37ec1947f6c786fac5895e508b775ce2d4240dbc19e8c9",
+      "/app/maimi_projects/service.py": "a9291a50006d4b4dda162633c658423f2b0efa4c0d4feb2992ba1911caf2bec6"
+    },
+    "personal-cloud-manager": {
+      "/opt/personal-cloud/manager.py": "302a4666e9ce8ea7b292a2bbc4ae4bd929e30488042c9ef72155836908192bb8"
+    }
+  },
+  "targets": {
+    "/app/app/personal_search.py": "public/app/personal_search.py",
+    "/app/app/project_platform.py": "public/app/project_platform.py",
+    "/app/maimi_projects/card_batch.py": "public/maimi_projects/card_batch.py",
+    "/app/maimi_projects/card_renderer.py": "public/maimi_projects/card_renderer.py",
+    "/app/maimi_projects/service.py": "public/maimi_projects/service.py"
+  },
+  "transaction": ".skills-cards-switch-20261008T083137Z-bf9d60d0",
+  "worker_image": "sha256:302943a1b35b7a75f19ec3a4f67d3e7668a2501435cfbb3d96c2ff810aea4e3c"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "megmeet-ai-desktop-local",
+  "version": "0.16.2",
+  "private": true,
+  "description": "MEGMEET native DSH desktop development client",
+  "main": "bootstrap.cjs",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "start:candidate": "electron scripts/start-alpha2-candidate.cjs",
+    "start:remote-candidate": "electron scripts/start-alpha2-candidate.cjs --remote-office",
+    "test": "node --test tests/*.test.cjs tests/*.test.mjs",
+    "package": "node scripts/package.cjs"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "electron": "44.4.1"
+  }
+}

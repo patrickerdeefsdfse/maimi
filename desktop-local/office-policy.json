@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "manifestSha256": "21f64346337977968fa1e1577ef3a2e6052bf0e0c9454d4eee08a96cf56d6d94",
+  "companyMode": "remote",
+  "remote": {
+    "version": "1.0.0",
+    "manifestSha256": "ebfea030f004f67fa26887e27650c8d43482b12802b4386e93d937c3902d0e0a"
+  }
+}

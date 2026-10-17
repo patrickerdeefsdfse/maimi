@@ -1,0 +1,14 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=__dirname,large='C:/Users/LI YUHAO/.codex/tmp/dsh020-r41-desktop',runtime=path.join(large,'runtime-win32-x64'),packaged=path.join(large,'packages/0.13.0-company/MEGMEET AI-win32-x64/resources/runtime');
+const proof=JSON.parse(fs.readFileSync(path.join(root,'evidence/community-adaptation.json')));
+for(const item of proof.adaptations)for(const name of Object.keys(item.files))fs.copyFileSync(path.join(runtime,'node_modules',item.package,name),path.join(packaged,'node_modules',item.package,name));
+for(const name of ['community-manifest.json','release-manifest.json','runtime-manifest.json','compatibility-manifest.json'])fs.copyFileSync(path.join(runtime,name),path.join(packaged,name));
+require('./app/dsh-adapter.cjs').validateRuntime(packaged,{full:true});
+const artifact=JSON.parse(fs.readFileSync(path.join(root,'app/artifact-company.json')));
+artifact.runtime=JSON.parse(fs.readFileSync(path.join(runtime,'runtime-manifest.json')));artifact.release=JSON.parse(fs.readFileSync(path.join(runtime,'release-manifest.json')));artifact.packagedRuntimeVerified=true;
+fs.writeFileSync(path.join(root,'app/artifact-company.json'),JSON.stringify(artifact,null,2)+'\n');
+const buildDir=path.join(large,'build-only/installer-0.13.0'),archive=path.join(large,'build-only/superseded-pre-community-ui');
+assert(path.resolve(buildDir).startsWith(path.resolve(large)+path.sep));assert(!fs.existsSync(archive));
+if(fs.existsSync(buildDir))fs.renameSync(buildDir,archive);
+console.log('FINAL_COMMUNITY_PAYLOAD_SYNCHRONIZED_REBUILD_REQUIRED');
