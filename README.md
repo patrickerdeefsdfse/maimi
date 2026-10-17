@@ -29,8 +29,8 @@
 | DSH 原生运行时 | 0.2.0-rc.2 | 精确 npm 锁、受控覆盖与许可；完整安装树由依赖制品提供 |
 | 企业加密上传 | r56 已部署并有用户验收 | 普通聊天及技能使用安全网关兼容上传协议；不执行服务端破解 |
 | PPT 转换与进程回收 | r61 已部署，用户反馈转换恢复 | 工作区 init/512，Office init/256；公司模板和专用 Python 使用指引已收录 |
-| service 入口修复 r63 | 本地开发候选 | 仅在 `experimental/service-entry-r63/`，未部署、未标为稳定 |
-| 任务沙箱 r64 | 本地开发中 | 仅在 `experimental/sandbox-r64/`，未接管 DSH 执行、未部署 runsc |
+| service 入口修复 r63 | 本地候选封装与独立审查完成 | [验证摘要](experimental/service-entry-r63/README.md)；公司维护与用户验收待完成，仍属实验版本 |
+| 任务沙箱 r64 | 容量与固定 SDK 契约已有合成测试 | [启用阻断项](experimental/sandbox-r64/runtime-provider/ACTIVATION-BLOCKERS.md)；未接管 DSH 执行、未部署 runsc，默认关闭 |
 
 物流轨迹、预计送达、新快递100账号及本次企业加密文件读取已有用户验收；这不代替任意文件类型或全部业务结果的验收。较早文档中的 DSH 版本、并发人数、闲置时长和部署路径只作历史参考。版本口径见 [当前架构与版本](CURRENT-ARCHITECTURE.md)。
 

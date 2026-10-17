@@ -17,6 +17,7 @@ import sqlite3
 import time
 from uuid import uuid4
 from .controller_lock import ControllerLock
+from .capacity import Commitment, Decision
 
 
 class Failure(Exception):
@@ -71,10 +72,14 @@ class Broker:
     files.read_input(scope, opaque_ref, max_bytes) -> bytes, from authorized native files.
     files.publish_output(scope, name, bytes, idempotency_key) -> opaque artifact reference.
     provider methods implement the pinned OpenSandbox contract; no shell runs here.
+    admission.locked() serializes sampling and committed reservations with legacy
+    workspace admission; admission.check(reserved, requested) returns a Decision.
+    The legacy scheduler must read this same durable reservation ledger while
+    holding that lock. No production admission adapter is installed by default.
     SQLite persists metadata only. Deploy with one exclusive controller; do not run replicas.
     """
     def __init__(self, database, *, authorize, files, provider, profiles, budget,
-                 enabled=False, clock=time.time):
+                 enabled=False, clock=time.time, admission=None):
         if not profiles or any(not re.fullmatch(r'[a-z][a-z0-9-]{0,31}', k) for k in profiles):
             raise ValueError('invalid administrator profiles')
         if any(p.cpu_millis <= 0 or p.memory_mib <= 0 or p.pids <= 0
@@ -86,6 +91,7 @@ class Broker:
             raise ValueError('invalid administrator budget')
         self.authorize, self.files, self.provider = authorize, files, provider
         self.profiles, self.budget, self.enabled, self.clock = dict(profiles), budget, enabled, clock
+        self.admission = admission
         try:
             self._controller_lock = ControllerLock(database)
         except OSError:
@@ -134,6 +140,18 @@ class Broker:
         except BaseException:
             self.db.execute('ROLLBACK')
             raise
+
+    @contextmanager
+    def _admission_guard(self):
+        try:
+            with self.admission.locked():
+                yield
+        except Failure:
+            raise
+        except Exception:
+            # Includes lock acquisition/release failures; never expose host paths.
+            # A reservation already committed on release failure remains charged.
+            raise Failure('HOST_ADMISSION_UNAVAILABLE') from None
 
     def _record(self, task_id, event):
         self.db.execute('INSERT INTO audit(task_id,event,at) VALUES(?,?,?)',
@@ -208,8 +226,12 @@ class Broker:
     async def dispatch_one(self):
         if not self.enabled or not self.recovered:
             raise Failure('CONTROLLER_NOT_READY')
+        if self.admission is None:
+            raise Failure('HOST_ADMISSION_NOT_CONFIGURED')
         async with self._dispatch_lock:
-            with self.transaction():
+            # The durable reservation commits before the shared admission lock
+            # is released. No asynchronous provider operation occurs under it.
+            with self._admission_guard(), self.transaction():
                 active = self.db.execute('SELECT owner,cpu_millis,memory_mib FROM tasks WHERE state IN (?,?,?,?,?)', RESERVED).fetchall()
                 cpu = sum(x['cpu_millis'] for x in active)
                 memory = sum(x['memory_mib'] for x in active)
@@ -220,6 +242,14 @@ class Broker:
                     and memory + r['memory_mib'] <= self.budget.memory_mib), None)
                 if row is None:
                     return None
+                try:
+                    decision = self.admission.check(
+                        reserved=tuple(Commitment(x['memory_mib'], x['cpu_millis']) for x in active),
+                        requested=Commitment(row['memory_mib'], row['cpu_millis']))
+                except Exception:
+                    raise Failure('HOST_ADMISSION_UNAVAILABLE') from None
+                if not isinstance(decision, Decision) or decision.allowed is not True:
+                    raise Failure('HOST_CAPACITY_NOT_ADMITTED')
                 self.db.execute("UPDATE tasks SET state='PROVISIONING',admitted=? WHERE id=?", (self.clock(), row['id']))
                 self.db.execute('INSERT INTO fairness VALUES(?,?) ON CONFLICT(owner) DO UPDATE SET dispatched=excluded.dispatched', (row['owner'], self.clock()))
                 self._record(row['id'], 'PROVISIONING')

@@ -57,6 +57,9 @@ class Profile:
     lifetime_seconds: int = 3600
 
     def validate(self):
+        if any(type(value) is not int for value in (self.cpu_millis, self.memory_mib,
+                self.pids, self.max_command_seconds, self.lifetime_seconds)):
+            raise ProviderError('INVALID_ADMIN_PROFILE')
         if not IMAGE.fullmatch(self.image) or not 100 <= self.cpu_millis <= 8000:
             raise ProviderError('INVALID_ADMIN_PROFILE')
         if not 1024 <= self.memory_mib <= 16384 or self.pids != 512:
@@ -132,7 +135,7 @@ class Provider:
             raise ProviderError('PRIVATE_LOOPBACK_ENDPOINT_REQUIRED')
         if not isinstance(api_key, str) or not 32 <= len(api_key) <= 512 or any(c.isspace() for c in api_key):
             raise ProviderError('INVALID_PRIVATE_CREDENTIAL')
-        if not IDENT.fullmatch(namespace) or not profiles:
+        if not IDENT.fullmatch(namespace) or not profiles or type(enabled) is not bool:
             raise ProviderError('INVALID_ADMIN_CONFIGURATION')
         if importlib.metadata.version('opensandbox') != SDK_VERSION:
             raise ProviderError('SDK_VERSION_CHANGED')
@@ -161,7 +164,7 @@ class Provider:
         return data
 
     @asynccontextmanager
-    async def _connection(self):
+    async def _connection(self, seconds=90):
         transport = PrivateTransport(self.endpoint, self.transport_factory() if self.transport_factory else None)
         cfg = ConnectionConfig(
             api_key=self.api_key, domain=self.endpoint.removeprefix('http://'), protocol='http',
@@ -171,12 +174,16 @@ class Provider:
         )
         manager = None
         try:
-            manager = await SandboxManager.create(cfg)
-            yield cfg, manager
+            async with asyncio.timeout(seconds):
+                manager = await SandboxManager.create(cfg)
+                yield cfg, manager
         finally:
-            if manager is not None:
-                await manager.close()
-            await transport.aclose()
+            async with asyncio.timeout(5):
+                try:
+                    if manager is not None:
+                        await manager.close()
+                finally:
+                    await transport.aclose()
 
     async def probe(self):
         try:
@@ -184,13 +191,23 @@ class Provider:
             result = {key: facts.get(key) is True for key in REQUIRED_NODE_FACTS}
         except Exception:
             result = {key: False for key in REQUIRED_NODE_FACTS}
-        result.update(sdk_version_pinned=True, automatic_retries=False, enabled=self.enabled)
+        result.update(sdk_version_pinned=True, automatic_retries=False,
+                      readiness_polling_bounded=True, enabled=self.enabled)
         result['ready'] = self.enabled and all(result[key] for key in REQUIRED_NODE_FACTS)
         return result
 
     async def _require_ready(self):
         if not (await self.probe())['ready']:
             raise ProviderError('NODE_POLICY_NOT_VERIFIED')
+
+    @staticmethod
+    async def _close_sandbox_client(sandbox):
+        if sandbox is not None:
+            try:
+                async with asyncio.timeout(5):
+                    await sandbox.close()
+            except BaseException:
+                raise ProviderError('SDK_CLIENT_CLEANUP_UNCONFIRMED') from None
 
     async def _info(self, manager, sandbox_id):
         if not isinstance(sandbox_id, str) or not IDENT.fullmatch(sandbox_id):
@@ -202,7 +219,7 @@ class Provider:
             raise ProviderError('SANDBOX_OWNER_MISMATCH')
         self._metadata(task)
         profile = self.profiles[name]
-        if info.id != sandbox_id or info.image is None or info.image.uri != profile.image:
+        if info.id != sandbox_id or info.image is None or info.image.image != profile.image:
             raise ProviderError('SANDBOX_IMAGE_MISMATCH')
         await self.guard.verify_sandbox(sandbox_id, task, profile, self.namespace)
         return task, profile
@@ -234,8 +251,7 @@ class Provider:
         except BaseException:
             raise ProviderError('CREATE_OUTCOME_UNKNOWN') from None
         finally:
-            if sandbox is not None:
-                await sandbox.close()
+            await self._close_sandbox_client(sandbox)
 
     @staticmethod
     def _path(path, prefix):
@@ -255,15 +271,15 @@ class Provider:
         try:
             async with self._connection() as (cfg, manager):
                 await self._info(manager, sandbox_id)
-                sandbox = await Sandbox.connect(sandbox_id, connection_config=cfg)
+                sandbox = await Sandbox.connect(sandbox_id, connection_config=cfg,
+                                                connect_timeout=timedelta(seconds=5))
                 await sandbox.files.write_files([WriteEntry(path=path, data=data, mode=444)])
         except ProviderError:
             raise
         except BaseException:
             raise ProviderError('INPUT_WRITE_OUTCOME_UNKNOWN') from None
         finally:
-            if sandbox is not None:
-                await sandbox.close()
+            await self._close_sandbox_client(sandbox)
 
     async def execute(self, sandbox_id, command, timeout_seconds, max_output_bytes):
         await self._require_ready()
@@ -271,6 +287,8 @@ class Provider:
             raise ProviderError('INVALID_COMMAND')
         if type(max_output_bytes) is not int or not 1 <= max_output_bytes <= MAX_LOG:
             raise ProviderError('INVALID_OUTPUT_LIMIT')
+        if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 600:
+            raise ProviderError('INVALID_COMMAND_TIMEOUT')
         sandbox, execution_id = None, None
         logs, remaining, truncated = {'stdout': bytearray(), 'stderr': bytearray()}, max_output_bytes, False
 
@@ -289,11 +307,12 @@ class Provider:
             raise ProviderError('UNEXPECTED_COMMAND_RESULT_EVENT')
 
         try:
-            async with self._connection() as (cfg, manager):
+            async with self._connection(seconds=timeout_seconds + 45) as (cfg, manager):
                 _, profile = await self._info(manager, sandbox_id)
                 if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= profile.max_command_seconds:
                     raise ProviderError('INVALID_COMMAND_TIMEOUT')
-                sandbox = await Sandbox.connect(sandbox_id, connection_config=cfg)
+                sandbox = await Sandbox.connect(sandbox_id, connection_config=cfg,
+                                                connect_timeout=timedelta(seconds=5))
                 async with asyncio.timeout(timeout_seconds + 10):
                     result = await sandbox.commands.run(
                         command, opts=RunCommandOpts(background=False, working_directory='/workspace',
@@ -317,8 +336,7 @@ class Provider:
                     pass
             raise ProviderError('COMMAND_OUTCOME_UNKNOWN_NO_RETRY') from None
         finally:
-            if sandbox is not None:
-                await sandbox.close()
+            await self._close_sandbox_client(sandbox)
 
     async def read_output(self, sandbox_id, path, max_bytes):
         await self._require_ready()

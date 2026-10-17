@@ -28,6 +28,7 @@ def validate_config(config):
         or config.docker.drop_capabilities != ['ALL'] or not config.docker.no_new_privileges
         or config.docker.pids_limit != 512 or config.docker.sandbox_env or config.docker.sandbox_binds
         or config.docker.apparmor_profile or config.docker.seccomp_profile
+        or config.server.host != '127.0.0.1'
         or not config.server.api_key or len(config.server.api_key) < 32):
         raise RuntimeError('MAIMI_SERVER_POLICY_REJECTED')
 

@@ -30,5 +30,15 @@
     "logistics_skill_synthetic_examples",
     "matching_runtime_and_manager_document_pins",
     "portable_service_test_paths_and_r62_card_expectation"
-  ]
+  ],
+  "followup": {
+    "date": "2026-10-17",
+    "purpose": "EXPERIMENTAL_SOURCE_AND_LOCAL_VALIDATION_ONLY",
+    "baseline_github_commit": "3a90acbeb8e4ef731b6a911952e2b5bfd4e39a0c",
+    "r63": "LOCAL_CANDIDATE_REVIEW_COMPLETE_COMPANY_DEPLOYMENT_AND_ACCEPTANCE_PENDING",
+    "r64": "LOCAL_CONTRACTS_TESTED_DISABLED_PENDING_RUNTIME_BOOTSTRAP_AND_REAL_ISOLATION",
+    "capacity_fixture_export": "ONE_RESOURCE_TEST_USES_REPRESENTATIVE_SYNTHETIC_32GIB_14_WORKER_CASE",
+    "company_receipts_or_private_configuration_included": false,
+    "deployment_performed": false
+  }
 }

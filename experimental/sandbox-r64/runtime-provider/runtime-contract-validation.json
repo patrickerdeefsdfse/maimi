@@ -1,0 +1,53 @@
+{
+  "schema": "maimi-r64-runtime-contract-validation-v1",
+  "status": "LOCAL_CONTRACTS_PASS",
+  "dependency_versions": {
+    "opensandbox": "1.1.1",
+    "opensandbox-server": "1.1.1"
+  },
+  "tests": [
+    {
+      "file": "test_sdk_contract.py",
+      "count": 15,
+      "status": "PASS"
+    },
+    {
+      "file": "test_node_policy.py",
+      "count": 12,
+      "status": "PASS"
+    }
+  ],
+  "test_count": 27,
+  "scope": "REAL_PINNED_SDK_WITH_SYNTHETIC_HTTP_AND_NODE_PROJECTIONS",
+  "actual_upstream_policy_hook_invoked": true,
+  "actual_source_pin_rejection_tested": true,
+  "company_requests": 0,
+  "docker_requests": 0,
+  "network_requests": 0,
+  "real_runsc_tested": false,
+  "company_deployment_performed": false,
+  "provider_default_enabled": false,
+  "activation": "BLOCKED_READONLY_RUNTIME_BOOTSTRAP_AND_REAL_ISOLATION_ACCEPTANCE",
+  "uncertain_create_retry": false,
+  "uncertain_delete_retry": false,
+  "unknown_snapshot_returns_file": false,
+  "readiness_polling": "BOUNDED_READONLY_CHECKS_NOT_MUTATION_RETRIES",
+  "files": {
+    "provider.py": "aea17283d81c1203027338ae427e4495be82e9255d40956812ea03aa60bfa359",
+    "node_guard.py": "e1430b457d8e4d083f86a1c7fc7ea82388a7910e2fc8848fb0e9c150a676119a",
+    "server_policy.py": "512156138d607359cb0face0ad86dc0a8088eef39a06cad4ae8459689de11915",
+    "test_sdk_contract.py": "e40f7a34c6b3975bdd66b570f6b68a3fd7d11f0f22969cc9da460ebec0ab2928",
+    "test_node_policy.py": "8c435338c33ee75630aa930b04ff46b84c5c15446199847f7a4173d4811ab755",
+    "deployment.example.toml": "72825a0e17e4c0f29dd360272f2632a0091ba81958f29f5c007b24b5e7e4ccb4",
+    "upstream-pins.json": "7095e731da8df2e5d20e626890f6f44dda8ec925ccfe9f26f99d738541c4fb72",
+    "ACTIVATION-BLOCKERS.md": "e51e47c6878837624af55b8f14f4128ed4750b8a1d3e6761bc74cb07f109f806",
+    "PREINSTALLED-RUNTIME-DESIGN.md": "8f1907e4a16977e35c91eea4359d4f43c0211e79941276f50e48e8f8e6ef83cd",
+    "run_validation.py": "707272f447a7bb1b8d8595815ea87541fcedf3b21b8bd231d152054c7b3d27e9"
+  },
+  "upstream_evidence": {
+    "server/opensandbox_server/services/docker/container_ops.py": "fb852b4f88142e814ae4ef3f45503553e8f3f468bfab839cfff6f8cb165f1b13",
+    "server/opensandbox_server/services/docker/runtime.py": "84222fb1e69257ec433469efa0c5da8eaad220e9ed971e907677cbff2ae499be",
+    "components/execd/bootstrap.sh": "f0e2b43e3c5a96d7bfd3d57ab3b5a50c33f609d13243b1b53f2b727c6adcc5c7",
+    "components/execd/Dockerfile": "32625c540eba22aabbe706005c6e76237b8c659b0f42dc7e653b9480bbf25178"
+  }
+}

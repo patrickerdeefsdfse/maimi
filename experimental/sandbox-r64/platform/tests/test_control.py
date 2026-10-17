@@ -3,9 +3,32 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from contextlib import contextmanager
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from maimi_sandbox import Broker, Scope, Profile, Budget, Failure
+from maimi_sandbox.capacity import Decision
+
+
+class SyntheticAdmission:
+    """Explicit synthetic trusted port, never a deployment proof."""
+    def __init__(self):
+        self.active = False
+        self.allowed = True
+        self.calls = []
+
+    @contextmanager
+    def locked(self):
+        self.active = True
+        try:
+            yield
+        finally:
+            self.active = False
+
+    def check(self, *, reserved, requested):
+        assert self.active
+        self.calls.append((reserved, requested))
+        return Decision(self.allowed, 'SYNTHETIC_TEST')
 
 
 class FakeProvider:
@@ -66,6 +89,7 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.path = str(Path(self.tmp.name) / 'tasks.db')
         self.provider, self.files = FakeProvider(), Files()
+        self.admission = SyntheticAdmission()
         self.allowed = True
         self.now = 1000.0
         self.a = Scope('employee_a', 'workspace_a', 'session_a')
@@ -80,7 +104,8 @@ class Tests(unittest.IsolatedAsyncioTestCase):
     def make(self, **kwargs):
         return Broker(self.path, authorize=self.authorize, files=self.files, provider=self.provider,
             profiles={'files': Profile(1000, 2048)}, budget=Budget(2000, 4096, 2),
-            enabled=kwargs.get('enabled', True), clock=lambda: self.now)
+            enabled=kwargs.get('enabled', True), clock=lambda: self.now,
+            admission=self.admission)
 
     async def asyncTearDown(self):
         self.broker.close_store()
@@ -100,6 +125,83 @@ class Tests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(Failure, 'TASK_NOT_FOUND'):
                 await self.broker.close(scope, task)
         self.assertEqual(self.provider.destroyed, [])
+
+    async def test_host_admission_missing_denies_without_provider_call(self):
+        task = await self.task()
+        self.broker.admission = None
+        with self.assertRaisesRegex(Failure, 'HOST_ADMISSION_NOT_CONFIGURED'):
+            await self.broker.dispatch_one()
+        self.assertEqual((await self.broker.status(self.a, task))['state'], 'QUEUED')
+        self.assertEqual(self.provider.created, [])
+
+    async def test_host_denial_preserves_queue_and_budget(self):
+        task = await self.task()
+        self.admission.allowed = False
+        with self.assertRaisesRegex(Failure, 'HOST_CAPACITY_NOT_ADMITTED'):
+            await self.broker.dispatch_one()
+        self.assertEqual((await self.broker.status(self.a, task))['state'], 'QUEUED')
+        self.assertEqual(self.provider.created, [])
+        self.assertEqual(self.broker.db.execute('SELECT count(*) FROM fairness').fetchone()[0], 0)
+
+    async def test_host_reservation_is_committed_before_provider_creation(self):
+        task = await self.task()
+        original = self.provider.create
+        async def checked_create(*args):
+            self.assertFalse(self.admission.active)
+            self.assertFalse(self.broker.db.in_transaction)
+            self.assertEqual(self.broker.db.execute('SELECT state FROM tasks WHERE id=?', (task,)).fetchone()[0], 'PROVISIONING')
+            return await original(*args)
+        self.provider.create = checked_create
+        await self.broker.dispatch_one()
+
+    async def test_unknown_resources_are_passed_to_host_admission(self):
+        self.provider.fail_create = True
+        await self.task()
+        with self.assertRaises(Failure):
+            await self.broker.dispatch_one()
+        self.provider.fail_create = False
+        await self.task(self.b)
+        await self.broker.dispatch_one()
+        reserved, requested = self.admission.calls[-1]
+        self.assertEqual(len(reserved), 1)
+        self.assertEqual((reserved[0].memory_mib, reserved[0].cpu_millis), (2048, 1000))
+
+    async def test_host_probe_failure_is_redacted_and_does_not_create(self):
+        task = await self.task()
+        def broken(**kwargs):
+            raise RuntimeError('private host detail')
+        self.admission.check = broken
+        with self.assertRaisesRegex(Failure, '^HOST_ADMISSION_UNAVAILABLE$'):
+            await self.broker.dispatch_one()
+        self.assertEqual((await self.broker.status(self.a, task))['state'], 'QUEUED')
+        self.assertEqual(self.provider.created, [])
+
+    async def test_admission_lock_acquisition_failure_is_redacted(self):
+        task = await self.task()
+        @contextmanager
+        def broken_lock():
+            raise OSError('private lock path')
+            yield
+        self.admission.locked = broken_lock
+        with self.assertRaisesRegex(Failure, '^HOST_ADMISSION_UNAVAILABLE$'):
+            await self.broker.dispatch_one()
+        self.assertEqual((await self.broker.status(self.a, task))['state'], 'QUEUED')
+        self.assertEqual(self.provider.created, [])
+
+    async def test_admission_unlock_failure_keeps_committed_reservation(self):
+        task = await self.task()
+        @contextmanager
+        def broken_unlock():
+            self.admission.active = True
+            yield
+            self.admission.active = False
+            raise OSError('private lock path')
+        self.admission.locked = broken_unlock
+        with self.assertRaisesRegex(Failure, '^HOST_ADMISSION_UNAVAILABLE$'):
+            await self.broker.dispatch_one()
+        self.assertEqual((await self.broker.status(self.a, task))['state'], 'PROVISIONING')
+        self.assertFalse(self.broker.db.in_transaction)
+        self.assertEqual(self.provider.created, [])
 
     async def test_submission_idempotency_and_conflict(self):
         task = await self.task()
