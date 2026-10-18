@@ -1,0 +1,13 @@
+--- a/task-authority.mjs
++++ b/task-authority.mjs
+@@ -62,7 +62,9 @@
+   if (!path.startsWith('/api/') || method !== 'POST') return null;
+   const endpoint = path.slice(5);
+   // HTTP endpoint and native envelope must agree; no method smuggling.
+-  if (!/^[A-Za-z][A-Za-z0-9_-]*\/[A-Za-z][A-Za-z0-9_-]*$/.test(endpoint)
++  // Official forwarded approval/question results use this sole reserved endpoint.
++  // It remains a mutation: lease checks and native same-Peer/event binding apply.
++  if (!(endpoint === '$events/result' || /^[A-Za-z][A-Za-z0-9_-]*\/[A-Za-z][A-Za-z0-9_-]*$/.test(endpoint))
+     || body?.type !== 'client-request' || body.method !== endpoint || typeof body.rpcId !== 'string')
+     throw Error('cloud native request invalid');
+   if (MANAGED_RPC_NAMESPACES.has(endpoint.split('/',1)[0]) && !READ_RPC.has(endpoint)

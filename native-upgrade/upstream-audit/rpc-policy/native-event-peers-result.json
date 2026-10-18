@@ -1,0 +1,10 @@
+{
+  "schema": "r65-native-remote-event-peer-test-v1",
+  "company_requests": 0,
+  "official_packages_modified": false,
+  "other_owner_peer_cannot_answer": true,
+  "peer_without_interactions_cannot_answer": true,
+  "same_owner_peer_can_answer": true,
+  "completed_event_replay_noop": true,
+  "status": "PASSED"
+}

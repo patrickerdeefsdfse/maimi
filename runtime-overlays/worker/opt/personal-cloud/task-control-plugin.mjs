@@ -1,10 +1,16 @@
 import {createNativeModelScopes} from './native-model-scope.mjs';
 import {bindNativeTaskContext} from './native-task-context.mjs';
+import {Peer} from '/opt/dsh/node_modules/@deepseek-ai/dsh-client-connection/lib/index.js';
 export const inject=['agents','connection','typertGateway','llm','credentials'];
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const SID=/^(?:session-)?[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export function apply(ctx,config){
  if(config?.endpoint!=='http://127.0.0.1:3086/__megmeet/scope'||!/^[A-Za-z0-9_-]{43}$/.test(config.token||''))throw Error('CLOUD_NATIVE_CONTROL_REQUIRED');
+ // DSH 0.2.1 requires a live Peer for in-process RPC. This peer belongs only
+ // to the authenticated wrapper's private task route; it is never supplied by
+ // browser/model JSON. Both proxies must continue denying /api/megmeet-cloud/.
+ // Hanging it under this plugin context also revokes it when the plugin unloads.
+ const controlPeer=new Peer(ctx,{principal:{kind:'owner'},interactions:'none'});
  const control=async(action,body)=>{
   const r=await fetch(config.endpoint+'/'+action,{method:'POST',redirect:'error',signal:AbortSignal.timeout(5000),
    headers:{Authorization:'Bearer '+config.token,'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -66,7 +72,7 @@ export function apply(ctx,config){
      e={generation:gen,session_id:root,request_id:b.request.requestId,done:false};prompts.set(b.dispatch_id,e);
      e.promise=(async()=>{
       if(cancelled.has(gen+':'+root))return {ok:false,error:{code:'gateway/cancelled',message:'该次发送已停止。',details:{}}};
-      try{return {ok:true,value:await scopes.runPrompt(root,gen,b.request,()=>ctx.typertGateway.invoke({namespace:'session',method:'prompt',args:{request:b.request}}))};}
+      try{return {ok:true,value:await scopes.runPrompt(root,gen,b.request,()=>ctx.typertGateway.invoke({peer:controlPeer,namespace:'session',method:'prompt',args:{request:b.request}}))};}
       catch(error){return receiptError(error);}
      })().then(result=>{e.done=true;return result;});
     }
@@ -80,7 +86,7 @@ export function apply(ctx,config){
      e={generation:gen,session_id:root,done:false};cancels.set(b.cancel_id,e);
      e.promise=(async()=>{
       if(gen)await cancelRoot(root,gen);
-      try{return {ok:true,value:await ctx.typertGateway.invoke({namespace:'session',method:'cancel',args:{request:{sessionId:root}}})};}
+      try{return {ok:true,value:await ctx.typertGateway.invoke({peer:controlPeer,namespace:'session',method:'cancel',args:{request:{sessionId:root}}})};}
       catch(error){return receiptError(error);}
      })().then(result=>{e.done=true;return result;});
     }

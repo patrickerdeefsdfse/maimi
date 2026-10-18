@@ -149,13 +149,18 @@ def ready() -> dict[str, object]:
         with _connect() as conn, conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT to_regclass('platform.schema_migrations'),
-                       to_regclass('platform.users'),
-                       to_regclass('platform.conversations'),
-                       to_regclass('platform.messages')
+                SELECT to_regclass('platform.schema_migrations') AS schema_migrations,
+                       to_regclass('platform.users') AS users,
+                       to_regclass('platform.conversations') AS conversations,
+                       to_regclass('platform.messages') AS messages
                 """
             )
-            if any(value is None for value in cur.fetchone()):
+            # _connect uses psycopg dict_row: unnamed columns overwrite each
+            # other, and iterating a dict checks keys rather than table values.
+            tables = cur.fetchone()
+            required_tables = {"schema_migrations", "users", "conversations", "messages"}
+            if (not isinstance(tables, dict) or set(tables) != required_tables
+                    or any(tables[name] is None for name in required_tables)):
                 failures.append("database_migrations")
             else:
                 required = os.getenv("MIGRATIONS_REQUIRED_VERSION", "005_history_write.sql")

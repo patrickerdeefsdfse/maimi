@@ -45,6 +45,10 @@ CANARY_OWNERS=frozenset(filter(None,os.getenv('PERSONAL_CLOUD_CANARY_OWNERS','')
 CANARY_OVERLAY_DIR=os.getenv('PERSONAL_CLOUD_CANARY_OVERLAY_DIR','')
 CANARY_RUNTIME='0.1.7-rc.2'
 REVIEWED_RUNTIME='0.2.0-rc.2'
+NATIVE021_RUNTIME='0.2.1-rc.2'
+NATIVE021_ACTIVATION_PATH='/opt/personal-cloud/runtime-r65/activation.json'
+NATIVE021_RECEIPTS_PATH='/opt/personal-cloud/runtime-r65/owners'
+NATIVE021_RECEIPTS_DIR=os.getenv('PERSONAL_CLOUD_RUNTIME_OWNER_RECEIPTS_DIR','')
 RUNTIME_ACTIVATION_FILE=os.getenv('PERSONAL_CLOUD_RUNTIME_ACTIVATION_FILE','')
 RUNTIME_RELEASE_SHA=os.getenv('PERSONAL_CLOUD_RUNTIME_RELEASE_SHA','')
 FAST_ENTRY_OVERLAY_DIR=os.getenv('PERSONAL_CLOUD_FAST_ENTRY_OVERLAY_DIR','')
@@ -106,7 +110,7 @@ if (any(not OWNER.fullmatch(owner) for owner in RESERVED_OWNERS) or (MAX_HOSTS>0
 OVERLAY_PATTERN=r'/data/megmeet-(?:cloud-access|web-image|web-files-idle|retention-network|dsh-upgrade|experience-skills|project-routing|dsh-cli)-[0-9]{8}-r[0-9]+/public'
 if WORKER_OVERLAY_DIR and not re.fullmatch(OVERLAY_PATTERN,WORKER_OVERLAY_DIR):
     raise RuntimeError('invalid worker overlay directory')
-if WORKER_RUNTIME not in ('0.1.7-alpha.2','0.1.7-rc.2',REVIEWED_RUNTIME):
+if WORKER_RUNTIME not in ('0.1.7-alpha.2','0.1.7-rc.2',REVIEWED_RUNTIME,NATIVE021_RUNTIME):
     raise RuntimeError('unreviewed default worker runtime')
 if CANARY_IMAGE or CANARY_OWNERS or CANARY_OVERLAY_DIR:
     if (not re.fullmatch(r'sha256:[a-f0-9]{64}',CANARY_IMAGE) or not CANARY_OWNERS
@@ -124,7 +128,17 @@ if RUNTIME_FOLLOWUP_OVERLAY_DIR and (RUNTIME_FOLLOWUP_OVERLAY_DIR!=RUNTIME_FOLLO
     or WORKER_OVERLAY_DIR!=FOLLOWUP_OVERLAY or HISTORY_OVERLAY_DIR!=HISTORY_OVERLAY_PATH
     or CANARY_IMAGE or CANARY_OWNERS or CANARY_OVERLAY_DIR):
     raise RuntimeError('unreviewed runtime followup overlay configuration')
-if WORKER_RUNTIME==REVIEWED_RUNTIME:
+if WORKER_RUNTIME==NATIVE021_RUNTIME:
+    if (any((WORKER_OVERLAY_DIR,HISTORY_OVERLAY_DIR,WORKFLOW_OVERLAY_DIR,RUNTIME_FOLLOWUP_OVERLAY_DIR,
+             FAST_ENTRY_OVERLAY_DIR,CANARY_IMAGE,CANARY_OWNERS,CANARY_OVERLAY_DIR))
+        or not re.fullmatch(r'sha256:[a-f0-9]{64}',IMAGE)
+        or RUNTIME_ACTIVATION_FILE!=NATIVE021_ACTIVATION_PATH
+        or NATIVE021_RECEIPTS_DIR!=NATIVE021_RECEIPTS_PATH
+        or not re.fullmatch(r'[a-f0-9]{64}',RUNTIME_RELEASE_SHA)):
+        raise RuntimeError('invalid native021 isolated runtime release configuration')
+elif NATIVE021_RECEIPTS_DIR:
+    raise RuntimeError('native021 owner admission requires native021 runtime')
+elif WORKER_RUNTIME==REVIEWED_RUNTIME:
     if (any((WORKER_OVERLAY_DIR,HISTORY_OVERLAY_DIR,WORKFLOW_OVERLAY_DIR,RUNTIME_FOLLOWUP_OVERLAY_DIR,
              CANARY_IMAGE,CANARY_OWNERS,CANARY_OVERLAY_DIR))
         or not re.fullmatch(r'sha256:[a-f0-9]{64}',IMAGE)
@@ -142,7 +156,7 @@ def runtime_activated():
     This root-owned file is mounted read-only. It contains no authentication data.
     Runtime admission cannot be activated by an employee request.
     """
-    if WORKER_RUNTIME!=REVIEWED_RUNTIME:return True
+    if WORKER_RUNTIME not in (REVIEWED_RUNTIME,NATIVE021_RUNTIME):return True
     if image_id is None:return False
     path=Path(RUNTIME_ACTIVATION_FILE)
     try:
@@ -154,9 +168,53 @@ def runtime_activated():
             opened=os.fstat(stream.fileno());raw=stream.read(2049);after=os.fstat(stream.fileno())
         identity=lambda v:(v.st_dev,v.st_ino,v.st_size,v.st_mtime_ns)
         if identity(before)!=identity(opened) or identity(opened)!=identity(after):return False
+        if WORKER_RUNTIME==NATIVE021_RUNTIME:
+            return json.loads(raw)=={'schema':'megmeet-runtime-activation-r65-v1','runtime':NATIVE021_RUNTIME,
+                'release_manifest_sha256':RUNTIME_RELEASE_SHA,'image_id':image_id,'status':'ACTIVE',
+                'history_admission':'OWNER_SNAPSHOT_RECEIPTS_REQUIRED','legacy_overlays':False}
         return json.loads(raw)=={'schema':'megmeet-runtime-activation-r41-v1','runtime':REVIEWED_RUNTIME,
             'release_manifest_sha256':RUNTIME_RELEASE_SHA,'image_id':image_id,'status':'ACTIVE'}
     except (OSError,ValueError,TypeError):return False
+
+
+def require_native021_history_receipt(owner,state_identity,files_identity):
+    """Check a read-only operator receipt; never snapshot/migrate employee data.
+
+    The offline release controller must create and verify both volume backups
+    before issuing this receipt. Matching v4 schemas alone is not admission.
+    Manager never accepts this object from employee JSON, nor writes it itself.
+    The receipt is bound to volume creation identities and the exact release.
+    """
+    if WORKER_RUNTIME!=NATIVE021_RUNTIME:return
+    owner_key(owner)
+    file=Path(NATIVE021_RECEIPTS_DIR)/(owner+'.json')
+    try:
+        if (state_identity[0]!=image_id or state_identity[1]!=owner_key(owner)+'-state'
+            or files_identity[0]!=owner_key(owner)+'-files'
+            or not all(isinstance(value,str) and value for value in (state_identity[2],files_identity[1]))):
+            raise ValueError()
+        if any(parent.is_symlink() for parent in (file,*file.parents)):raise ValueError()
+        before=file.stat()
+        if (not stat.S_ISREG(before.st_mode) or before.st_size>4096 or before.st_nlink!=1
+            or before.st_uid!=0 or stat.S_IMODE(before.st_mode)&0o022):raise ValueError()
+        with os.fdopen(os.open(file,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0)),'rb') as stream:
+            opened=os.fstat(stream.fileno());raw=stream.read(4097);after=os.fstat(stream.fileno())
+        identity=lambda value:(value.st_dev,value.st_ino,value.st_size,value.st_mtime_ns)
+        if identity(before)!=identity(opened) or identity(opened)!=identity(after):raise ValueError()
+        data=json.loads(raw)
+        expected={'schema':'megmeet-runtime-owner-snapshot-r65-v1','status':'SNAPSHOT_VERIFIED',
+            'owner':owner,'manager_namespace':INSTANCE,'source_runtime':REVIEWED_RUNTIME,
+            'target_runtime':NATIVE021_RUNTIME,'release_manifest_sha256':RUNTIME_RELEASE_SHA,
+            'image_id':image_id,'state_volume':{'name':state_identity[1],'created_at':state_identity[2]},
+            'files_volume':{'name':files_identity[0],'created_at':files_identity[1]},
+            'backup':data.get('backup')}
+        backup=data.get('backup')
+        if (data!=expected or not isinstance(backup,dict)
+            or set(backup)!={'state_sha256','files_sha256','verification_receipt_sha256'}
+            or any(not isinstance(value,str) or not re.fullmatch(r'[a-f0-9]{64}',value) for value in backup.values())):
+            raise ValueError()
+    except (OSError,ValueError,TypeError,AttributeError,IndexError):
+        raise HTTPException(503,'personal_cloud_runtime_snapshot_required') from None
 
 def require_runtime_activation():
     if not runtime_activated():raise HTTPException(503,'personal_cloud_runtime_upgrade_preparing')
@@ -245,6 +303,14 @@ def worker_selection(owner):
 def container_config(owner,body,route_token):
     name=owner_key(owner)
     selected_image,overlay_dir,runtime=worker_selection(owner)
+    if runtime==NATIVE021_RUNTIME:
+        # No legacy bind may shadow the reviewed native image, even if globals
+        # were changed after import by a future configuration reload.
+        if any((overlay_dir,FAST_ENTRY_OVERLAY_DIR,HISTORY_OVERLAY_DIR,WORKFLOW_OVERLAY_DIR,RUNTIME_FOLLOWUP_OVERLAY_DIR)):
+            raise HTTPException(503,'personal_cloud_native021_overlay_forbidden')
+        admitted=migration_ready.get(owner)
+        if not admitted or admitted[0]!=selected_image or admitted[1]!=name+'-state':
+            raise HTTPException(503,'personal_cloud_runtime_snapshot_required')
     # Linux limits each environment entry to roughly 128KiB even when the
     # aggregate environment is valid. ASCII JSON makes chunk bytes explicit.
     catalog=json.dumps(body.catalog,separators=(',',':'),ensure_ascii=True)
@@ -475,8 +541,8 @@ async def reap():
 async def lifespan(app):
     global image_id,canary_image_id
     info=await docker('GET','/images/'+IMAGE+'/json');image_id=info['Id']
-    if WORKER_RUNTIME==REVIEWED_RUNTIME and (image_id!=IMAGE
-        or (info.get('Config',{}).get('Labels') or {}).get('com.megmeet.dsh.runtime')!=REVIEWED_RUNTIME):
+    if WORKER_RUNTIME in (REVIEWED_RUNTIME,NATIVE021_RUNTIME) and (image_id!=IMAGE
+        or (info.get('Config',{}).get('Labels') or {}).get('com.megmeet.dsh.runtime')!=WORKER_RUNTIME):
         raise RuntimeError('reviewed runtime image identity changed')
     if CANARY_IMAGE:
         info=await docker('GET','/images/'+CANARY_IMAGE+'/json')
@@ -617,7 +683,7 @@ async def prepare_open(owner,body,request,attempt):
         queued=queue_admission(owner,body.lease,memory_ok=await memory_admission(owner))
         if queued:return JSONResponse(queued,status_code=202,headers={'Retry-After':'5'})
         route_token=secrets.token_urlsafe(32)
-        state_identity=None
+        state_identity=None;files_identity=None
         for suffix in ('state','files'):
             volume=await docker('POST','/volumes/create',{'Name':name+'-'+suffix,'Labels':{LABEL:INSTANCE,'com.megmeet.personal-cloud.owner':owner}})
             # Docker's create response for an existing volume may omit labels.
@@ -630,7 +696,14 @@ async def prepare_open(owner,body,request,attempt):
                 created=volume.get('CreatedAt')
                 if not isinstance(created,str) or not created:raise HTTPException(503,'personal_cloud_volume_identity_unavailable')
                 state_identity=(worker_selection(owner)[0],volume.get('Name'),created)
-        if migration_ready.get(owner)!=state_identity:
+            else:
+                files_identity=(volume.get('Name'),volume.get('CreatedAt'))
+        if WORKER_RUNTIME==NATIVE021_RUNTIME:
+            if (files_identity[0]!=name+'-files' or not isinstance(files_identity[1],str) or not files_identity[1]):
+                raise HTTPException(503,'personal_cloud_volume_identity_unavailable')
+            require_native021_history_receipt(owner,state_identity,files_identity)
+            migration_ready[owner]=state_identity
+        elif migration_ready.get(owner)!=state_identity:
             if migration_failures.get(owner)==state_identity:
                 reason=migration_failure_codes.get(owner,'MAINTENANCE_REFUSED')
                 raise HTTPException(503,'personal_cloud_history_upgrade_refused'+(':'+reason if reason!='MAINTENANCE_REFUSED' else ''))
@@ -982,6 +1055,8 @@ async def storage(owner:str,body:StorageBody,request:Request):
 async def migrate_owner(owner,state_identity):
     """The migrations map reserves the owner and capacity until cleanup ends."""
     try:
+        if WORKER_RUNTIME==NATIVE021_RUNTIME:
+            raise HTTPException(503,'personal_cloud_runtime_snapshot_required')
         payload=await run_history_helper(owner,{'action':'migration-admit'})
         if payload.get('result')!={'status':'READY','runtime':worker_selection(owner)[2],'format':4}:
             raise HTTPException(503,'personal_cloud_history_upgrade_refused')
@@ -997,6 +1072,11 @@ async def migrate_owner(owner,state_identity):
 
 
 async def run_history_helper(owner,body):
+    # The old helper may transform/rollback generations and its Cmd does not
+    # override the new worker image ENTRYPOINT. Require a separately reviewed
+    # r65 maintenance path; never run the legacy helper against native021 data.
+    if WORKER_RUNTIME==NATIVE021_RUNTIME:
+        raise HTTPException(503,'personal_cloud_native021_maintenance_unreviewed')
     # Caller either holds the normal storage lock or owns migrations[owner].
     # Revalidate the exact volume and absence of even stopped references before
     # binding the owned state. Never bind a filesystem path or another volume.

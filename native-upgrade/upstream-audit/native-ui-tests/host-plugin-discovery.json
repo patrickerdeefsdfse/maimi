@@ -1,0 +1,34 @@
+{
+  "schema": "r65-company-ui-real-host-loader-v1",
+  "company_calls": 0,
+  "official_packages_modified": 0,
+  "host_entries": [
+    {
+      "name": "@deepseek-ai/dsh-client-ui-renderer",
+      "disabled": false,
+      "fiber_state": 2
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar",
+      "disabled": false,
+      "fiber_state": 2
+    },
+    {
+      "name": "file:///D:/%E9%BA%A6%E6%A0%BC%E7%B1%B3%E7%89%B9/linux/output/dsh-upgrade-r65-20261018/upstream-audit/native-ui-tests/candidate/opt/dsh/plugins/company-ui/index.mjs",
+      "disabled": false,
+      "fiber_state": 2
+    }
+  ],
+  "graph_row": {
+    "id": "@megmeet/dsh-company-ui",
+    "url": "plugins/??@megmeet/dsh-company-ui/client.js&rev=69cde113dbc2",
+    "rev": "69cde113dbc2",
+    "inject": [
+      "@deepseek-ai/dsh-client-ui-renderer",
+      "@deepseek-ai/dsh-client-ui-sidebar"
+    ]
+  },
+  "bundle_http_status": 200,
+  "client_bundle_contains_company_id": true,
+  "status": "DISCOVERED_AND_SERVED_BY_NATIVE_HOST_REGISTRY"
+}

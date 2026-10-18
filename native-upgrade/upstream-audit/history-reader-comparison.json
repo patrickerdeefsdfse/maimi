@@ -1,0 +1,49 @@
+{
+  "schema": "r65-history-reader-comparison-v1",
+  "status": "NO_NEW_CORE_RESTORE_REJECTIONS",
+  "official_old_tag_fixture_count": 51,
+  "restored_on_both": 46,
+  "fixture_context_rejections_on_both": 5,
+  "results_identical": true,
+  "versions": {
+    "0.2.0-rc.2": {
+      "session_writer": 4,
+      "derived_sqlite_schema": 8,
+      "schema_source_sha256": "2cc4c7c8e50409847599a048922d55ef4ffbd1ac2309502f3a5a06420bc1a28f"
+    },
+    "0.2.1-rc.2": {
+      "session_writer": 4,
+      "derived_sqlite_schema": 8,
+      "schema_source_sha256": "2cc4c7c8e50409847599a048922d55ef4ffbd1ac2309502f3a5a06420bc1a28f"
+    }
+  },
+  "old_report_sha256": "6ea2c30abf3a759333e96a8604f5fd51442a5caeab694d48ed5d0f261b1d9bf8",
+  "new_report_sha256": "f5532b429dd700e9cb2c4bcfd964d7383371bddb5c77a0633d07cd99519757c6",
+  "scope": "OFFICIAL_NORMALIZED_V4_SNAPSHOTS_WITH_ONLY_CWD_AND_SEQUENCE_ENVELOPE_MATERIALIZED",
+  "company_history_read": false,
+  "full_agent_resume_tested": false,
+  "production_copy_rehearsal_required": true,
+  "downgrade_guaranteed": false,
+  "remaining_fixture_context": [
+    {
+      "fixture": "snapshots/acp/image-compaction/session.v4.jsonl",
+      "error": "invalid seed event at index 20: session event \"image/offload\" requires a message projection; load its owning plugin or supply its projection definition"
+    },
+    {
+      "fixture": "snapshots/sdk/dynamic-tool-updates/session.v4.jsonl",
+      "error": "invalid seed event at index 19: developer/message tool-addition \"snapshot_ping\" must name exactly one tool in headerSeq 18"
+    },
+    {
+      "fixture": "snapshots/session/dynamic-tool-prompt-updates/session.v4.jsonl",
+      "error": "invalid seed event at index 20: developer/message tool-addition \"snapshot_ping\" must name exactly one tool in headerSeq 19"
+    },
+    {
+      "fixture": "snapshots/session/dynamic-tool-updates/session.v4.jsonl",
+      "error": "invalid seed event at index 19: developer/message tool-addition \"snapshot_ping\" must name exactly one tool in headerSeq 18"
+    },
+    {
+      "fixture": "snapshots/session/plugin-manager-mcp/session.v4.jsonl",
+      "error": "invalid seed event at index 20: developer/message tool-addition \"list_mcp_resource_templates\" must name exactly one tool in headerSeq 19"
+    }
+  ]
+}

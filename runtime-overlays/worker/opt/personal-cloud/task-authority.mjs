@@ -37,22 +37,39 @@ export class TaskAuthority {
  revoke(task){if(this.has(task)){task.revoked=true;this.revision++;}}
 }
 
-// Read-only unary calls do not acquire task authority. Everything else remains
-// client-bound while a task is active; prompt is the sole generation initiator.
+// Reviewed against the generated 0.2.1-rc.2 Remote descriptors. Older read
+// aliases remain for compatible clients; new names are exact, not verb guesses.
+// Read-only calls do not acquire another conversation's task authority.
 export const READ_RPC = new Set(['session/list','session/search','session/page','session/attachment','session/projections',
   'workspaceFiles/stat','workspaceFiles/readBytes','officeToPdf/generation',
   'session/modelCatalog','session/canOpenWorkspacePath','session/workspaceDesktop',
   'workspace/list','workspace/files','workspace/stat','settings/get','settings/list','settings/describe',
-  'commands/list','agentPreset/list','permissionPreset/list']);
+  'commands/list','agentPreset/list','permissionPreset/list',
+  'agentPresets/list','agentPresets/read','permissionPresets/catalog','pluginInventory/list',
+  'pluginManager/inspect','pluginManager/listBundles','pluginManager/listPlugins',
+  'pluginManager/listVersionExemptions','pluginManager/registries','pluginManager/waitForInstall',
+  'pluginMarket/listIndexes','pluginMarket/search','pluginRegistryProbe/fastest',
+  'dynamicCordisRunner/getClientCode','dynamicCordisRunner/inventory',
+  'schedule/list','schedule/get','schedule/catalog','schedule/history',
+  'goal/list','goal/get','goal/catalog','goals/get','workflow/list','workflow/get','workflow/catalog',
+  'remoteAccess/follow','session/follow','session/control']);
+// The current deployment owns these lifecycle capabilities. An authenticated
+// login alone must not start durable work or replace its managed plugins.
+// Unknown future methods in these namespaces fail closed until reviewed.
+const MANAGED_RPC_NAMESPACES = new Set(['schedule','goal','goals','workflow',
+  'pluginManager','pluginMarket','dynamicCordisRunner']);
 export function validateNativeRpc(path, method, body, nativeId) {
   if (!path.startsWith('/api/') || method !== 'POST') return null;
   const endpoint = path.slice(5);
   // HTTP endpoint and native envelope must agree; no method smuggling.
-  if (body?.type !== 'client-request' || body.method !== endpoint || typeof body.rpcId !== 'string')
+  // Official forwarded approval/question results use this sole reserved endpoint.
+  // It remains a mutation: lease checks and native same-Peer/event binding apply.
+  if (!(endpoint === '$events/result' || /^[A-Za-z][A-Za-z0-9_-]*\/[A-Za-z][A-Za-z0-9_-]*$/.test(endpoint))
+    || body?.type !== 'client-request' || body.method !== endpoint || typeof body.rpcId !== 'string')
     throw Error('cloud native request invalid');
-  if (/^(?:schedule|goal|workflow)\/(?!list$|get$|catalog$)/.test(endpoint)
+  if (MANAGED_RPC_NAMESPACES.has(endpoint.split('/',1)[0]) && !READ_RPC.has(endpoint)
     || /^cordis\/(?:run|install|enable|update|unload|remove|reload|apply|create)/.test(endpoint))
-    throw Error('云端暂不支持跨登录的定时或自主后台任务。');
+    throw Error('此操作由公司统一管理，当前云端不允许启动后台任务或变更运行插件。');
   const request = body.payload?.args?.request;
   if (endpoint === 'workspace/create' && request?.path !== '/workspace')
     throw Error('网页版和个人云端只使用本人的云端工作区。');

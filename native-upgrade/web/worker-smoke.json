@@ -1,0 +1,29 @@
+{
+  "schema": "dsh-r65-native-worker-local-smoke-v1",
+  "status": "PASSED",
+  "runtime": "0.2.1-rc.2",
+  "company_changed": false,
+  "network": "none",
+  "credentials": "SYNTHETIC_ONLY",
+  "model_requests": 0,
+  "base_image": "LOCAL_SURROGATE_NOT_COMPANY_BASE",
+  "official_package_overwrites": 0,
+  "tested_image_id": "sha256:10ec86583e9117fcd9702c4569d2fdb97af52d941f99741bc405a0bfdade084f",
+  "runtime_overlay_mounts": false,
+  "init": true,
+  "pids_limit": 512,
+  "memory_bytes": 1610612736,
+  "ready_seconds": 10.398,
+  "checks": {
+    "unauthenticated_rejected": true,
+    "native_html": true,
+    "task_state": true,
+    "private_control_route_hidden": true,
+    "foreign_workspace_rejected": true,
+    "mixed_case_media_guard": true
+  },
+  "stop": {
+    "exit": 0,
+    "oom": false
+  }
+}

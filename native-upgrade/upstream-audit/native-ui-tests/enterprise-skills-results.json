@@ -1,0 +1,117 @@
+{
+  "schema": "r65-enterprise-skills-real-registration-v1",
+  "company_calls": 0,
+  "patched_fields": [
+    {
+      "path": "/opt/dsh/logistics-skill/package.json",
+      "json_pointer": "/peerDependencies/@deepseek-ai~1dsh-skill",
+      "before": "0.2.0-rc.2",
+      "after": "0.2.1-rc.2"
+    },
+    {
+      "path": "/opt/dsh/review-skills/package.json",
+      "json_pointer": "/peerDependencies/@deepseek-ai~1dsh-skill",
+      "before": "0.2.0-rc.2",
+      "after": "0.2.1-rc.2"
+    }
+  ],
+  "skills": [
+    {
+      "name": "logistics-query",
+      "provider": "megmeet-logistics",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "704ef45852bb24e2b420b6af243c7ac664d9c97467e93325b428e713b5658143"
+    },
+    {
+      "name": "patent-review",
+      "provider": "megmeet-review",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "973cd99098ac406169a0dc04298324909e977cb710409451ee33fb3a9cd34497"
+    },
+    {
+      "name": "onboarding-health-review",
+      "provider": "megmeet-review",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "f0b711f5ab2b5a80345d33e01e7398ac0f6f158e1615bc8da5bc9cc4b78d405f"
+    },
+    {
+      "name": "company-ppt-template",
+      "provider": "megmeet-company-ppt-template",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "a0bd5efe6ed04572055184533218e172ee5ffc32ac8fabbf144cf463e992414c"
+    },
+    {
+      "name": "office",
+      "provider": "dsh-office",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "dd53666ef7ebde196525bbf874a7bca6a0a9f6e45127559422d42e522169fa6f"
+    },
+    {
+      "name": "office-docx",
+      "provider": "dsh-office",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "b70093d45f780f0ccac92cbdbeb658d7a21afed81d9b59604deb3fbf518bbf5f"
+    },
+    {
+      "name": "office-pptx",
+      "provider": "dsh-office",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "01c0ed70806727def32b820f10139b437ba9f9b8568afbd469e23546a022ad62"
+    },
+    {
+      "name": "office-xlsx",
+      "provider": "dsh-office",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "6900a1c2b809ec2ba531d82acefa1971fb5a02c32cab811c0364729a4f0af8b6"
+    },
+    {
+      "name": "office-render",
+      "provider": "dsh-office",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "3e9dec2590e244addf63c7d9c308bf8e137f9deb5609b1538ac2f4b0e05354d7"
+    },
+    {
+      "name": "office-export-pdf",
+      "provider": "dsh-office",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "48161691aa9dcc1950502c582c79cfc2908bfa4725d498250a08addb23d3b223"
+    },
+    {
+      "name": "office-recalculate",
+      "provider": "dsh-office",
+      "body_nonempty": true,
+      "resource_directory_exists": true,
+      "skill_file_readable": true,
+      "body_sha256": "1b79790cc205bcb9bee3a47fd532a2fa417150d3449c1d824a260d47bc5ef3a0"
+    }
+  ],
+  "service": {
+    "registered_as_native_skill": false,
+    "source": "Enterprise connector catalog and project tool schema, not a filesystem SKILL.md",
+    "tool_schema_path": "services/gateway/maimi_projects/server_operations.py",
+    "card_factory_path": "services/gateway/maimi_projects/service.py",
+    "two_field_instruction_present": true,
+    "default_root22_instruction_present": true
+  },
+  "status": "REGISTERED_AND_READ_WITH_NATIVE_021_SKILLS"
+}

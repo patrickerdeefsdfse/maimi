@@ -1,0 +1,48 @@
+{
+  "schema": "r65-office-kit-official-fixture-v1",
+  "company_data_read": false,
+  "company_services_changed": false,
+  "network_requests": 0,
+  "input": "official color-blocks.pptx",
+  "input_sha256": "a459fb78af5f6446fa5bfcb6623454c984e82bf9f15cfcf27710bb995741702c",
+  "output_directory": "/mnt/d/麦格米特/linux/output/dsh-upgrade-r65-20261018/upstream-audit/office-kit-smoke-1792290964455",
+  "converter_created": true,
+  "convert": {
+    "backend": "wasm",
+    "bytes": 11304,
+    "sha256": "dc564576b710b985f917b78d53fa4227db71e3b1c344e8f4cff21f3c9f54f0f7",
+    "elapsed_ms": 9795,
+    "missing_fonts": [
+      "Arial"
+    ]
+  },
+  "render": {
+    "schemaVersion": 1,
+    "backend": "wasm",
+    "rasterEngine": "pdfium",
+    "source": "saved",
+    "inputPath": "/mnt/d/麦格米特/linux/output/dsh-upgrade-r65-20261018/upstream-audit/office-kit-smoke-1792290964455/color-blocks.pdf",
+    "sourceSha256": "dc564576b710b985f917b78d53fa4227db71e3b1c344e8f4cff21f3c9f54f0f7",
+    "dpi": 144,
+    "pageCount": 1,
+    "images": [
+      {
+        "index": 1,
+        "page": 1,
+        "path": "/mnt/d/麦格米特/linux/output/dsh-upgrade-r65-20261018/upstream-audit/office-kit-smoke-1792290964455/images/page-0001.png",
+        "width": 864,
+        "height": 576,
+        "rectangle": {
+          "x": 0,
+          "y": 0,
+          "width": 576,
+          "height": 384
+        },
+        "byteLength": 13208
+      }
+    ],
+    "missingFonts": []
+  },
+  "status": "CONVERTED_AND_RENDERED",
+  "converter_disposed": true
+}

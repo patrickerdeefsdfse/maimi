@@ -1,0 +1,191 @@
+{
+  "schema": "r65-native021-service-ui-registration-v1",
+  "status": "PASSED",
+  "findings": [
+    {
+      "variant": "r63",
+      "mode": "native",
+      "setup": {
+        "nodeCount": 6,
+        "serviceNodes": 1,
+        "groups": [
+          {
+            "kind": "node",
+            "key": "13:input-messageca52eb09-0b15-481d-ac3d-73c022136f6b"
+          },
+          {
+            "kind": "node",
+            "key": "12:turn-process1"
+          },
+          {
+            "kind": "group",
+            "key": "[\"process\",\"9:tool-callcall_service\",null]"
+          },
+          {
+            "kind": "node",
+            "key": "22:megmeet-project-resultservice:10:call_service"
+          },
+          {
+            "kind": "node",
+            "key": "14:assistant-step1:2"
+          },
+          {
+            "kind": "node",
+            "key": "9:turn-tail1"
+          }
+        ],
+        "serviceLocation": "session"
+      },
+      "standard": {
+        "inputs": 2,
+        "hiddenAncestors": [
+          []
+        ],
+        "requests": 0,
+        "groupButtons": [
+          {
+            "open": "false",
+            "hidden": true
+          }
+        ]
+      },
+      "outerOpen": {
+        "inputs": 2,
+        "hiddenAncestors": [
+          []
+        ],
+        "requests": 0,
+        "groupButtons": [
+          {
+            "open": "false",
+            "hidden": true
+          }
+        ]
+      },
+      "allOpen": {
+        "inputs": 2,
+        "hiddenAncestors": [
+          []
+        ],
+        "requests": 0,
+        "groupButtons": [
+          {
+            "open": "false",
+            "hidden": true
+          }
+        ]
+      },
+      "connection": {
+        "two_visible_inputs": true,
+        "typing_and_selection": true,
+        "root22_private_fields": true,
+        "exact_session_parent_ticket": true,
+        "cleared_password": true,
+        "connected_card": true,
+        "replay_does_not_connect": true,
+        "password_absent_in_durable_logs_dom_storage": true
+      }
+    },
+    {
+      "variant": "r63",
+      "mode": "ptc",
+      "setup": {
+        "nodeCount": 6,
+        "serviceNodes": 1,
+        "groups": [
+          {
+            "kind": "node",
+            "key": "13:input-message140e6f18-c9a4-4a40-a88b-1c67e05fdb42"
+          },
+          {
+            "kind": "node",
+            "key": "12:turn-process1"
+          },
+          {
+            "kind": "group",
+            "key": "[\"process\",\"9:tool-callcall_service\",null]"
+          },
+          {
+            "kind": "node",
+            "key": "22:megmeet-project-resultservice-ptc:12:call_service:ptc:1"
+          },
+          {
+            "kind": "node",
+            "key": "14:assistant-step1:2"
+          },
+          {
+            "kind": "node",
+            "key": "9:turn-tail1"
+          }
+        ],
+        "serviceLocation": "session"
+      },
+      "standard": {
+        "inputs": 2,
+        "hiddenAncestors": [
+          []
+        ],
+        "requests": 0,
+        "groupButtons": [
+          {
+            "open": "false",
+            "hidden": true
+          }
+        ]
+      },
+      "outerOpen": {
+        "inputs": 2,
+        "hiddenAncestors": [
+          []
+        ],
+        "requests": 0,
+        "groupButtons": [
+          {
+            "open": "false",
+            "hidden": true
+          }
+        ]
+      },
+      "allOpen": {
+        "inputs": 2,
+        "hiddenAncestors": [
+          []
+        ],
+        "requests": 0,
+        "groupButtons": [
+          {
+            "open": "false",
+            "hidden": true
+          }
+        ]
+      },
+      "connection": {
+        "two_visible_inputs": true,
+        "typing_and_selection": true,
+        "root22_private_fields": true,
+        "exact_session_parent_ticket": true,
+        "cleared_password": true,
+        "connected_card": true,
+        "replay_does_not_connect": true,
+        "password_absent_in_durable_logs_dom_storage": true
+      }
+    }
+  ],
+  "hashes": {
+    "native_ui_chat": "a00e5176d1257d51604cefbe9a15d326d4283439df31f76ba20ff690c76e10a1",
+    "r63_brand": "6f432f622a5a6a0b083f61320df6b9f4b19ae690683cdeb6b8aeee2047ae033e"
+  },
+  "real": [
+    "Prior r63 synthetic AgentLoop native/PTC logs consumed by latest UI; newer event producer not rerun in this UI test",
+    "Official 0.2.1-rc.2 complete ui-chat bundle: ChatView, ChatGroupSeat, ChatNodeSeat, registry and snapshots",
+    "Official 0.2.1-rc.2 complete ui-conversation bundle, ConversationNodeAssembler and prompt contracts",
+    "Actual React/ReactDOM/Cordis/store/slots/virtual/primitives from complete 0.2.1-rc.2 frontend static module registry",
+    "Independent company plugin assembled by root prepare-runtime.py registers service event and actual session-scoped slot; official packages not overwritten"
+  ],
+  "limitations": [
+    "Local scripted model provider and synthetic same-session HTTP history; no company/SSH calls",
+    "Full 0.2.1 Cordis/SlotRegistry/renderer/session inject exercised; session state selectors supplied locally; full desktop bootstrap and company SSH remain untested",
+    "Native ui-chat exposes internal functions only in in-memory audit copy; no frozen file changed"
+  ],
+  "company_calls": 0
+}

@@ -1,0 +1,394 @@
+{
+  "schema": "r65-native-rpc-policy-candidate-v1",
+  "status": "PASSED",
+  "runtime": "0.2.1-rc.2",
+  "company_requests": 0,
+  "descriptor_count": 144,
+  "reviewed_descriptor_count": 48,
+  "required_native_reads": 20,
+  "required_native_denials": 25,
+  "legacy_reads_preserved": 20,
+  "two_lease_read_cases": 60,
+  "two_lease_authority_unchanged": true,
+  "foreign_mutation_still_denied": true,
+  "actual_native_stream_rejections": [
+    "goals/create",
+    "dynamicCordisRunner/runHostHalf",
+    "pluginManager/installBundle"
+  ],
+  "mutating_service_calls": 0,
+  "unknown_managed_actions_rejected": true,
+  "malformed_endpoint_rejected": true,
+  "actual_descriptor_hashes": {
+    "dsh-agent-preset-registry": "5dcd6d59496abcaf5eace4c55b4f29494aaa80c660acc508b1b041e8f04e0a59",
+    "dsh-api-account-controller": "e3dc9065da4197a9654f2bcb76f972f7df6ae9e16d08244e9732a71c6159170f",
+    "dsh-api-job-controller": "0c5aa69d3861e00d11c4f616d41589a80ca25b1900ff27c1674d187ad163096f",
+    "dsh-api-remote-access": "d5cd00d138f3c2efbc893d0d50aeb6c8086df12f6ea419f3244f8b38422f18ac",
+    "dsh-api-session-controller": "0c12316ed398710bcd87520f2332ebb647f0ab5f71cdfe04551c0592b48b2c3c",
+    "dsh-api-settings-controller": "f0f7c84c15d4caa66c1485533217acf39984aa405158a5b6f8046d44d9a9fce2",
+    "dsh-api-terminal-controller": "3377602ada84e2de6ec192b200e7ba02ee5051fb05cf4a014b2504b63e1ace10",
+    "dsh-api-workspace-controller": "d8d43921e8be756dea73c58b175fdb533175698ecaf07b0615a928122e85b3ba",
+    "dsh-api-workspace-files": "ffb407b64b813e4e9909cb380eb53b6bf7038f74a41fd55b4bafa932658f19c4",
+    "dsh-client-file-upload": "a07cc9a549c49f38c746a51d26b75cf7e9b9f21a294f56e55721418a4dc7ec04",
+    "dsh-client-product-analytics": "60d8e982077ffe54239f1a288361c1dc88d2f43fc6eccb719860c8e93b099870",
+    "dsh-client-ui-plugin-manager": "28b50cea0439441d063221e7f66d73c3a9bdafc9cb9af019edae620081f2ad54",
+    "dsh-command-feedback": "5d3b65f9e10e272c60ad30b50522e25037bf4bc0078da555fe3f2cd178e75cd6",
+    "dsh-commands": "c8359570bb029548e574fa398eb9caad00b80da29f92987cafb1de075c0e10ac",
+    "dsh-cordis-host-runner": "c52193f76fc71da2601a6c1a02470ea0b8e6d3fb6b5f5e5895a067f49b3d1847",
+    "dsh-experimental-api-speech-to-text": "04475ec8f10719d40e3e1a8bacad0ba96d0214ed57a0b492b95b865c913eac50",
+    "dsh-experimental-client-ui-cot-translation": "93af90604d06043cc3ca6f9c411dd402a5d477b8db496712905e93540bca59f6",
+    "dsh-goal": "d1e4ded15cc42f433daf240d4e9f9926f4169dfb5630127983652e1a5557f0d3",
+    "dsh-host-plugin-inventory": "abc752c26467d5fec28975bfef0c49e25eedd2f95cf991b9493c7ff0a4f0b626",
+    "dsh-llm": "22d86e67e013714b9b70eb119f85b825d73a52e30d6ebd5d7894dc4a2965076a",
+    "dsh-message-feedback": "25db2b6ebc585f8653566624595586ab0c6f4e7e6c5ed9c1b1ebeef6ee35f569",
+    "dsh-office-to-pdf": "7f5345c267bb6e90b0264b7ace46e6c652323cae20b4fac16b4d635dfb8a9da5",
+    "dsh-permission-presets": "4013640fdff39f2cc0eced64641d30b27b47e925e12a12c66b0c60d9f181438c",
+    "dsh-plugin-manager": "4d52452212ba28f6121adb4cceab5d4a64b0f9c09f3216edeffbf81e7717a238",
+    "dsh-plugin-market": "df106c398b9893577bd407218039fb50aee6616b77025fa3a6e3de1247e832fb",
+    "dsh-schedule": "d41bfc4d30142f90516e2d2e5338caed1ae75fccbd5e84d869f45f7cd4d2c129",
+    "dsh-session-reference": "99a252a897624ecbc719347132d9e9435acb5017b1d1951d62eb342846737616",
+    "dsh-subagent": "58e34812ae72879e792ab3df02bc934a1b493a81f753a707e20704ae7f03fb45",
+    "dsh-user-questions": "041f0620dc0fe93e1c7fdd65fc40ec518b4516a41cc78cb6edc6b73ec92feacd"
+  },
+  "items": [
+    {
+      "package": "dsh-agent-preset-registry",
+      "endpoint": "agentPresets/list",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-agent-preset-registry",
+      "endpoint": "agentPresets/read",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-agent-preset-registry",
+      "endpoint": "agentPresets/select",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-api-remote-access",
+      "endpoint": "remoteAccess/follow",
+      "mode": "stream",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-client-ui-plugin-manager",
+      "endpoint": "pluginRegistryProbe/fastest",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/getClientCode",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/inventory",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/invoke",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/reportClientGuardFailure",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/reportRenderFailure",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/resolveInspectQuery",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/resolveRequestRun",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/runHostHalf",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/settleUserRun",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/stopFromPanel",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/syncInspectManifest",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/undefineFromPanel",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/clear",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/complete",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/create",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/edit",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/get",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/pause",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/resume",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-host-plugin-inventory",
+      "endpoint": "pluginInventory/list",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-permission-presets",
+      "endpoint": "permissionPresets/catalog",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/cancelInstall",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/inspect",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/installBundle",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/listBundles",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/listPlugins",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/listVersionExemptions",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/registries",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/removeBundle",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/setBundleEnabled",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/setPluginEnabled",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/setVersionExemption",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/waitForInstall",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-plugin-market",
+      "endpoint": "pluginMarket/listIndexes",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-plugin-market",
+      "endpoint": "pluginMarket/search",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-plugin-market",
+      "endpoint": "pluginMarket/setIndexes",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/catalog",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/delete",
+      "mode": "unary",
+      "before": "BLOCKED_BY_COMPANY_POLICY",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/history",
+      "mode": "unary",
+      "before": "BLOCKED_BY_COMPANY_POLICY",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/list",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "READ_ONLY"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/update",
+      "mode": "unary",
+      "before": "BLOCKED_BY_COMPANY_POLICY",
+      "after": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-subagent",
+      "endpoint": "subagents/interruptByParent",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-subagent",
+      "endpoint": "subagents/prompt",
+      "mode": "unary",
+      "before": "MUTATION_LEASE_GATED",
+      "after": "MUTATION_LEASE_GATED"
+    }
+  ],
+  "native_approval_result_endpoint_allowed_as_mutation": true,
+  "reserved_namespace_others_rejected": true,
+  "candidate_sha256": "b09756fc9ed4b489571ee110951b684b01c95be3070a9c20e8c02f93f715cfab"
+}

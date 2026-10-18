@@ -1,0 +1,23 @@
+{
+  "schema": "r65-native-advanced-worker-v1",
+  "company_requests": 0,
+  "network": "none",
+  "runtime": "0.2.1-rc.2",
+  "official_packages_modified": false,
+  "native_subagent_uses_parent_lease": true,
+  "native_subagent_continuation_accepted": true,
+  "foreign_lease_cannot_continue_child": true,
+  "parent_cancel_closes_child_model": true,
+  "followup_after_child_cancel": true,
+  "native_events_ready": true,
+  "foreign_lease_cannot_answer_approval": true,
+  "native_approval_rejected_file_absent": true,
+  "native_pending_approval_cancelled": true,
+  "status": "PASSED",
+  "gateway_requests": {
+    "/internal/personal-cloud/model/v1/session": 17,
+    "/internal/personal-cloud/model/v1/chat/completions": 9
+  },
+  "model_requests": 9,
+  "child_streams_closed": 1
+}

@@ -1,0 +1,39 @@
+name: Native DSH candidate checks
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - native-upgrade/**
+      - services/gateway/**
+      - services/personal-cloud/**
+      - runtime-overlays/worker/**
+      - .github/workflows/native-dsh-candidate.yml
+permissions:
+  contents: read
+jobs:
+  synthetic-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install exact native runtime
+        run: npm ci --prefix native-upgrade/upstream/runtime-linux --no-audit --no-fund
+      - name: Readiness and request media guards
+        run: |
+          python -m unittest discover -s services/gateway/tests -p test_readiness.py
+          python -m unittest discover -s services/gateway/tests -p test_proxy_media.py
+          python -m unittest discover -s native-upgrade/web -p test_pack_runtime.py
+      - name: Native API and profile migration contracts
+        env:
+          DSH_R65_RUNTIME: ${{ github.workspace }}/native-upgrade/upstream/runtime-linux
+          MAIMI_TEST_RUNTIME: ${{ github.workspace }}/native-upgrade/upstream/runtime-linux
+        run: |
+          node --test services/gateway/tests/worker-adapter.test.mjs native-upgrade/web/test-community-profile.mjs native-upgrade/web/test-verify-runtime.mjs
+          node native-upgrade/upstream-audit/rpc-policy/check-policy.mjs
+# This workflow has no deployment job, company credential, SSH or Docker socket.
