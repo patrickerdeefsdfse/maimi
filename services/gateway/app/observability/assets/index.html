@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>麦米 · 运行监控</title>
+  <link rel="stylesheet" href="/maimi/developer/monitor/assets/monitor.css">
+  <script type="module" src="/maimi/developer/monitor/assets/monitor.mjs"></script>
+</head>
+<body>
+  <div id="access-state" role="status">正在验证监控访问权限…</div>
+  <div id="app" hidden>
+    <aside class="sidebar">
+      <a class="brand" href="/maimi/web/chat"><span class="brand-mark">M</span><span>麦米<small>运行监控</small></span></a>
+      <div class="nav-heading">平台运行</div>
+      <nav aria-label="监控栏目">
+        <button class="nav active" data-tab="overview">运行总览</button>
+        <button class="nav" data-tab="users">用户用量</button>
+        <button class="nav" data-tab="services">沙箱与服务</button>
+        <button class="nav" data-tab="alerts">告警与数据覆盖</button>
+      </nav>
+      <div class="sidebar-note"><span class="dot"></span>仅授权人员可见<small>只读监控 · 不提供服务操作</small></div>
+    </aside>
+    <main>
+      <header>
+        <div><p class="eyebrow">MAIMI OBSERVABILITY</p><h1 id="page-title">运行总览</h1><p class="subtitle">了解资源使用、任务运行与系统容量。</p></div>
+        <div class="toolbar"><label>统计范围<select id="window"><option value="1h">最近 1 小时</option><option value="24h" selected>最近 24 小时</option><option value="7d">最近 7 天</option></select></label><button id="refresh" class="primary">刷新数据</button></div>
+      </header>
+      <div class="status-line"><span id="freshness">等待数据</span><span id="poll-status">每 30 秒刷新 · 页面隐藏时暂停</span></div>
+      <div id="error" class="notice error" role="alert" hidden></div>
+      <section id="panel-overview" class="panel">
+        <div id="summary" class="summary-grid"></div>
+        <div class="section-heading"><h2>资源趋势</h2><span>按实际采样时间展示；缺失区间不补零</span></div>
+        <div id="trends" class="trend-grid"></div>
+        <div class="two-column">
+          <article class="card"><div class="card-heading"><h2>需要关注</h2><button class="text-button" data-open="alerts">查看全部</button></div><div id="alert-preview"></div></article>
+          <article class="card"><h2>统计口径</h2><div class="scope-row"><b>云端工作区</b><p>按已验证的用户归属统计资源与存储。</p></div><div class="scope-row"><b>共享 Office</b><p>独立显示服务资源；缺少任务归属时不分摊给个人。</p></div><div class="scope-row"><b>桌面本地</b><p>与云端资源分开。未接入可信上报时显示“未采集”。</p></div><div class="scope-row"><b>模型与数据</b><p>Token 仅采用服务端真实计量；存储占用、传输流量和模型用量分别统计。</p></div></article>
+        </div>
+      </section>
+      <section id="panel-users" class="panel" hidden>
+        <div class="card table-card"><div class="card-heading"><div><h2>用户资源与用量</h2><p class="hint">每位用户的云端资源与模型计量，未知值不计为零。</p></div><label class="search-label"><span class="sr-only">按工号搜索</span><input id="user-search" type="search" autocomplete="off" placeholder="搜索工号"></label></div><div class="table-scroll"><table><thead id="user-head"></thead><tbody id="user-body"></tbody></table></div><div class="table-footer"><span id="user-count"></span><div><button id="prev">上一页</button><span id="page-number"></span><button id="next">下一页</button></div></div></div>
+      </section>
+      <section id="panel-services" class="panel" hidden><div class="section-heading"><h2>云端沙箱与共享服务</h2><span>运行状态与资源限额</span></div><div id="services" class="service-grid"></div></section>
+      <section id="panel-alerts" class="panel" hidden><div class="two-column"><article class="card"><h2>当前告警</h2><div id="alerts"></div></article><article class="card"><h2>采集覆盖与质量</h2><p class="hint">采集停止、过期和未接入均单独标记。</p><div id="coverage"></div></article></div></section>
+      <footer>仅展示资源和用量元数据，不展示聊天、文档内容、密码或命令正文。<span id="source-note"></span></footer>
+    </main>
+  </div>
+  <dialog id="user-detail"><div class="card-heading"><h2 id="detail-title">用户详情</h2><button id="detail-close" aria-label="关闭详情">关闭</button></div><div id="detail-body"></div></dialog>
+</body>
+</html>

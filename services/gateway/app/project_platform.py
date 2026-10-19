@@ -740,6 +740,8 @@ class ProjectRuntime:
         return {'status': 'running', 'job_id': job_id, 'poll_after_ms': 1000}
 
     async def _run(self, access, connector, action, arguments, fields, deadline):
+        from . import usage_producer as metering
+        metering_started = time.monotonic()
         async def watch():
             while True:
                 await asyncio.sleep(5)
@@ -804,8 +806,9 @@ class ProjectRuntime:
             if sealed:
                 cur.execute('SELECT COALESCE(sum(octet_length(encrypted_result)),0) AS total FROM platform.project_jobs WHERE owner_key=%s',(access.owner,))
                 if len(sealed.encode())>2*1024*1024 or cur.fetchone()['total']+len(sealed.encode())>64*1024*1024:
-                    cur.execute("UPDATE platform.project_jobs SET status='failed',error_code='project_result_quota',updated_at=clock_timestamp() WHERE owner_key=%s AND session_id=%s AND job_id=%s AND status='running'",(*access.identity,access.job_id))
-                    return
+                    cur.execute("UPDATE platform.project_jobs SET status='failed',error_code='project_result_quota',updated_at=clock_timestamp() WHERE owner_key=%s AND session_id=%s AND job_id=%s AND status='running' RETURNING status",(*access.identity,access.job_id))
+                    saved = cur.fetchone()
+                    return saved["status"] if saved else None
             child_index = None
             if sealed and access.parent_job_id:
                 try:
@@ -814,9 +817,10 @@ class ProjectRuntime:
                     self.history_parent(cur, access, access.parent_job_id, connector)
                     child_index = self.history_child_index(cur, access)
                 except IAMFailure as exc:
-                    cur.execute("UPDATE platform.project_jobs SET status=CASE WHEN status='cancelling' THEN 'cancelled' ELSE 'failed' END,error_code=%s,updated_at=clock_timestamp() WHERE owner_key=%s AND session_id=%s AND job_id=%s AND status IN ('running','cancelling')",
+                    cur.execute("UPDATE platform.project_jobs SET status=CASE WHEN status='cancelling' THEN 'cancelled' ELSE 'failed' END,error_code=%s,updated_at=clock_timestamp() WHERE owner_key=%s AND session_id=%s AND job_id=%s AND status IN ('running','cancelling') RETURNING status",
                                 (exc.code, *access.identity, access.job_id))
-                    return
+                    saved = cur.fetchone()
+                    return saved["status"] if saved else None
             if connector == 'service' and code in SERVICE_UNKNOWN:
                 cur.execute("UPDATE platform.project_jobs SET status='failed',encrypted_result=NULL,error_code=%s,updated_at=clock_timestamp() WHERE owner_key=%s AND session_id=%s AND job_id=%s AND status IN ('running','cancelling') RETURNING status",
                             (code,*access.identity,access.job_id))
@@ -831,8 +835,12 @@ class ProjectRuntime:
                     SET encrypted_payload=EXCLUDED.encrypted_payload,payload_bytes=EXCLUDED.payload_bytes,
                     fence=EXCLUDED.fence,version=platform.project_session_state.version+1''',
                     (*access.identity, key, payload, size, scope['fence']))
+            return saved["status"] if saved else None
         try:
-            await self.db.tx(access, finish)
+            saved_status = await self.db.tx(access, finish)
+            # Count the committed state, not the pre-commit optimistic result.
+            metering.task_finished(access.actor, access.job_id, saved_status, metering_started,
+                remote_unknown=connector == "service" and code in SERVICE_UNKNOWN)
         except Exception:
             # Erasure barriers win. Never recreate a deleted scope or result.
             pass

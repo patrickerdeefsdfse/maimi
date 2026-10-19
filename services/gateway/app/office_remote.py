@@ -20,6 +20,7 @@ from starlette.background import BackgroundTask
 
 from .iam_oauth import IAMFailure
 from . import personal_cloud as cloud
+from . import usage_producer as metering
 
 router = APIRouter()
 PREFIX = '/v1/office'
@@ -189,6 +190,7 @@ async def bridge(request: Request, suffix: str, internal=False):
         trust_env=False, follow_redirects=False, transport=_transport)
     response = None
     handed_off = False
+    requested_at = time.monotonic()
     try:
         response = await client.send(client.build_request(request.method, base + PREFIX + suffix,
             headers=headers, content=content), stream=True)
@@ -241,6 +243,12 @@ async def bridge(request: Request, suffix: str, internal=False):
         except (TypeError, ValueError, KeyError):
             raise IAMFailure(502, 'office_response_invalid') from None
         await revalidate()
+        # Only validated, owner-bound service receipts establish a job result.
+        # Capabilities/uploads/downloads are not separate Office jobs.
+        if action != "capabilities":
+            if action == "run":
+                metering.office_started(actor, value["job_id"], requested_at)
+            metering.office_observed(actor, value["job_id"], value["state"])
         return JSONResponse(value, status_code=response.status_code, headers=HEADERS)
     except httpx.HTTPError:
         raise IAMFailure(503, 'office_service_unavailable') from None

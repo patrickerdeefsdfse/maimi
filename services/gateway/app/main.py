@@ -27,6 +27,9 @@ from .office_remote import router as office_router
 from .personal_search import router as personal_search_router
 
 app = FastAPI(title="Megmeet AI Gateway", version="0.1.0")
+# Read-only monitoring is opt-in and has its own exact IAM read allowlist.
+from .observability.bootstrap import install as install_monitor
+monitor_runtime = install_monitor(app)
 app.add_middleware(PlatformAuthMiddleware)
 app.include_router(iam_router)
 app.include_router(desktop_auth_router)

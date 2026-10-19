@@ -22,6 +22,17 @@ python -B -m unittest test_admission test_release test_snapshot_guards -v
 
 测试覆盖空卷证明、旧卷拒绝、恢复映射、激活意图、现有 gate 保护，以及文件和目录同步失败。实际 Docker 的镜像/卷/挂载行为另由 `gateway/activation/test_real_docker.py` 在显式本机合成环境验证；当前 CI 没有自动执行该集成测试，也不代表它已经在生产环境演练。
 
+## Linux / Windows：监控元数据独立回归
+
+`native-dsh-candidate.yml` 中的 `observability-metadata` job 使用 Ubuntu latest / Windows 2025 矩阵和 Python 3.12，各自有 10 分钟上限。它只安装 `requirements-monitor-tests.txt` 中的固定直接测试依赖，并运行：
+
+```sh
+python -m pip install -r native-upgrade/ci/requirements-monitor-tests.txt
+python -B -m pytest -q -p no:cacheprovider services/gateway/tests/observability
+```
+
+目前为 79 项：48 项后台、适配及生命周期检查，31 项实际业务计量检查。没有公司请求、真实 Docker、Office 转换或部署；不依赖桌面编译，不安装 Office 绘图依赖，不执行其他旧网关测试。测试依赖清单仅固定直接依赖，不能代替生产依赖锁或供应链审计。完整覆盖与未覆盖项见 [运行监控说明](../../docs/DEVELOPER-MONITORING.md)。
+
 ## Windows：同仓 PR 或手动编译候选
 
 `.github/workflows/native-dsh-windows-candidate.yml` 在同仓 PR 涉及桌面或本工作流变化时运行，也支持手动触发。job 检查 PR 的 head 仓库与当前仓库相同，不运行其他仓库的 PR；没有 `pull_request_target`。使用 Windows 2025、Node 24、Python 3.12、pnpm 11.28.5。固定官方提交为 `687f282e8625c6b8d11ff58211a90524be2e4317`，归档 SHA-256 为 `157903b22c2881d3678d846755afe957a48df834e747deda805a1195ce25a146`。下载器校验归档，装配器校验完整源码锁，然后仅在新建目录应用公司外壳修改。
