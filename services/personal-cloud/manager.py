@@ -49,6 +49,14 @@ NATIVE021_RUNTIME='0.2.1-rc.2'
 NATIVE021_ACTIVATION_PATH='/opt/personal-cloud/runtime-r65/activation.json'
 NATIVE021_RECEIPTS_PATH='/opt/personal-cloud/runtime-r65/owners'
 NATIVE021_RECEIPTS_DIR=os.getenv('PERSONAL_CLOUD_RUNTIME_OWNER_RECEIPTS_DIR','')
+NATIVE021_NEW_OWNERS_DIR=os.getenv('PERSONAL_CLOUD_RUNTIME_NEW_OWNER_RECEIPTS_DIR','')
+RESTORE_BINDINGS_FILE=os.getenv('PERSONAL_CLOUD_RESTORE_BINDINGS_FILE','')
+from runtime_admission import admit_if_new, new_receipt_matches, AdmissionRefused, read_receipt
+if NATIVE021_NEW_OWNERS_DIR and NATIVE021_NEW_OWNERS_DIR!='/opt/personal-cloud/runtime-r65/new-owners':
+    raise RuntimeError('invalid native021 new-owner receipt directory')
+if RESTORE_BINDINGS_FILE and RESTORE_BINDINGS_FILE!='/opt/personal-cloud/runtime-r65/restore.json':
+    raise RuntimeError('invalid administrative restore binding path')
+
 RUNTIME_ACTIVATION_FILE=os.getenv('PERSONAL_CLOUD_RUNTIME_ACTIVATION_FILE','')
 RUNTIME_RELEASE_SHA=os.getenv('PERSONAL_CLOUD_RUNTIME_RELEASE_SHA','')
 FAST_ENTRY_OVERLAY_DIR=os.getenv('PERSONAL_CLOUD_FAST_ENTRY_OVERLAY_DIR','')
@@ -128,6 +136,10 @@ if RUNTIME_FOLLOWUP_OVERLAY_DIR and (RUNTIME_FOLLOWUP_OVERLAY_DIR!=RUNTIME_FOLLO
     or WORKER_OVERLAY_DIR!=FOLLOWUP_OVERLAY or HISTORY_OVERLAY_DIR!=HISTORY_OVERLAY_PATH
     or CANARY_IMAGE or CANARY_OWNERS or CANARY_OVERLAY_DIR):
     raise RuntimeError('unreviewed runtime followup overlay configuration')
+if RESTORE_BINDINGS_FILE and WORKER_RUNTIME!=REVIEWED_RUNTIME:
+    raise RuntimeError('restore binding requires reviewed old runtime')
+if NATIVE021_NEW_OWNERS_DIR and WORKER_RUNTIME!=NATIVE021_RUNTIME:
+    raise RuntimeError('new-owner receipt requires native021 runtime')
 if WORKER_RUNTIME==NATIVE021_RUNTIME:
     if (any((WORKER_OVERLAY_DIR,HISTORY_OVERLAY_DIR,WORKFLOW_OVERLAY_DIR,RUNTIME_FOLLOWUP_OVERLAY_DIR,
              FAST_ENTRY_OVERLAY_DIR,CANARY_IMAGE,CANARY_OWNERS,CANARY_OVERLAY_DIR))
@@ -187,6 +199,10 @@ def require_native021_history_receipt(owner,state_identity,files_identity):
     """
     if WORKER_RUNTIME!=NATIVE021_RUNTIME:return
     owner_key(owner)
+    if state_identity[0]==image_id and NATIVE021_NEW_OWNERS_DIR and new_receipt_matches(Path(NATIVE021_NEW_OWNERS_DIR)/(owner+'.json'),
+            owner=owner,namespace=INSTANCE,release_sha=RUNTIME_RELEASE_SHA,image_id=image_id,
+            state={'name':state_identity[1],'created_at':state_identity[2]},
+            files={'name':files_identity[0],'created_at':files_identity[1]}):return
     file=Path(NATIVE021_RECEIPTS_DIR)/(owner+'.json')
     try:
         if (state_identity[0]!=image_id or state_identity[1]!=owner_key(owner)+'-state'
@@ -300,6 +316,29 @@ def worker_selection(owner):
     return image_id,WORKER_OVERLAY_DIR,WORKER_RUNTIME
 
 
+def restored_binding(owner):
+    if not RESTORE_BINDINGS_FILE:return None
+    try:
+        data=read_receipt(RESTORE_BINDINGS_FILE,maximum_bytes=4*1024*1024)
+        expected={'schema':'megmeet-runtime-restore-bindings-r65-v1','status':'RESTORE_VERIFIED',
+            'runtime':REVIEWED_RUNTIME,'manager_namespace':INSTANCE,'image_id':image_id,
+            'release_manifest_sha256':RUNTIME_RELEASE_SHA,'owners':data.get('owners')}
+        if data!=expected or not isinstance(data['owners'],dict):raise ValueError()
+        value=data['owners'][owner]
+        if set(value)!={'state','files'}:raise ValueError()
+        for kind,volume in value.items():
+            if (set(volume)!={'name','created_at'} or not isinstance(volume['created_at'],str) or not volume['created_at']
+                or not re.fullmatch(re.escape(owner_key(owner))+'-restore-[a-f0-9]{16}-'+kind,volume['name'])):raise ValueError()
+        return value
+    except (OSError,ValueError,TypeError,KeyError,AdmissionRefused):
+        raise HTTPException(503,'personal_cloud_restore_binding_required') from None
+
+
+def volume_names(owner):
+    value=restored_binding(owner)
+    return {kind:value[kind]['name'] if value else owner_key(owner)+'-'+kind for kind in ('state','files')}
+
+
 def container_config(owner,body,route_token):
     name=owner_key(owner)
     selected_image,overlay_dir,runtime=worker_selection(owner)
@@ -318,8 +357,11 @@ def container_config(owner,body,route_token):
     chunks=[catalog[i:i+CATALOG_CHUNK_BYTES] for i in range(0,len(catalog),CATALOG_CHUNK_BYTES)]
     catalog_env=['CLOUD_MODEL_CATALOG_COUNT='+str(len(chunks))]
     catalog_env += ['CLOUD_MODEL_CATALOG_'+str(i)+'='+part for i,part in enumerate(chunks)]
-    mounts=[{'Type':'volume','Source':name+'-state','Target':'/state'},
-            {'Type':'volume','Source':name+'-files','Target':'/workspace'}]
+    volume_pair=volume_names(owner)
+    mounts=[{'Type':'volume','Source':volume_pair['state'],'Target':'/state'},
+            {'Type':'volume','Source':volume_pair['files'],'Target':'/workspace'}]
+    if runtime==NATIVE021_RUNTIME:
+        for mount in mounts:mount['VolumeOptions']={'NoCopy':True}
     if overlay_dir:
         for filename in WORKER_OVERLAY_FILES:
             source=Path(overlay_dir)/filename
@@ -684,11 +726,22 @@ async def prepare_open(owner,body,request,attempt):
         if queued:return JSONResponse(queued,status_code=202,headers={'Retry-After':'5'})
         route_token=secrets.token_urlsafe(32)
         state_identity=None;files_identity=None
+        if WORKER_RUNTIME==NATIVE021_RUNTIME and NATIVE021_NEW_OWNERS_DIR:
+            try:
+                await admit_if_new(docker=docker,owner=owner,namespace=INSTANCE,image_id=image_id,
+                    release_sha=RUNTIME_RELEASE_SHA,receipts_directory=NATIVE021_NEW_OWNERS_DIR,
+                    snapshot_directory=NATIVE021_RECEIPTS_DIR)
+            except AdmissionRefused:
+                raise HTTPException(503,'personal_cloud_new_owner_admission_required') from None
+        restored=restored_binding(owner);volume_pair=volume_names(owner)
         for suffix in ('state','files'):
-            volume=await docker('POST','/volumes/create',{'Name':name+'-'+suffix,'Labels':{LABEL:INSTANCE,'com.megmeet.personal-cloud.owner':owner}})
+            if not restored:
+                volume=await docker('POST','/volumes/create',{'Name':volume_pair[suffix],'Labels':{LABEL:INSTANCE,'com.megmeet.personal-cloud.owner':owner}})
             # Docker's create response for an existing volume may omit labels.
             # Verify the persisted resource, never infer ownership from request.
-            volume=await docker('GET','/volumes/'+name+'-'+suffix)
+            volume=await docker('GET','/volumes/'+volume_pair[suffix])
+            if restored and (volume.get('Name')!=restored[suffix]['name'] or volume.get('CreatedAt')!=restored[suffix]['created_at']):
+                raise HTTPException(503,'personal_cloud_restored_volume_changed')
             labels=volume.get('Labels') or {}
             if labels.get(LABEL)!=INSTANCE or labels.get('com.megmeet.personal-cloud.owner')!=owner:
                 raise HTTPException(503,'personal_cloud_volume_ownership_mismatch')
@@ -702,6 +755,8 @@ async def prepare_open(owner,body,request,attempt):
             if (files_identity[0]!=name+'-files' or not isinstance(files_identity[1],str) or not files_identity[1]):
                 raise HTTPException(503,'personal_cloud_volume_identity_unavailable')
             require_native021_history_receipt(owner,state_identity,files_identity)
+            migration_ready[owner]=state_identity
+        elif restored:
             migration_ready[owner]=state_identity
         elif migration_ready.get(owner)!=state_identity:
             if migration_failures.get(owner)==state_identity:
@@ -1019,6 +1074,8 @@ async def storage(owner:str,body:StorageBody,request:Request):
     """Exclusive offline maintenance; no caller-supplied image, path or volume."""
     auth(request);name=owner_key(owner);volume_name=name+'-state'
     require_runtime_activation()
+    if RESTORE_BINDINGS_FILE:raise HTTPException(503,'personal_cloud_restore_maintenance_pending')
+    if WORKER_RUNTIME==NATIVE021_RUNTIME:raise HTTPException(503,'personal_cloud_native021_maintenance_unreviewed')
     if body.action=='delete-session' and (not re.fullmatch(r'[A-Za-z0-9_-]{1,200}',body.sessionId or '')
             or any(getattr(body,key) is not None for key in ('digest','archivedDigest','trashId'))):
         raise HTTPException(400,'personal_cloud_storage_arguments')

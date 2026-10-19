@@ -63,15 +63,17 @@ def make_app(broker=None):
         finally:
             raw[:]=b'\x00'*len(raw)
             if 'value' in locals() and isinstance(value,dict) and isinstance(value.get('fields'),dict):value['fields']['password']=''
-    async def connection_state(request,delete=False):
+    async def connection_state(request,delete=False,retire=False):
         await authenticate(request);items=list(request.query_params.multi_items())
         require(len(items)==3 and {key for key,_ in items}=={'employee_no','session_id','generation'})
-        query=dict(items);action=broker.connections.disconnect if delete else broker.connections.status
+        query=dict(items);action=broker.connections.retire if retire else broker.connections.disconnect if delete else broker.connections.status
         return JSONResponse(await action(query['employee_no'],query['session_id'],query['generation']),headers={'Cache-Control':'no-store'})
     @app.get('/v1/connections')
     async def connection_status(request:Request):return await connection_state(request)
     @app.delete('/v1/connections')
     async def connection_disconnect(request:Request):return await connection_state(request,True)
+    @app.delete('/v1/connection-grants')
+    async def connection_revoke(request:Request):return await connection_state(request,retire=True)
     async def scoped(request,operation,delete=False):
         await authenticate(request)
         items=list(request.query_params.multi_items())

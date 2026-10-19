@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import {startCompanyNativeSession} from '../src/company-desktop-session.mjs';
-const runtimeRoot=path.resolve(import.meta.dirname,'../../upstream/runtime-win');
+const runtimeRoot=process.env.DSH_R65_DESKTOP_RUNTIME??process.env.DSH_R65_RUNTIME??path.resolve(import.meta.dirname,'../../upstream',process.platform==='win32'?'runtime-win':'runtime-linux');
 const auth=owner=>({user:{user_no:owner},token:'synthetic-parent-only-token',expiresAt:Date.now()+120000});
 const models=[{id:'deepseek-v4.1-flash'}];
 
@@ -27,7 +27,7 @@ test('native startup IPC serves isolated accounts, revokes old session and retai
  try{
   const stateRoot=path.join(tmp,'state');
   first=await startCompanyNativeSession({auth:auth('M00000001'),models,runtimeRoot,stateRoot,gatewayOrigin,testOnly:true});
-  assert.ok(first.hasCompanySession());assert.equal(first.cloudEntryRequired,true);assert.equal(first.companyPublishAllowed,false);
+  assert.ok(first.hasCompanySession());assert.equal(first.cloudEntryRequired,false);assert.equal(first.companyPublishAllowed,false);
   assert.deepEqual(await first.inspectQuit(),{activeTasks:false,scheduledTasks:false});
   assert.equal(await first.updateTasks('inspect'),false);assert.equal(await first.updateTasks('lock'),false);assert.equal(await first.updateTasks('unlock'),false);
   await assert.rejects(first.updateTasks('download'),/NATIVE_UPDATE_ACTION_INVALID/);

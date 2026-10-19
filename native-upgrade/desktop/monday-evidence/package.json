@@ -1,0 +1,1 @@
+{"name":"@megmeet/dsh-native-desktop-monday-candidate","version":"0.0.0-r65-monday","private":true,"type":"module","scripts":{"test":"node --test --test-concurrency=1 tests/*.test.mjs"},"engines":{"node":">=24.0.0"}}

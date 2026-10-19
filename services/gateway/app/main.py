@@ -22,6 +22,7 @@ from .enterprise_plugins import router as enterprise_plugins_router
 from .personal_cloud import router as personal_cloud_router
 from .personal_cloud_web import router as personal_cloud_web_router
 from .enterprise_connectors import router as enterprise_connectors_router
+from .local_service import router as local_service_router
 from .office_remote import router as office_router
 from .personal_search import router as personal_search_router
 
@@ -34,6 +35,7 @@ app.include_router(enterprise_plugins_router)
 app.include_router(personal_cloud_router)
 app.include_router(personal_cloud_web_router)
 app.include_router(enterprise_connectors_router)
+app.include_router(local_service_router)
 app.include_router(office_router)
 app.include_router(personal_search_router)
 dsh_adapter = DshAgentAdapter.from_environment()

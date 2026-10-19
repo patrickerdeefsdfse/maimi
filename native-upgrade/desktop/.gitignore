@@ -4,3 +4,8 @@ build-tools/
 candidate-state/
 *.local.log
 test-output-r65.txt
+
+# Optional browser test installation and generated test artifacts
+.test-browser/
+test-results/
+playwright-report/

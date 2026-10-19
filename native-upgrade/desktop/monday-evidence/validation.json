@@ -1,0 +1,21 @@
+{
+  "schema": "maimi-r65-monday-desktop-device-auth-v1",
+  "status": "LOCAL_INCREMENT_TESTED_NOT_PUBLISHED",
+  "dsh_version": "0.2.1-rc.2",
+  "unit_and_shell_tests": {"passed": 26, "failed": 0, "actual_transformed_native_menu_executed": true, "separate_staging_overlay_tested": true, "real_native_scrubbed_parent_env_and_child_env_tested": true, "actual_child_credential_absent": true},
+  "real_native_host_test": {"passed": 1, "failed": 0, "duration_ms": 34252.7071, "synthetic_iam": true, "real_native_double_boot": true, "real_electron_os_storage": false},
+  "final_suite": {"passed": 27, "failed": 0, "duration_ms": 37329.7114},
+  "earlier_attempt": {"test": "real_native_double_boot", "total_timeout_ms": 90000, "result": "CANCELLED_TIMEOUT_CLEANED_UP", "production_start_timeout_changed": false},
+  "test_timeout_ms": 210000,
+  "company_requests": 0,
+  "services_changed": false,
+  "existing_user_state_changed": false,
+  "upstream_client_bundle_modified": false,
+  "upstream_primary_runtime_resolver_preserved": true,
+  "credential_plaintext_fallback": false,
+  "normal_close_preserves_device": true,
+  "explicit_signout_local_block_and_revocation": "NATIVE_MENU_AND_EXISTING_VALIDATED_WINDOWS_IPC_WIRED_TESTED",
+  "signout_order": ["ACCOUNT_CONFIRMATION", "NATIVE_TASK_LOCK", "NATIVE_TASK_CONFIRMATION", "BLOCK_RESUME", "CLOSE_PLATFORM_VIEW", "STOP_NATIVE_HOST", "REVOKE_DEVICE", "QUIT_APPLICATION"],
+  "cloud_entry_removal": "WAITING_ENTERPRISE_LOCAL_BRIDGE_ACCEPTANCE",
+  "production_publication": "NOT_ALLOWED_BY_THIS_VALIDATION"
+}

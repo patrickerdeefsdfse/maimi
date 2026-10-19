@@ -11,11 +11,39 @@ on:
 permissions:
   contents: read
 jobs:
+  cloud-admission-and-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify tested modules are the manager image sources
+        run: python native-upgrade/ci/check-activation-sources.py
+      - name: Prepare isolated test dependencies
+        run: |
+          python -m venv "$RUNNER_TEMP/maimi-cloud-ci"
+          "$RUNNER_TEMP/maimi-cloud-ci/bin/python" -m pip install fastapi==0.115.6 httpx==0.28.1
+      - name: Admission, activation and recovery fault tests
+        working-directory: native-upgrade/gateway/activation
+        env:
+          DOCKER_HOST: unix:///nonexistent/maimi-ci-no-docker.sock
+        run: |
+          # Receipt tests enforce root ownership. Only synthetic temporary files
+          # and fake Docker responses are used; this job does not run a daemon.
+          sudo -- env DOCKER_HOST="$DOCKER_HOST" PYTHONDONTWRITEBYTECODE=1 \
+            "$RUNNER_TEMP/maimi-cloud-ci/bin/python" -B -m unittest \
+            test_admission test_release test_snapshot_guards -v
   synthetic-contracts:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -24,6 +52,22 @@ jobs:
           python-version: '3.12'
       - name: Install exact native runtime
         run: npm ci --prefix native-upgrade/upstream/runtime-linux --no-audit --no-fund
+      - name: Prepare pinned desktop source and test tooling
+        run: |
+          npm ci --prefix native-upgrade/desktop --ignore-scripts --no-audit --no-fund
+          python native-upgrade/desktop/scripts/fetch-source.py
+      - name: Native desktop login, sign-out and process credential boundaries
+        env:
+          DSH_R65_RUNTIME: ${{ github.workspace }}/native-upgrade/upstream/runtime-linux
+        run: |
+          node --test --test-concurrency=1 \
+            native-upgrade/desktop/tests/device-login.test.mjs \
+            native-upgrade/desktop/tests/native-env-boundary.test.mjs \
+            native-upgrade/desktop/tests/session-device-native.test.mjs \
+            native-upgrade/desktop/tests/session-startup-cleanup.test.mjs \
+            native-upgrade/desktop/tests/shell-device.test.mjs \
+            native-upgrade/desktop/tests/signout.test.mjs \
+            native-upgrade/desktop/tests/staging.test.mjs
       - name: Readiness and request media guards
         run: |
           python -m unittest discover -s services/gateway/tests -p test_readiness.py

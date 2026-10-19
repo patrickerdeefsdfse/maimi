@@ -1,0 +1,79 @@
+name: Native DSH Windows candidate compilation
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - native-upgrade/desktop/**
+      - .github/workflows/native-dsh-windows-candidate.yml
+permissions:
+  contents: read
+jobs:
+  compile-candidate:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-2025
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DSH_CLIENT_COMMIT_HASH: 687f282e8625c6b8d11ff58211a90524be2e4317
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned candidate tooling
+        run: |
+          npm ci --prefix native-upgrade/desktop --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $pnpmVersion = & ./native-upgrade/desktop/node_modules/.bin/pnpm.cmd --version
+          if ($LASTEXITCODE -ne 0 -or $pnpmVersion.Trim() -ne '11.28.5') { throw 'PNPM_VERSION_MISMATCH' }
+      - name: Fetch and inspect exact official source
+        run: |
+          python native-upgrade/desktop/scripts/fetch-source.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node native-upgrade/desktop/scripts/native-build.mjs inspect
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Check the real shell patch and its frozen receipt
+        run: |
+          node --test native-upgrade/desktop/tests/staging.test.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Stage separate candidate source
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'maimi-native-source'
+          $receipts = Join-Path $env:RUNNER_TEMP 'maimi-native-receipts'
+          node native-upgrade/desktop/scripts/native-build.mjs stage --output $stage
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python native-upgrade/desktop/scripts/prepare-native-shell.py --stage-root $stage --receipt-directory $receipts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compile official artifacts and company desktop shell
+        run: |
+          $pnpm = (Resolve-Path 'native-upgrade/desktop/node_modules/.bin/pnpm.cmd').Path
+          $stage = Join-Path $env:RUNNER_TEMP 'maimi-native-source'
+          Push-Location $stage
+          try {
+            & $pnpm install --frozen-lockfile --ignore-scripts
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            & $pnpm --filter '@deepseek-ai/dsh-desktop' exec install-electron
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            & $pnpm run build:artifacts
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            & $pnpm --filter '@deepseek-ai/dsh-desktop' run build
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally { Pop-Location }
+      - name: Retain source patch receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-dsh-windows-candidate-receipts
+          path: ${{ runner.temp }}/maimi-native-receipts/
+          if-no-files-found: ignore
+          retention-days: 14
+# Compilation only: no app launch, installer, signing, release upload,
+# company login, server access or production deployment.

@@ -1,0 +1,44 @@
+{
+  "schema": "r65-repository-enterprise-test-migration-v1",
+  "date": "2026-10-19",
+  "status": "PASSED_RELEVANT_LOCAL_REGRESSIONS",
+  "platform": "Windows; isolated Redis through explicitly configured local WSL Docker",
+  "native_runtime": "0.2.1-rc.2",
+  "native_regressions": {
+    "passed": 17,
+    "failed": 0,
+    "duration_ms": 1685.1779
+  },
+  "actual_host_end_to_end": {
+    "rerun_by_this_migration": false,
+    "prior_frozen_candidate_passed": true,
+    "latest_integration_independent_review_reported_passed": true,
+    "reported_duration_seconds": 43,
+    "basis": "root coordination message; not a new raw test receipt"
+  },
+  "migrated_host_test": {
+    "syntax_checked": true,
+    "runtime_and_browser_module_paths_verified": true,
+    "complete_electron_gui_acceptance": false
+  },
+  "source_sha256": {
+    "native-upgrade/desktop/src/company-desktop-session.mjs": "ad53cb0bbd7dc00405a96a1893cb41ed62a4884228557c3fc7f2ea6a942785c4",
+    "native-upgrade/desktop/src/company-host-child.mjs": "3ad2b17ef50c1cff51731cf9a249b44c52fdb4057799cec6aec2b866762f5903",
+    "native-upgrade/desktop/src/native-company-host.mjs": "c79d3e7917056be4325cb950951f5c8e8a7cb2e70a7defbd0e15836e7e68e95b",
+    "native-upgrade/desktop/src/local-enterprise/bridge.mjs": "344a6365316f50a203cd132ccbc3d0ac76979a6ee90053895839122e004b1de7",
+    "native-upgrade/desktop/src/local-enterprise/native-plugin.mjs": "9def8884c909d9867954bacafc3378e4981ba41e5f22329e06be1cc181cb3d72",
+    "native-upgrade/desktop/src/local-enterprise/service-ui/client.js": "f3e95be2512c7d3a781503a954cdacb96cc7ed05611f7fa8298edaeaf24fc8fc",
+    "native-upgrade/desktop/src/local-enterprise/service-ui/index.mjs": "5b2df8275a78de7a341e1ec852d93a8d31e85501c46f9359e8136d7e3033bbef",
+    "native-upgrade/desktop/src/local-enterprise/service-ui/package.json": "8ec57c9c5712a9070497023a49c3b815670a0519e326e54f695b9566f806df77"
+  },
+  "startup_cleanup_review": {
+    "tests": 3,
+    "passed": 3,
+    "evidence": "reviewer reported old implementation failed 3/3 and revised integration passed 3/3",
+    "file": "../session-startup-cleanup.test.mjs"
+  },
+  "company_requests": 0,
+  "deployed": false,
+  "linux_execution_of_migrated_tests": "NOT_RUN_IN_THIS_MIGRATION",
+  "old_full_broker_suite_rerun": false
+}

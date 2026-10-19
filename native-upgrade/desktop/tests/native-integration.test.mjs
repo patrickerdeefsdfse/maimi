@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {createCompanyModelBridge} from '../src/company-model-bridge.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
-const runtimeRoot=path.resolve(dir,'../../upstream/runtime-win');
+const runtimeRoot=process.env.DSH_R65_DESKTOP_RUNTIME??process.env.DSH_R65_RUNTIME??path.resolve(dir,'../../upstream',process.platform==='win32'?'runtime-win':'runtime-linux');
 function listen(server){return new Promise(resolve=>server.listen(0,'127.0.0.1',()=>resolve(`http://127.0.0.1:${server.address().port}`)));}
 function stop(server){server.closeAllConnections();return new Promise(resolve=>server.close(resolve));}
 const authorization=()=>({owner:'synthetic-owner',generation:1,token:'synthetic-company-access-token',expiresAt:Date.now()+60000,models:[{id:'deepseek-v4.1-flash',contextWindow:131072,maxTokens:8192}]});

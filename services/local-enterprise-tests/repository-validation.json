@@ -1,0 +1,37 @@
+{
+  "schema": "r65-repository-local-service-test-migration-v1",
+  "date": "2026-10-19",
+  "status": "PASSED_RELEVANT_LOCAL_REGRESSIONS",
+  "gateway_tests": {
+    "passed": 10,
+    "failed": 0,
+    "seconds": 0.235
+  },
+  "retirement_tests": {
+    "passed": 5,
+    "failed": 0,
+    "seconds": 0.248
+  },
+  "real_redis": {
+    "passed": 1,
+    "failed": 0,
+    "seconds": 27.078,
+    "image": "redis:7",
+    "network": "none",
+    "published_ports": 0,
+    "automatic_image_pull": false,
+    "container_removed": true,
+    "engine": "explicit local WSL Docker"
+  },
+  "source_sha256": {
+    "services/gateway/app/local_service.py": "8d4f21ab3de24206e5d30433210dd84ca0eae7589e2b2407b917c48119c15891",
+    "services/service-broker/journal.py": "2512d9c58b8929763b6e12fae5226dfc3844ceaa201a1f4f330cd04b45e902e5",
+    "services/service-broker/ssh_transport.py": "5dd63fa8eb20a0ce2a7501c797927e8917d6580fac6fab0aa9bfa6bb2d560736",
+    "services/service-broker/main.py": "c75b437cf8ba62832dd23e65b317ed681daacc03abd66101fcbfad4ccd4443c0",
+    "services/service-broker/broker-source-pins.json": "6d14f38eb90f088b58bcf163f37a6d4025bb1e30faba9dab58b8cd997ccc0779"
+  },
+  "company_requests": 0,
+  "company_ssh_connections": 0,
+  "deployed": false,
+  "old_full_broker_suite_rerun": false
+}

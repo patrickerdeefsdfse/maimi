@@ -44,12 +44,20 @@ python3 native-upgrade/web/pack-runtime.py \
 | 原生 Office | 官方合成 PPTX → PDF → PNG 成功，转换器释放；缺失 Arial 仍会替换字体 |
 | 旧历史样本 | 51 份官方旧样本，新旧 reader 同为 46 成功、5 缺 fixture 上下文；未证明任意员工历史可无损升级或降级 |
 | 网关 | 真实 PostgreSQL/Redis 就绪检查及合成 XLSX/DOCX/PNG/PDF 处理通过；没有公司业务请求 |
-| 管理器与历史备份 | 8 项管理器、10 项快照单元及 1 项本机 Docker 合成卷集成通过；生成备份及二次校验回执，未实现完整上线/恢复编排 |
-| 桌面 | 32 项 IAM/凭据/模型流/退出等测试及官方完整构建 7/7 通过；Windows 安装器、真实登录、本地企业文件桥与完整 Office payload 未验收 |
+| 管理器与历史备份 | 当前准入/激活/恢复实现通过 39 项 Linux 测试及真实 Docker 合成卷演练；新用户须空卷证明，旧用户须备份回执，恢复卷已接入实际 manager；生产维护事务仍待封装 |
+| 桌面 | 既有 32 项测试；本轮设备续登/退出撤销 27 项、启动异常清理 3 项通过，实际原生 Host 验证了 service 两字段界面、工具与撤销；Windows 官方完整构建 7/7 及桌面类型检查和打包通过。安装器 GUI、系统凭据存储实机、真实公司登录及其他企业工作流尚未验收 |
 
 完整合成对话还覆盖中文附件、模型流、取消后继续发送以及其他登录凭据不能取消当前任务。打包器对全部安装文件和内部链接逐项校验，拒绝空清单、缺失文件、额外文件及同版本被修改的代码；这校验的是已锁定安装的装配一致性，不是第三方依赖安全审计。
 
-详细记录在 `web/worker-smoke.json`、`gateway/validation.json`、`desktop/validation.json` 和 `upstream-audit/`。测试报告只说明其列出的范围。
+详细记录在 `web/worker-smoke.json`、`gateway/validation.json`、`gateway/activation/validation.json`、`desktop/validation.json`、`desktop/monday-evidence/validation.json` 和 `upstream-audit/`。各报告针对不同阶段与范围，不直接相加为一个完整端到端验收数。
+
+## 云端维护接口与 CI
+
+部署源码 `services/personal-cloud` 已包含 manager 和三个准入/快照/恢复模块，Dockerfile 同时打包它们。`gateway/activation` 保留相同的被测实现，CI 在执行 39 项 Linux 测试前逐字节核对两处代码。实现接口为 `prepare_release`、`activate_release`、`restore_release`；都要求明确计划、固定镜像身份和管理员拥有的回执，失败停止准入，不猜测旧卷身份。
+
+真实本机 Docker 测试确认：全局激活由实际 manager 读取，新用户两只空卷完成独立证明，恢复后实际 manager 挂载新的恢复卷，原卷中新版写入的内容保持不变。它不证明公司镜像、容量或业务数据已验收。完整契约见 [准入与恢复](gateway/activation/README.md)，外层生产维护事务尚未提供。
+
+CI 新增 Linux 准入、恢复和桌面回归测试，以及同仓 PR / 手动 Windows 候选编译，均没有公司凭据和部署步骤；定义与执行边界见 [CI 说明](ci/README.md)。桌面候选优先使用本机原生能力，已移除独立云端工作区入口；目前仅开放已接线的 service 企业工具，其他企业工作流及完整文件交接仍需迁移和验收，因此尚不能替换正式客户端。
 
 ## 不能跳过的发布步骤
 
@@ -61,4 +69,4 @@ python3 native-upgrade/web/pack-runtime.py \
 
 新版后台目标、自动定时执行、动态宿主插件安装及自动浏览器后端尚需企业授权和生命周期接入；对应入口不会因为升级版本号就默认开放。原生只读历史、插件清单和权限预设查询已按最新 API 调整，保留可用的查看功能。
 
-新任务沙箱按 [新版执行接口](upstream-audit/SANDBOX-API-MAPPING.md) 接入原生 fs/subprocess/shell/PTC。r64 继续默认关闭；不把同机容器或 WSL 的 partial Landlock 说成完整隔离。此前新用户的实际入口故障仍待周一现场证据。
+新任务沙箱按 [新版执行接口](upstream-audit/SANDBOX-API-MAPPING.md) 接入原生 fs/subprocess/shell/PTC。r64 继续默认关闭；不把同机容器或 WSL 的 partial Landlock 说成完整隔离。本轮不改变单机部署或预先启用新的任务执行池。

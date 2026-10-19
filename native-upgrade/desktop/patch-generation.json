@@ -1,0 +1,22 @@
+{
+  "schema": "monday-desktop-patch-v1",
+  "changed_upstream_files": [
+    {
+      "path": "apps/desktop/src/main.ts",
+      "upstream_sha256": "e345eda0425f2df795d20413bb87bb9a3ddc46e71ceb1cec0755ad1cca3fb847",
+      "candidate_sha256": "3a40eb92f67f8d599b39500fbc1b882d5d0792113e5bd47ba44e7fb9cda7d73d"
+    },
+    {
+      "path": "apps/desktop/scripts/electron-builder-config.mjs",
+      "upstream_sha256": "5f5fe52e0c5d275eac1344eef55ef16448edb4cea74ddd44f421fda9463d6dd0",
+      "candidate_sha256": "eb89470990d6ed4c59a529bdc874a25b11058c6ea0f642a5e81246c0f8e1cc9e"
+    },
+    {
+      "path": "apps/desktop-host/src/index.ts",
+      "upstream_sha256": "1f61890c63da8898cef678479450d7647163530c416751d161dde6b397c654d3",
+      "candidate_sha256": "da2e01fba46e8c0d9e870da6e240f42800a82704bc12e983bfd794001e5f31ed"
+    }
+  ],
+  "copied_upstream_tree": false,
+  "services_changed": false
+}

@@ -13,7 +13,8 @@ process.once('message',async message=>{
  try {
   if(message.type!=='maimi-native-start'||typeof message.capability!=='string')throw Error('PRIVATE_IPC_INIT_REQUIRED');
   process.env.DSH_HOME=message.home;
-  process.env.MAIMI_LOCAL_MODEL_CAPABILITY=message.capability;
+  // TOKEN deliberately matches the native subprocess credential scrub policy.
+  process.env.MAIMI_LOCAL_MODEL_TOKEN=message.capability;
   application=await startNativeCompanyHost(message);
   if(stopping){await application.shutdown.shutdown(0);return;}
   const {ctx}=application;
