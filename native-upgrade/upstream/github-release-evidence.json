@@ -1,0 +1,70 @@
+{
+  "repository": "deepseek-ai/deepseek-harness",
+  "checked_client_date": "2026-10-18",
+  "latest_release": {
+    "url": "https://api.github.com/repos/deepseek-ai/deepseek-harness/releases/415672626",
+    "assets_url": "https://api.github.com/repos/deepseek-ai/deepseek-harness/releases/415672626/assets",
+    "upload_url": "https://uploads.github.com/repos/deepseek-ai/deepseek-harness/releases/415672626/assets{?name,label}",
+    "html_url": "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2",
+    "id": 415672626,
+    "author": {
+      "login": "imccyu",
+      "id": 276526105,
+      "node_id": "U_kgDOEHt0GQ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/276526105?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/imccyu",
+      "html_url": "https://github.com/imccyu",
+      "followers_url": "https://api.github.com/users/imccyu/followers",
+      "following_url": "https://api.github.com/users/imccyu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/imccyu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/imccyu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/imccyu/subscriptions",
+      "organizations_url": "https://api.github.com/users/imccyu/orgs",
+      "repos_url": "https://api.github.com/users/imccyu/repos",
+      "events_url": "https://api.github.com/users/imccyu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/imccyu/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "node_id": "RE_kwDOT3T1g84Yxqky",
+    "tag_name": "dsh-v0.2.1-rc.2",
+    "target_commitish": "master",
+    "name": "v0.2.1-rc.2",
+    "draft": false,
+    "immutable": true,
+    "prerelease": true,
+    "created_at": "2026-10-17T07:22:43Z",
+    "updated_at": "2026-10-17T08:16:33Z",
+    "published_at": "2026-10-17T08:16:33Z",
+    "assets": [],
+    "tarball_url": "https://api.github.com/repos/deepseek-ai/deepseek-harness/tarball/dsh-v0.2.1-rc.2",
+    "zipball_url": "https://api.github.com/repos/deepseek-ai/deepseek-harness/zipball/dsh-v0.2.1-rc.2",
+    "body": "[中文](#cn-v0.2.1-rc.2-community) | [English](#en-v0.2.1-rc.2-community)\r\n\r\n<h3 id=\"cn-v0.2.1-rc.2-community\">新增功能</h3>\r\n\r\n- 适配 DeepSeek-V4.1-Flash-1017 上线 @LegGasai\r\n- 适配 DeepSeek Search 与 Fetch API，可在网页搜索设置中开启 @yudshj, @LegGasai\r\n\r\n<h3 id=\"en-v0.2.1-rc.2-community\">New Features</h3>\r\n\r\n- Add support for DeepSeek-V4.1-Flash-1017. by @LegGasai\r\n- Add support for DeepSeek Search and Fetch APIs, which can be enabled in Web Search settings. by @yudshj, @LegGasai\r\n\r\nFull Changelog: [dsh-v0.2.1-rc.1...dsh-v0.2.1-rc.2](https://github.com/deepseek-ai/deepseek-harness/compare/dsh-v0.2.1-rc.1...dsh-v0.2.1-rc.2)",
+    "reactions": {
+      "url": "https://api.github.com/repos/deepseek-ai/deepseek-harness/releases/415672626/reactions",
+      "total_count": 124,
+      "+1": 73,
+      "-1": 0,
+      "laugh": 3,
+      "hooray": 7,
+      "confused": 0,
+      "heart": 13,
+      "rocket": 16,
+      "eyes": 12
+    },
+    "mentions_count": 2
+  },
+  "tag": {
+    "ref": "refs/tags/dsh-v0.2.1-rc.2",
+    "node_id": "REF_kwDOT3T1g7lyZWZzL3RhZ3MvZHNoLXYwLjIuMS1yYy4y",
+    "url": "https://api.github.com/repos/deepseek-ai/deepseek-harness/git/refs/tags/dsh-v0.2.1-rc.2",
+    "object": {
+      "sha": "687f282e8625c6b8d11ff58211a90524be2e4317",
+      "type": "commit",
+      "url": "https://api.github.com/repos/deepseek-ai/deepseek-harness/git/commits/687f282e8625c6b8d11ff58211a90524be2e4317"
+    }
+  },
+  "source_download": "https://codeload.github.com/deepseek-ai/deepseek-harness/tar.gz/687f282e8625c6b8d11ff58211a90524be2e4317"
+}

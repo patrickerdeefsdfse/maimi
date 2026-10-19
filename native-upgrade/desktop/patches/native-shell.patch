@@ -1,0 +1,222 @@
+--- a/apps/desktop/src/main.ts
++++ b/apps/desktop/src/main.ts
+@@ -25,6 +25,8 @@
+ import { resolveDesktopPaths } from './paths.ts'
+ import { DesktopProjectManager } from './project-manager.ts'
+ import { DesktopHostFatalError, DesktopHostProcess, DesktopHostUncleanExitError } from './host-process.ts'
++import { CompanyNativeDesktopHost, COMPANY_CANDIDATE } from './company-shell-host.ts'
++import { CompanySignOutController } from './company-signout.ts'
+ import { DesktopPlatformView, PLATFORM_IPC, platformBounds } from './platform-view.ts'
+ import { installDesktopDirectoryPicker } from './directory-picker.ts'
+ import { installMicrophonePermissions } from './microphone-permissions.ts'
+@@ -82,6 +84,11 @@
+ 
+ // Platform-conventional logs directory (macOS ~/Library/Logs/<name>, otherwise under userData);
+ // set before ready so the first fatal report already resolves under it.
++if (COMPANY_CANDIDATE) {
++  app.setName('麦米 DSH 升级候选')
++  app.setPath('userData', join(app.getPath('appData'), 'MegmeetMaimiDSH-r65-candidate'))
++  process.env.DSH_HOME = join(app.getPath('userData'), 'native-shell-state')
++}
+ app.setAppLogsPath()
+ 
+ function currentDesktopLocale(): ReturnType<typeof resolveDesktopLocale> {
+@@ -348,6 +355,8 @@
+   // NSIS passes --updated when it launches the application after installation.
+   let raiseAfterUpdate = process.platform === 'win32' && process.argv.includes('--updated')
+   let shellInstallerOwnsQuit = false
++  let companyActiveHost: CompanyNativeDesktopHost | undefined
++  let requestCompanySignOut: () => Promise<boolean> = () => Promise.resolve(false)
+   let requireCleanStop = false
+   let updateStoppedHost = false
+   let updateStopFailure: DesktopHostUncleanExitError | undefined
+@@ -443,6 +452,23 @@
+   const platformView = new DesktopPlatformView(join(app.getAppPath(), 'lib', 'preload-platform-account.cjs'),
+     () => locale.id === 'zh-CN' ? 'zh_CN' : 'en_US', process.platform === 'win32' ? 'win32' : 'darwin')
+   const backend = new DesktopBackendController((onFailure) => {
++    if (COMPANY_CANDIDATE) {
++      const host = new CompanyNativeDesktopHost(resources.dsh, onFailure, primaryRuntime, resources)
++      companyActiveHost = host
++      return {
++        start: async () => {
++          const ready = await host.start()
++          hostCookie = await authenticateWebHost(ready.url)
++          hostUrl = ready.url
++          if (ready.injections === undefined) throw new Error('Company Host did not provide native boot injections')
++          injections = ready.injections
++          analyticsEnabled = false
++        },
++        stop: () => host.stop(requireCleanStop),
++        updateTasks: (action: 'inspect' | 'lock' | 'unlock') => host.updateTasks(action),
++        inspectQuit: () => host.inspectQuit(),
++      }
++    }
+     const hostInspectPort = developmentHostInspectPort(development)
+     const host = new DesktopHostProcess(resources.node, resources.dsh, activeProject,
+       hostInspectPort, { ...hostEnvironment, DSH_CLIENT_VERSION: desktopClientVersion() }, onFailure,
+@@ -562,6 +588,7 @@
+   }
+ 
+   const readWelcomeState = async () => {
++    if (COMPANY_CANDIDATE) return { loggedIn: backend.host !== undefined, hasApiKey: false, writable: false, localePreference: 'zh-CN' }
+     if (backend.host === undefined || welcomeBackend === undefined) throw new Error('desktop welcome: backend unavailable')
+     return welcomeBackend.read()
+   }
+@@ -571,7 +598,7 @@
+     startup ??= (async () => {
+       await navigateMain(applicationUrl)
+       await backend.start(async () => {
+-        await Promise.all([manager.applyRelease(), prepareHostEnvironment()])
++        await Promise.all([COMPANY_CANDIDATE ? Promise.resolve() : manager.applyRelease(), prepareHostEnvironment()])
+       })
+       if (backend.host !== undefined) await openInitialWindow()
+       if (backend.host !== undefined) updateJournal?.action('workspace-ready')
+@@ -637,7 +664,7 @@
+       }
+       return true
+     },
+-    undefined, undefined, undefined,
++    undefined, COMPANY_CANDIDATE ? () => false : undefined, undefined,
+     (success, reason) => { void track('desktop_upgrade_download_result', { is_success: success, ...reason === undefined ? {} : { error_reason: reason } }) },
+     updateChannel,
+   )
+@@ -738,6 +765,7 @@
+   ipcMain.handle(PLATFORM_IPC.open, (event, page: unknown, bounds: unknown) => {
+     const owner = assertMainApplication(event)
+     if (page !== 'usage' && page !== 'top-up') throw new Error('Invalid Platform page')
++    if (COMPANY_CANDIDATE) throw new Error('COMPANY_ACCOUNT_MANAGED_BY_IAM')
+     return platformView.open(owner, page, platformBounds(bounds))
+   })
+   ipcMain.handle(PLATFORM_IPC.bounds, (event, bounds: unknown) => {
+@@ -755,6 +783,7 @@
+       || new URL(event.senderFrame.url).origin !== new URL(applicationUrl).origin) {
+       throw new Error('desktop welcome: rejected locale request from an unowned frame')
+     }
++    if (COMPANY_CANDIDATE) return { languages: systemLanguages, preference: 'zh-CN' }
+     if (welcomeBackend === undefined) throw new Error('desktop welcome: backend unavailable')
+     return { languages: systemLanguages, preference: await welcomeBackend.readLocalePreference() }
+   })
+@@ -779,7 +808,7 @@
+   })
+   ipcMain.handle(DESKTOP_IPC.onboardingApiKey, async (event) => {
+     assertProductSender(event)
+-    return (await readWelcomeState()).hasApiKey
++    return COMPANY_CANDIDATE ? backend.host !== undefined : (await readWelcomeState()).hasApiKey
+   })
+   ipcMain.on(DESKTOP_IPC.onboardingActive, (event, active: unknown) => {
+     const window = mainWindow
+@@ -919,6 +948,7 @@
+   }
+ 
+   const automaticCheck = (): void => {
++    if (COMPANY_CANDIDATE) return
+     if (!quitting) void mandatoryPolicy?.check('foreground-or-resume').catch((error: unknown) => { console.error(error) })
+     if (!quitting) void updateSchedule.check().catch((error: unknown) => { console.error(error) })
+   }
+@@ -952,6 +982,11 @@
+       { role: 'unhide', label: currentDesktopLocale().messages.showAllApplications }, { type: 'separator' }]
+     : []
+   const applicationItems = (): MenuItemConstructorOptions[] => [
++    ...COMPANY_CANDIDATE ? [{
++      label: '退出公司登录并关闭麦米',
++      enabled: backend.host !== undefined && !quitting && !shellInstallerOwnsQuit,
++      click: () => { void requestCompanySignOut() },
++    }, { type: 'separator' as const }] : [],
+     // Windows has no system About panel; Electron's fallback is a plain
+     // message box, so the shell shows its own dimmed dialog instead.
+     process.platform === 'win32'
+@@ -1012,6 +1047,37 @@
+     // size directly, where the 1024 px PNG would be scaled down by GDI.
+     ...(process.platform === 'win32' ? { icon: nativeImage.createFromPath(trayIconPath) } : {}),
+   })
++
++  const companySignOut = new CompanySignOutController({
++    current: () => {
++      const company = companyActiveHost
++      const host = backend.host
++      if (!COMPANY_CANDIDATE || company === undefined || host === undefined || quitting || shellInstallerOwnsQuit) return undefined
++      return {
++        identity: company,
++        lock: () => host.updateTasks('lock'),
++        unlock: () => host.updateTasks('unlock'),
++        blockResume: () => company.blockResume(),
++        stop: async () => { try { await platformView.closeAndWait() } finally { await backend.close(); companyActiveHost = undefined } },
++        revoke: () => company.signOut(),
++      }
++    },
++    confirmAccount: async () => (await dialog.showMessageBox({
++      type: 'question', title: '退出公司登录', message: '退出公司登录并关闭麦米？',
++      detail: '此电脑下次打开麦米需要重新登录。当前本地聊天和文件会保留。',
++      buttons: ['退出登录', '取消'], defaultId: 1, cancelId: 1, noLink: true,
++    })).response === 0,
++    confirmTasks: () => quitConfirmation.confirm(),
++    notify: async (result) => { await dialog.showMessageBox({
++      type: 'warning', title: '麦米公司登录',
++      message: result === 'revocation-pending' ? '本机已退出，服务器撤销将在网络恢复后的下次启动时重试。'
++        : result === 'stop-failed' ? '已阻止本机自动登录，任务退出未能完整确认，麦米将关闭。'
++          : '本次退出未能完成，请稍后重试。',
++      buttons: ['知道了'], noLink: true,
++    }) },
++    finish: () => { quitWithoutConfirmation() },
++  })
++  requestCompanySignOut = () => companySignOut.run()
+ 
+   if (process.platform === 'win32') {
+     ipcMain.handle(DESKTOP_IPC.windowsMenu, (event, name: unknown, x: unknown, y: unknown) => {
+@@ -1141,6 +1207,7 @@
+   }
+   let openingWelcome: Promise<void> | undefined
+   const showWelcome = (): Promise<void> => {
++    if (COMPANY_CANDIDATE) return reconcileBackend()
+     if (quitting) return Promise.resolve()
+     if (welcomeWindow !== undefined && !welcomeWindow.isDestroyed()) {
+       if (!welcomeWindow.isVisible()) void track('auth_page_view', {})
+@@ -1293,7 +1360,7 @@
+   const policyInput: unknown = app.isPackaged
+     ? ('dshMandatoryUpdatePolicy' in manifest ? manifest.dshMandatoryUpdatePolicy : undefined)
+     : developmentPolicy === undefined ? undefined : JSON.parse(developmentPolicy) as unknown
+-  const policyConfig = resolveDesktopPolicyConfig(policyInput, !app.isPackaged)
++  const policyConfig = resolveDesktopPolicyConfig(COMPANY_CANDIDATE ? undefined : policyInput, !app.isPackaged)
+   if (policyConfig !== undefined) {
+     if (policyConfig.authentication === 'feishu-test') {
+       policyAuth = new DesktopPolicyTestAuth(policyConfig.origin, policyConfig.allowedAuthOrigins, locale,
+--- a/apps/desktop/scripts/electron-builder-config.mjs
++++ b/apps/desktop/scripts/electron-builder-config.mjs
+@@ -50,7 +50,7 @@
+   preparedRuntime = undefined,
+   preparedRuntimeVersion = undefined,
+ ) {
+-  const appId = resolveDesktopAppId(env)
++  const appId = 'com.megmeet.maimi.r65candidate'
+   const targetPlatform = env.DSH_DESKTOP_TARGET_PLATFORM
+   const resolvedPlatform = targetPlatform ?? hostPlatform
+   const resolvedArch = env.DSH_DESKTOP_TARGET_ARCH ?? hostArch
+@@ -113,7 +113,7 @@
+       ...buildVersion === productVersion ? {} : { version: buildVersion },
+       ...packaged === undefined ? {} : { dshBuildCommit: packaged.commit, dshBuildDirty: packaged.dirty },
+     },
+-    productName: 'DeepSeek Harness',
++    productName: '麦米 DSH 升级候选',
+     // Unsigned builds carry their own suffix so a shared file can never pass for a release artifact.
+     artifactName: `deepseek-harness-\${version}-\${os}-\${arch}${output.suffix}.\${ext}`,
+     directories: { output: output.directory },
+@@ -135,6 +135,7 @@
+     },
+     files: [
+       'lib/main.js',
++      'maimi/**/*',
+       'lib/welcome/**/*',
+       'lib/preload-app.cjs',
+       'lib/preload-mandatory.cjs',
+--- a/apps/desktop-host/src/index.ts
++++ b/apps/desktop-host/src/index.ts
+@@ -9,6 +9,9 @@
+ import type {} from '@deepseek-ai/dsh-deepseek-account'
+ import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
+ import * as desktopOffice from './office.ts'
++// Expose the unchanged native Office composition to the company Host adapter.
++export { desktopOffice }
++export { installOfficeEngineResolution } from './office-engine.ts'
+ 
+ import { installDesktopUpdateTaskControl } from './update-tasks.ts'
+ import { installDesktopQuitInspection } from './quit-inspection.ts'

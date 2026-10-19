@@ -1,0 +1,11 @@
+{
+  "schema": "r65-rpc-policy-approval-merge-map-v1",
+  "files": [
+    {
+      "target": "runtime-overlays/worker/opt/personal-cloud/task-authority.mjs",
+      "source": "upstream-audit/rpc-policy/task-authority.mjs",
+      "old_sha256": "445881281fbd8b3dc3597d90b9358f6f6369bbf2ef63d3dfcdbdcb80089ffb08",
+      "new_sha256": "b09756fc9ed4b489571ee110951b684b01c95be3070a9c20e8c02f93f715cfab"
+    }
+  ]
+}

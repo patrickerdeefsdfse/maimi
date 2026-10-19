@@ -1,0 +1,7 @@
+# Direct dependencies for the synthetic monitoring suite, not a production lock.
+# Runtime versions match services/gateway/requirements.txt.
+fastapi==0.115.6
+httpx==0.28.1
+cryptography==50.0.1
+psycopg[binary]==3.2.3
+pytest==8.3.4

@@ -399,7 +399,7 @@ async def native_http(request:Request,path:str):
     if retention.enabled():
         # Body and endpoint must agree before interpreting a native identity.
         envelope=None
-        if request.method=='POST' and path.startswith('/api/') and 'json' in request.headers.get('content-type',''):
+        if request.method=='POST' and path.startswith('/api/') and request.headers.get('content-type','').split(';',1)[0].strip().lower()=='application/json':
             try:envelope=json.loads(body)
             except (ValueError,TypeError):pass
         if isinstance(envelope,dict) and envelope.get('type')=='client-request' and envelope.get('method')==path[5:]:

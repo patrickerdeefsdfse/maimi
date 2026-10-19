@@ -1,0 +1,27 @@
+# Candidate override ONLY. A future maintenance package must bind the exact
+# reviewed gateway image, numeric UID/GID, paths, baseline and backup receipt.
+# Required substitutions deliberately have no default; this is not an apply file.
+# Compose appends/merges existing volumes: review the FULL merged config privately
+# before approval. Never expose Docker/proc/cgroup/business volumes to this module.
+services:
+  gateway:
+    image: ${MAIMI_MONITOR_BOUND_GATEWAY_IMAGE:?reviewed immutable gateway image must be bound}
+    environment:
+      MAIMI_MONITOR_ENABLED: "false"
+      MAIMI_MONITOR_READ_USERS: "M00096389,M00000246,M00091350,M00063756,M00003260,M00057343"
+    volumes:
+      - type: bind
+        source: ${MAIMI_MONITOR_BOUND_STATE_HOST_PATH:?existing private state path must be bound}
+        target: /var/lib/maimi-monitor
+        read_only: false
+        bind:
+          create_host_path: false
+          propagation: rprivate
+      # Mount the directory, not latest.json: atomic replacement changes its inode.
+      - type: bind
+        source: /run/maimi-monitor
+        target: /run/maimi-monitor
+        read_only: true
+        bind:
+          create_host_path: false
+          propagation: rprivate

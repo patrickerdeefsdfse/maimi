@@ -1,0 +1,18 @@
+{
+  "schema": "r65-manager-candidate-validation-v1",
+  "status": "PASSED_LOCAL_LINUX",
+  "manager_tests": 8,
+  "snapshot_unit_tests": 10,
+  "snapshot_real_docker_tests": 1,
+  "snapshot_real_manager_receipt_admission": true,
+  "snapshot_source_bytes_unchanged": true,
+  "snapshot_test_containers_and_volumes_remaining": 0,
+  "company_requests": 0,
+  "employee_data_read": false,
+  "production_deployment": false,
+  "backup_creation": "IMPLEMENTED_TESTED_SYNTHETIC_VOLUMES",
+  "activation_orchestration": "NOT_IMPLEMENTED",
+  "new_employee_volume_admission": "NOT_IMPLEMENTED",
+  "restore_controller": "NOT_IMPLEMENTED",
+  "history_maintenance_native021": "NOT_IMPLEMENTED"
+}

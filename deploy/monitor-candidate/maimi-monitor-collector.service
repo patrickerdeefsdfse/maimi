@@ -1,0 +1,67 @@
+# Candidate only. No [Install] section, installer, timer or enable operation.
+# A future reviewed maintenance transaction must bind/verify this code release,
+# service UID/GID, Docker socket and host paths before creating the gate below.
+[Unit]
+Description=Maimi bounded local monitoring metadata collector (candidate)
+After=docker.service
+ConditionPathExists=/etc/maimi-monitor/collector-enabled
+AssertPathExists=/run/docker.sock
+ConditionPathIsDirectory=/run/maimi-monitor
+ConditionPathIsDirectory=/opt/maimi-monitor/collector
+ConditionPathIsDirectory=/opt/maimi-monitor/docker-empty-config
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/maimi-monitor/collector
+# -E -s retains this root-owned script directory for sibling imports; -I does not.
+ExecStart=/usr/bin/python3 -E -s -B /opt/maimi-monitor/collector/daemon.py --cache-directory /run/maimi-monitor --interval-seconds 15
+Environment=PATH=/usr/bin:/bin
+Environment=LANG=C.UTF-8
+UMask=0077
+Restart=no
+TimeoutStopSec=20
+KillMode=control-group
+
+# Only the provisioned private metadata cache is writable on the host.
+ProtectSystem=strict
+ReadWritePaths=/run/maimi-monitor
+ReadOnlyPaths=/sys/fs/cgroup /proc /tmp /var/tmp
+ProtectHome=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+
+# Other host PIDs remain visible only for the fixed metadata reads in collector.
+# The caps allow directory traversal, cache ownership and per-PID metadata reads;
+# they are not an OS-level whitelist of file contents or Docker API operations.
+ProtectProc=default
+ProcSubset=all
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_READ_SEARCH CAP_SYS_PTRACE
+AmbientCapabilities=
+SystemCallArchitectures=native
+SystemCallFilter=~@mount @reboot @swap @module @raw-io @clock
+
+# No TCP/IP sockets or listener. The fixed Docker Unix socket is NOT a read-only
+# API: Docker metadata-only policy is enforced by reviewed collector code.
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+
+TasksMax=64
+MemoryMax=256M
+CPUQuota=50%
+Nice=10
+IOWeight=10
+StandardOutput=journal
+StandardError=null

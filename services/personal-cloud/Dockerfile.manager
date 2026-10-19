@@ -2,5 +2,6 @@ ARG GATEWAY_BASE_IMAGE=megmeet-dev-gateway:local
 FROM ${GATEWAY_BASE_IMAGE}
 USER root
 COPY services/personal-cloud/manager.py /opt/personal-cloud/manager.py
+COPY services/personal-cloud/runtime_admission.py services/personal-cloud/runtime_release.py services/personal-cloud/runtime_snapshot.py /opt/personal-cloud/
 ENV PYTHONDONTWRITEBYTECODE=1
 CMD ["uvicorn","manager:app","--app-dir","/opt/personal-cloud","--host","0.0.0.0","--port","8092","--no-access-log"]

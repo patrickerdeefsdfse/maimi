@@ -1,0 +1,30 @@
+{
+  "schema": "maimi-native-shell-integration-r65-v1",
+  "status": "SOURCE_CANDIDATE_PREPARED",
+  "default_work_mode": "NATIVE_LOCAL",
+  "company_login": "EXISTING_IAM_PKCE",
+  "official_update_feed_enabled": false,
+  "official_account_ui_enabled": false,
+  "cloud_entry": "NATIVE_SIDEBAR_FOOTER_BROWSER_LINK",
+  "official_client_bundles_modified": 0,
+  "changed_upstream_files": [
+    {
+      "path": "apps/desktop/src/main.ts",
+      "upstream_sha256": "e345eda0425f2df795d20413bb87bb9a3ddc46e71ceb1cec0755ad1cca3fb847",
+      "candidate_sha256": "d55f072fbf233f0fef48e6919d2958fb1decf4d9084f1316c46cad01321d98a7"
+    },
+    {
+      "path": "apps/desktop/scripts/electron-builder-config.mjs",
+      "upstream_sha256": "5f5fe52e0c5d275eac1344eef55ef16448edb4cea74ddd44f421fda9463d6dd0",
+      "candidate_sha256": "eb89470990d6ed4c59a529bdc874a25b11058c6ea0f642a5e81246c0f8e1cc9e"
+    },
+    {
+      "path": "apps/desktop-host/src/index.ts",
+      "upstream_sha256": "1f61890c63da8898cef678479450d7647163530c416751d161dde6b397c654d3",
+      "candidate_sha256": "da2e01fba46e8c0d9e870da6e240f42800a82704bc12e983bfd794001e5f31ed"
+    }
+  ],
+  "electron_shell_build": "NOT_YET_TESTED",
+  "company_requests": 0,
+  "services_changed": false
+}

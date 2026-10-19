@@ -1,4 +1,4 @@
-// Reviewed only against DSH 0.2.0-rc.2. This does not alter independent web search.
+// Reviewed against DSH 0.2.1-rc.2. This does not alter independent web search.
 export const COMPANY_CHAT_MODEL = 'deepseek-v4.1-flash';
 export const COMPANY_CHAT_PROVIDER = 'deepseek-official';
 export const inject = ['llm'];
@@ -41,9 +41,11 @@ export function apply(ctx, config) {
   for (const method of ['resolveCallConfig', 'prepareCall']) ctx.effect(() => {
     const own = Object.hasOwn(llm, method), original = llm[method];
     if (typeof original !== 'function') denied();
-    const prepare = function(value, signal) {
+    const prepare = function(value, ...args) {
       assertManagedAdapter(llm, base);
-      return original.call(this, canonicalSelection(value), signal);
+      // prepareCall adds a configure callback in 0.2.1. Preserve it (and the
+      // signal) so native control selection does not silently disappear.
+      return original.call(this, canonicalSelection(value), ...args);
     };
     llm[method] = prepare;
     return () => { if (llm[method] === prepare) { if (own) llm[method] = original; else delete llm[method]; } };

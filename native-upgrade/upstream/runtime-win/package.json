@@ -1,0 +1,8 @@
+{
+  "name": "maimi-dsh-r65-upstream-audit",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.2.1-rc.2"
+  }
+}

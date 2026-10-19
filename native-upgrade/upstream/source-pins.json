@@ -1,0 +1,137 @@
+{
+  "schema": "maimi-r65-upstream-source-pins-v1",
+  "verified_date": "2026-10-18",
+  "repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "candidate": {
+    "tag": "dsh-v0.2.1-rc.2",
+    "commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+    "prerelease": true,
+    "published_at": "2026-10-17T08:16:33Z",
+    "github_release_assets_count": 0,
+    "source_archive": "source-687f282.tar.gz",
+    "archive_sha256": "157903b22c2881d3678d846755afe957a48df834e747deda805a1195ce25a146",
+    "download_url": "https://codeload.github.com/deepseek-ai/deepseek-harness/tar.gz/687f282e8625c6b8d11ff58211a90524be2e4317",
+    "source_directory": "source/deepseek-harness-687f282e8625c6b8d11ff58211a90524be2e4317"
+  },
+  "baseline": {
+    "tag": "dsh-v0.2.0-rc.2",
+    "commit": "639ed015397290b3745d163aafe02ffee4aa3f84",
+    "source_archive": "baseline-639ed015397290b3745d163aafe02ffee4aa3f84.tar.gz",
+    "archive_sha256": "bbc09e888e1df3aa37be049abdb7720951e76442d21e5432365d87a465d628f1",
+    "source_directory": "baseline-source/deepseek-harness-639ed015397290b3745d163aafe02ffee4aa3f84"
+  },
+  "npm": {
+    "package": "@deepseek-ai/dsh",
+    "exact_version": "0.2.1-rc.2",
+    "dist_tags_at_check": {
+      "latest": "0.2.0-rc.2",
+      "alpha": "0.2.1-alpha.5",
+      "next": "0.2.1-rc.2"
+    },
+    "dist": {
+      "shasum": "a502d1551aabc881020e3cb7961c38901565731a",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.2.1-rc.2.tgz",
+      "fileCount": 20,
+      "integrity": "sha512-tvY+yhfKRifthbqPe/OK0AYxM5ZkvqfYq/jMYgJcEUxiRRL1Vwra3Ti5TB6AXgSWQdiPHYh/Vp6SJa9yHwMNuw==",
+      "signatures": [
+        {
+          "sig": "MEUCIQDzlV5D1iMmmEB24vl+G3SB66E2XZiUSgtm2Z4bUjcVBQIgChv383N7gUAjxF6MIuitkjQ8lzyD8Vr8s5zHmg59hoI=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEQCIGmYN4vmEyNNXPzkUQ5pZwVIGQj5+fXXBC5wJiZ6HfoOAiBmZQM4XSvt4lQowjVHiG9bC1dM3qPHaGI4jwhtWIwshw=="
+        }
+      ],
+      "unpackedSize": 75972
+    },
+    "cli_entry": "@deepseek-ai/dsh/lib/bin.js",
+    "composition_export": "@deepseek-ai/dsh/profile-boot"
+  },
+  "isolated_installs": {
+    "runtime-linux": {
+      "package_lock_sha256": "70457c61ef0b54bc727d0bf423b0e2904a32fd167886062f1ac9de1d28089eb7",
+      "lockfile_version": 3,
+      "installed_cli_version": "0.2.1-rc.2",
+      "npm_scripts_enabled": true,
+      "command": "npm install --no-audit --no-fund",
+      "registry_resolved_packages": 683
+    },
+    "runtime-win": {
+      "package_lock_sha256": "f3c173db6673f66daea13846e271592fbcce9e0dfa02f2616bd759d2bde3ee63",
+      "lockfile_version": 3,
+      "installed_cli_version": "0.2.1-rc.2",
+      "npm_scripts_enabled": false,
+      "command": "npm install --no-audit --no-fund --ignore-scripts",
+      "registry_resolved_packages": 683
+    }
+  },
+  "source_files": {
+    "apps/cli/package.json": {
+      "sha256": "d42efe9f3ff424f602f11598af8805ad25039953ebbbd3c163d67875f7e8658b",
+      "bytes": 8138
+    },
+    "apps/desktop/package.json": {
+      "sha256": "913095d3048ad424335acccf8e3193bb9523961604709062a430f57c4ac22479",
+      "bytes": 3904
+    },
+    "packages/bundle/web-app/src/startup.ts": {
+      "sha256": "dd04c1ef79fbc5e465f0a2124d20db639d8f249067edcc258a45c7cac5755ed8",
+      "bytes": 5650
+    },
+    "packages/client/connection/src/index.ts": {
+      "sha256": "33a14e80298e0a0bc7bafef515d853d13584cd2433844b3dc2a89d4980d315e1",
+      "bytes": 6978
+    },
+    "packages/core/session/src/types.ts": {
+      "sha256": "515cba50f366b06dc3caaab45e8ce98c48c80fc07684437aba014df13ce04f2f",
+      "bytes": 24681
+    },
+    "packages/core/session/src/index.ts": {
+      "sha256": "c1f08f7dcf4075eeebb13e6ea06b3f348bfeb85b8a5d4e4bfd1c3b93c1959332",
+      "bytes": 65812
+    },
+    "packages/session-query/session-query-sqlite/src/schema.ts": {
+      "sha256": "2cc4c7c8e50409847599a048922d55ef4ffbd1ac2309502f3a5a06420bc1a28f",
+      "bytes": 6098
+    },
+    "packages/fs/fs/src/index.ts": {
+      "sha256": "bb3e351a975fde0f5d313cf9374af958b5d92f85b9f7c6688ccc7098409690d7",
+      "bytes": 13191
+    },
+    "packages/subprocess/subprocess/src/index.ts": {
+      "sha256": "19e3fde571d0cd1f76e95696477a7d38677529aaf51b07c429965f2e4330065f",
+      "bytes": 8152
+    },
+    "packages/subprocess/subprocess/src/types.ts": {
+      "sha256": "e65166444ff791994a7198a86ac4a821e8329120bd551f342913623c87e5a715",
+      "bytes": 13135
+    },
+    "packages/shell/shell/src/index.ts": {
+      "sha256": "2f4612974ca1cbcebb119007102b3daa66a95bad507f5278b8f87bd141083590",
+      "bytes": 3971
+    },
+    "packages/sandbox/sandbox/src/index.ts": {
+      "sha256": "46592025ce36d04ff8d1bfa9d6594dd8d1527883649ccf40ff7a169e94e68dc6",
+      "bytes": 7966
+    },
+    "packages/ptc-runtime/ptc-runtime/src/index.ts": {
+      "sha256": "73decb41308cf196618ff19a251779b4f1303c66d7e39eb3314698903acd53ee",
+      "bytes": 7899
+    },
+    "packages/ptc-runtime/ptc-runtime-node/src/index.ts": {
+      "sha256": "6249fae82fefd0c6862a09a5ef098cfd693b67ce9505e8d79cb59a0f4de4984f",
+      "bytes": 18998
+    },
+    "packages/ssh/ssh/src/index.ts": {
+      "sha256": "5809b43f396aecc4ea6083dc8ed821ef77eb6ce5d2f5c4bfbf37ff6bfae80d4c",
+      "bytes": 16571
+    },
+    "packages/skill/skill-office/src/index.ts": {
+      "sha256": "e0f74bf63193aec6aa9bd65f0975e0ec9409ad4f40bef6a4a5b0f0e4aff69950",
+      "bytes": 4720
+    }
+  },
+  "live_deployment_performed": false,
+  "company_credentials_read": false
+}

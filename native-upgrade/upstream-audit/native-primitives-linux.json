@@ -1,0 +1,16 @@
+{
+  "schema": "r65-native-primitives-local-v1",
+  "network_requests": 0,
+  "company_data_read": false,
+  "company_services_changed": false,
+  "node": "v22.20.0",
+  "flock": "NATIVE_LOCK_ACQUIRED",
+  "landlock": "partial",
+  "sqlite_fts5": true,
+  "office_kit": {
+    "exit_code": 0,
+    "error": null,
+    "stdout": "{\"runtime\":{\"version\":\"0.1.5\",\"backend\":\"wasm\",\"cliPath\":\"/mnt/d/麦格米特/linux/output/dsh-upgrade-r65-20261018/upstream/runtime-linux/node_modules/@deepseek-ai/libreoffice-kit/lib/cli.js\",\"nodeApiPath\":\"/mnt/d/麦格米特/linux/output/dsh-upgrade-r65-20261018/upstream/runtime-linux/node_modules/@deepseek-ai/libreoffice-kit/lib/index.js\"},\"conversions\":[{\"inputs\":[\"doc\",\"docx\",\"odt\"],\"outputs\":[\"pdf\",\"docx\",\"odt\",\"txt\"]},{\"inputs\":[\"xls\",\"xlsx\",\"ods\"],\"outputs\":[\"pdf\",\"xlsx\",\"ods\",\"csv\"]},{\"inputs\":[\"ppt\",\"pptx\",\"odp\"],\"outputs\":[\"pdf\",\"pptx\",\"odp\"]}],\"imageRendering\":{\"inputs\":[\"doc\",\"docx\",\"odt\",\"xls\",\"xlsx\",\"ods\",\"ppt\",\"pptx\",\"odp\",\"pdf\"],\"output\":\"png\",\"officeBackend\":\"libreoffice\",\"pdfBackend\":\"pdfium\",\"pages\":\"one-based physical pages or slides; all by default\",\"worksheets\":\"exact sheet plus optional A1 range; all visible data areas by default\",\"maxPages\":100,\"maxPixels\":16777216,\"maxDimension\":8192},\"csv\":{\"sheet\":\"exact name; required when the input has multiple worksheets\",\"encoding\":\"UTF-8\",\"delimiter\":\",\"},\"recalculation\":{\"inputs\":[\"xls\",\"xlsx\",\"ods\"],\"outputs\":[\"xlsx\",\"ods\"],\"preservesFormulas\":true},\"options\":{\"limits\":[\"timeout-ms\",\"max-input-bytes\",\"max-output-bytes\",\"max-image-resolution\",\"max-archive-entries\",\"max-uncompressed-bytes\",\"max-font-files\",\"max-font-file-bytes\",\"max-loaded-font-bytes\"],\"fonts\":[\"font-directory\",\"initial-font-family\",\"font-fallbacks\"]}}\n",
+    "stderr": ""
+  }
+}

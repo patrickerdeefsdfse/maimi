@@ -1,0 +1,294 @@
+{
+  "schema": "r65-native-rpc-policy-audit-v1",
+  "runtime": "0.2.1-rc.2",
+  "items": [
+    {
+      "package": "dsh-agent-preset-registry",
+      "endpoint": "agentPresets/list",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-agent-preset-registry",
+      "endpoint": "agentPresets/read",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-agent-preset-registry",
+      "endpoint": "agentPresets/select",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-api-remote-access",
+      "endpoint": "remoteAccess/follow",
+      "mode": "stream",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-client-ui-plugin-manager",
+      "endpoint": "pluginRegistryProbe/fastest",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/getClientCode",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/inventory",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/invoke",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/reportClientGuardFailure",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/reportRenderFailure",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/resolveInspectQuery",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/resolveRequestRun",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/runHostHalf",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/settleUserRun",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/stopFromPanel",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/syncInspectManifest",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-cordis-host-runner",
+      "endpoint": "dynamicCordisRunner/undefineFromPanel",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/clear",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/complete",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/create",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/edit",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/get",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/pause",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-goal",
+      "endpoint": "goals/resume",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-host-plugin-inventory",
+      "endpoint": "pluginInventory/list",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-permission-presets",
+      "endpoint": "permissionPresets/catalog",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/cancelInstall",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/inspect",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/installBundle",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/listBundles",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/listPlugins",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/listVersionExemptions",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/registries",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/removeBundle",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/setBundleEnabled",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/setPluginEnabled",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/setVersionExemption",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-manager",
+      "endpoint": "pluginManager/waitForInstall",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-market",
+      "endpoint": "pluginMarket/listIndexes",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-market",
+      "endpoint": "pluginMarket/search",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-plugin-market",
+      "endpoint": "pluginMarket/setIndexes",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/catalog",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/delete",
+      "mode": "unary",
+      "policy": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/history",
+      "mode": "unary",
+      "policy": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/list",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-schedule",
+      "endpoint": "schedule/update",
+      "mode": "unary",
+      "policy": "BLOCKED_BY_COMPANY_POLICY"
+    },
+    {
+      "package": "dsh-subagent",
+      "endpoint": "subagents/interruptByParent",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    },
+    {
+      "package": "dsh-subagent",
+      "endpoint": "subagents/prompt",
+      "mode": "unary",
+      "policy": "MUTATION_LEASE_GATED"
+    }
+  ]
+}

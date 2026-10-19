@@ -63,6 +63,9 @@ class Connections:
                 with contextlib.suppress(Exception):await asyncio.wait_for(connection.wait_closed(),2)
     async def get(self,employee,session,generation,*,touch=False):
         key=self._key(employee,session,generation);value=self.sessions.get(key)
+        if self.journal.connection_retired(employee,session,generation):
+            if value and value.generation==generation:await self._drop(key)
+            return None
         if value and value.generation!=generation:return None
         if value and (self.clock()-value.last_used>=7200 or value.connection is None or value.connection.is_closed()):
             await self._drop(key);value=None
@@ -84,10 +87,15 @@ class Connections:
             return {'protocol':PROTOCOL,'connected':False,'server':None}
         await self._drop(key)
         return {'protocol':PROTOCOL,'connected':False,'server':None}
+    async def retire(self,employee_no,session_id,generation):
+        self._key(employee_no,session_id,generation)
+        self.journal.retire_connection(employee_no,session_id,generation)
+        return await self.disconnect(employee_no,session_id,generation)
     async def open(self,raw):
         require(not self.closed,'NOT_CONFIGURED',503)
         value=connection_request(raw,self.clock);scope=value['scope'];fields=value['fields']
         key=self._key(value['employee_no'],scope['session_id'],scope['generation']);rid=value['request_id']
+        require(not self.journal.connection_retired(*key,scope['generation']),'SCOPE_EXPIRED',403)
         require(key not in self.connecting,'CONNECTION_BUSY',409)
         # A replay cannot remain valid beyond its original short-lived scope.
         # Keep only bounded in-memory admission receipts, never credential hashes.
@@ -114,7 +122,7 @@ class Connections:
                     login_timeout=10,keepalive_interval=30,keepalive_count_max=1,request_pty=False,x11_forwarding=False,
                     send_env=[],env={},encoding=None)
             require(client.verified,'SSH_HOST_KEY_REJECTED',503)
-            require(not self.closed and self.connecting.get(key)==(scope['generation'],asyncio.current_task()) and self.clock()<scope['expires_at'],'SCOPE_EXPIRED',403)
+            require(not self.closed and not self.journal.connection_retired(*key,scope['generation']) and self.connecting.get(key)==(scope['generation'],asyncio.current_task()) and self.clock()<scope['expires_at'],'SCOPE_EXPIRED',403)
             self.sessions[key]=Session(*key,scope['generation'],str(uuid4()),
                 fields['username']+'@'+fields['host']+':'+str(fields['port']),rid,connection,fields['password'],
                 self.clock(),high_privilege=fields['username']=='root')

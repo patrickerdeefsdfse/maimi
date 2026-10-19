@@ -91,17 +91,17 @@ await writeFile('/state/profile.json',JSON.stringify([
 // The native loader otherwise copies its library into /tmp, which is
 // deliberately noexec in employee Hosts. Load the immutable image binary.
 const childEnv={PATH:process.env.PATH,HOME:'/state/home',DSH_HOME:'/state/dsh',XDG_CACHE_HOME:'/state/cache',DSH_TELEMETRY_MODE:'DISABLED',NARB_DISABLE_NATIVE_CACHE:'1',NODE_OPTIONS:'--max-old-space-size=512',MEGMEET_MODEL_TOKEN:routeToken};
-let buffer='',cookie='',nativeId='',server;
+let buffer='',cookie='',nativeId='',server,stopping=false;
 const child=spawn(process.execPath,['--expose-internals','/opt/dsh/node_modules/@deepseek-ai/dsh/lib/bin.js','--profile','web','--patch','/state/profile.json','--host','127.0.0.1','--port','3085','--no-open'],{cwd:'/workspace',env:childEnv,stdio:['ignore','pipe','pipe']});
 child.stdout.on('data',v=>{buffer=(buffer+v).slice(-32768)});
 child.stderr.on('data',v=>{buffer=(buffer+v).slice(-32768)});
-child.on('exit',code=>{
+child.on('exit',(code,signal)=>{
  if(!server&&buffer)console.error('NATIVE_STARTUP_FAILED',buffer
   .replaceAll(routeToken,'[redacted]').replaceAll(lease,'[redacted]')
   .replace(/([?&]token=)[A-Za-z0-9_-]+/g,'$1[redacted]').replace(/Bearer\s+[A-Za-z0-9_.-]+/g,'Bearer [redacted]').slice(-6000));
- server?.close();console.log('NATIVE_CHILD_EXIT',code);process.exit(code||1);
+ server?.close();console.log('NATIVE_CHILD_EXIT',code);process.exit(stopping&&(code===0||signal==='SIGTERM')?0:(code||1));
 });
-for(const sig of ['SIGTERM','SIGINT'])process.on(sig,()=>{server?.close();child.kill('SIGTERM')});
+for(const sig of ['SIGTERM','SIGINT'])process.on(sig,()=>{stopping=true;server?.close();child.kill('SIGTERM')});
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 async function rpcArgs(method,args){
  const r=await fetch(base+'/api/'+method,{method:'POST',redirect:'error',signal:AbortSignal.timeout(15000),headers:{Cookie:cookie,Origin:base,'Content-Type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:randomUUID(),method,payload:{args}})});
@@ -473,7 +473,7 @@ try {
   if(path.startsWith('/api/megmeet-cloud/')||path.startsWith('/__megmeet/office')||path.startsWith('/__megmeet/web')||path.startsWith('/__megmeet/scope/')||path.startsWith('/__megmeet/search/')||path==='/__megmeet/tool-execute'){res.writeHead(404);res.end();return;}
   let bytes=null,dispatch=false,dispatchTask,envelope,visionPreparation;
   try{
-   if(req.method==='POST'&&/^\/api\/[^/]+\/[^/]+$/.test(path)&&String(req.headers['content-type']||'').split(';')[0]==='application/json'){
+   if(req.method==='POST'&&/^\/api\/[^/]+\/[^/]+$/.test(path)&&String(req.headers['content-type']||'').split(';',1)[0].trim().toLowerCase()==='application/json'){
     const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>32*1024*1024)throw Error('request too large');chunks.push(chunk)}
     bytes=Buffer.concat(chunks);envelope=JSON.parse(bytes.toString('utf8'));
     const command=validateNativeRpc(path,req.method,envelope,nativeId);

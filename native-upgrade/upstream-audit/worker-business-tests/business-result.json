@@ -1,0 +1,60 @@
+{
+  "schema": "r65-worker-business-local-v1",
+  "runtime": "0.2.1-rc.2",
+  "company_requests": 0,
+  "network": "none",
+  "credentials": "SYNTHETIC_ONLY",
+  "official_packages_modified": false,
+  "invalid_lease_rejected": true,
+  "create_prompt_model_sse_history": true,
+  "upload_sha256_exact": true,
+  "upload_bytes_and_name_preserved": true,
+  "file_receipt_in_accepted_history": true,
+  "file_path_reached_model": true,
+  "foreign_lease_cannot_cancel": true,
+  "cancel_acknowledged_and_upstream_closed": true,
+  "followup_after_cancel": true,
+  "status": "PASSED",
+  "gateway_request_counts": {
+    "/internal/personal-cloud/model/v1/session": 13,
+    "/internal/personal-cloud/model/v1/chat/completions": 5
+  },
+  "model_requests": 5,
+  "model_request_metadata": [
+    {
+      "holding": false,
+      "model": "deepseek-v4.1-flash",
+      "stream": true,
+      "synthetic_marker": true,
+      "has_file_path": false
+    },
+    {
+      "holding": false,
+      "model": "deepseek-v4.1-flash",
+      "stream": true,
+      "synthetic_marker": true,
+      "has_file_path": false
+    },
+    {
+      "holding": false,
+      "model": "deepseek-v4.1-flash",
+      "stream": true,
+      "synthetic_marker": true,
+      "has_file_path": true
+    },
+    {
+      "holding": true,
+      "model": "deepseek-v4.1-flash",
+      "stream": true,
+      "synthetic_marker": true,
+      "has_file_path": true
+    },
+    {
+      "holding": false,
+      "model": "deepseek-v4.1-flash",
+      "stream": true,
+      "synthetic_marker": true,
+      "has_file_path": true
+    }
+  ]
+}

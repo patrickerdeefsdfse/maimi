@@ -1,0 +1,32 @@
+{
+  "schema": "r65-desktop-enterprise-actual-host-validation-v1",
+  "date": "2026-10-19",
+  "status": "PASSED_LOCAL_SYNTHETIC",
+  "native_version": "0.2.1-rc.2",
+  "real_parent_fork_host": true,
+  "real_cookie_owner_peer": true,
+  "public_profile_client_loaded_from_native_host": true,
+  "real_dsh_react_browser_component": true,
+  "input_fields": [
+    "ip",
+    "password"
+  ],
+  "background_poll_preserves_password": true,
+  "native_model_tool_calls_service": true,
+  "password_absent_from_native_history_and_storage": true,
+  "normal_account_service_ui_not_installed": true,
+  "independent_cloud_entry_removed": true,
+  "cloud_host_requests": 0,
+  "logout_stops_model_stream_and_retires_service_grant": true,
+  "company_requests": 0,
+  "company_ssh_connections": 0,
+  "production_deployed": false,
+  "electron_installer_gui_acceptance": false,
+  "browser_mount": "controlled slot fixture; actual served component and real authenticated Host RPC",
+  "other_enterprise_tools_advertised": false,
+  "service_cohort": [
+    "M00003307",
+    "M00001069",
+    "M00096389"
+  ]
+}

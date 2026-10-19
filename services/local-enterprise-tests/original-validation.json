@@ -1,0 +1,29 @@
+{
+  "schema": "r65-local-enterprise-local-validation-v2",
+  "date": "2026-10-19",
+  "status": "LOCAL_CANDIDATE_TESTED",
+  "native_tests_passed": 17,
+  "backend_tests_passed": 10,
+  "broker_retirement_tests_passed": 5,
+  "prior_broker_regressions": {
+    "run": 39,
+    "passed": 38,
+    "skipped": 1,
+    "skip_reason": "requires real Linux openat helper"
+  },
+  "redis_atomic_scripts_execution": "PASSED_REAL_LOCAL_REDIS_7_NETWORK_NONE_NO_PORTS",
+  "redis_test_container_removed": true,
+  "native_version": "0.2.1-rc.2",
+  "desktop_integrated": "SEPARATE_MONDAY_DESKTOP_ENTERPRISE_OVERLAY",
+  "company_network_requests": 0,
+  "company_ssh_connections": 0,
+  "deployed": false,
+  "frozen_sources_modified": false,
+  "pending": [
+    "company IAM and service read-only acceptance",
+    "other project workflows local authorization",
+    "connector human confirmation UI",
+    "approved encrypted Office ingestion",
+    "rolling service grant renewal"
+  ]
+}

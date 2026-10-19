@@ -1,0 +1,32 @@
+{
+  "schema": "r65-monday-cloud-validation-v1",
+  "status": "LOCAL_CANDIDATE_TESTED",
+  "unit_tests_passed": 39,
+  "unit_test_environment": "LINUX_PYTHON_3_12_CONTAINER",
+  "real_docker_test": "PASSED",
+  "real_docker_receipt": "real-docker-validation.json",
+  "company_requests": 0,
+  "production_deployment_ready": false,
+  "frozen_prior_sources_modified": false,
+  "files": {
+    "manager-patch.json": "b38740ec5cdc648ac1a9a202e22b1bf8a377b05f422d9b5de02d6611bd0c13d9",
+    "manager.py": "85bd50b72a94e8bc91b8fb7151bf042de3086e4816864d109807cb18f66f0907",
+    "patch_manager.py": "b5e328f61d7326722debb430f09211c9240f87d7fe80f420b093b737df9d5dbf",
+    "README.md": "64720881873badfe4b955e085c6c625491ac5cfb36da3b16ea9398605b0c482f",
+    "real-docker-validation.json": "11e5ef5f8b3ec668b49063321dd410b47f3f3debb89ed5388fe5b2e19e65ffd1",
+    "runtime_admission.py": "ab253cfe5cc2520858cc828569ae6ac03bc083a356b91bfbbc34e917ba8d2452",
+    "runtime_release.py": "01e93423d408b416372ff6e1a61eb7927c1893013f415964664d062139d5d3b2",
+    "runtime_snapshot.py": "f5c4e126484cf70b02a7ef4847a23033781c383bcdd14a6add797891a33c0574",
+    "test_admission.py": "9e3198ca3ddf6364abd792add4776261701022b16d29a26da430aa2abeaee8f5",
+    "test_real_docker.py": "144fe10c025e8efcd2cbdb39caf848218de30ffa7b8ab8f4f25222bd7b315a6e",
+    "test_release.py": "4efc5dd3914310d459d4cbfadbd4a82b191bfb3a1a800ebc7b689107ff09417b",
+    "test_snapshot_guards.py": "ebf6196279315cb759ac48f7d23bda1df7556079b4f8fc717b10120af38edb04"
+  },
+  "additional_fault_regression": [
+    "SNAPSHOT_AND_RESTORE_NOCOPY",
+    "SHARED_RECOVERABLE_ARCHIVE_POLICY",
+    "ARCHIVE_AND_DIRECTORY_FSYNC",
+    "ACTIVATION_INTENT_AND_OWNED_GATE_REVOCATION",
+    "EXISTING_OR_RACING_GATE_PRESERVED"
+  ]
+}

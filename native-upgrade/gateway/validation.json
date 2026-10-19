@@ -1,0 +1,43 @@
+{
+  "schema": "dsh-r65-gateway-validation-v1",
+  "date": "2026-10-18",
+  "status": "LOCAL_TESTS_PASSED",
+  "upstream_version": "0.2.1-rc.2",
+  "upstream_commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "python_tests": 17,
+  "node_integration_tests": 6,
+  "node_version": "24.13.0",
+  "services_changed": false,
+  "company_requests": 0,
+  "business_data_read": false,
+  "real_upstream_modules": true,
+  "model_endpoint": "LOOPBACK_SYNTHETIC_SSE_ONLY",
+  "complete_worker_or_browser_acceptance": false,
+  "production_deployment": false,
+  "m00003308_root_cause": "NOT_ESTABLISHED",
+  "clean_business_image": "LOCAL_BUILD_AND_SYNTHETIC_SMOKE_PASSED",
+  "desktop_project_api_declouding": "DESIGN_ONLY",
+  "commands": [
+    "python -m unittest discover -s services/gateway/tests -p test_*.py",
+    "DSH_R65_RUNTIME=<npm-install-root> node --test services/gateway/tests/worker-adapter.test.mjs",
+    "docker build --platform linux/amd64 -t maimi-gateway:local services/gateway",
+    "python3 services/gateway/tests/gateway-image-smoke.py --image maimi-gateway:local"
+  ],
+  "docker_image": "maimi-r65-gateway:build-20261018",
+  "docker_image_manifest": "sha256:c73da960a347b1df077e3cc720cbeb10a3ca88f2395239d55f56bb9149ea5248",
+  "docker_image_config": "sha256:29ffe9a1f864676c1d85da53a710c52a58f8221c678f4ec2ecf4eedc0d256e0a",
+  "business_modules_imported": 19,
+  "synthetic_image_checks": [
+    "xlsx_card_import",
+    "docx_roundtrip",
+    "qr_png",
+    "pdf_raster"
+  ],
+  "real_postgres_redis_readiness": {
+    "empty_schema": 503,
+    "partial_schema": 503,
+    "missing_migration": 503,
+    "complete_schema": 200,
+    "removed_users_table": 503
+  }
+}

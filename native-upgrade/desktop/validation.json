@@ -1,0 +1,241 @@
+{
+  "schema": "maimi-native-desktop-r65-validation-v1",
+  "status": "LOCAL_NATIVE_INTEGRATION_PASSED_NOT_PUBLISHED",
+  "upstream_version": "0.2.1-rc.2",
+  "upstream_commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "source_check": "VERIFIED",
+  "source_regular_files": 16283,
+  "source_bytes": 133199860,
+  "source_links_not_staged": 14,
+  "tests": {
+    "command": "npm test (node --test --test-concurrency=1 tests/*.test.*)",
+    "passed": 32,
+    "failed": 0,
+    "native_profile_boot": true,
+    "native_ui_cookie_exchange_and_html": true,
+    "native_llm_stream_through_company_bridge": true,
+    "parent_private_ipc_account_isolation": true,
+    "iam_pkce_and_renewal_protocol": "PASS_SYNTHETIC",
+    "real_company_iam_login": "NOT_TESTED",
+    "native_electron_shell": "PASS_OFFICIAL_ARTIFACT_BUILD_LINUX_NOT_GUI",
+    "native_office_payload": "OFFICIAL_COMPOSITION_WIRED_NOT_PAYLOAD_TESTED",
+    "enterprise_local_file_bridge": "NOT_TESTED",
+    "history_migration": "NOT_TESTED",
+    "native_quit_and_update_controls": "PASS_REAL_NATIVE_HOST_IPC",
+    "native_electron_adapter": "PASS_MOCK_ELECTRON_REAL_ADAPTER",
+    "native_package_manager": "OFFICIAL_PNPM_AND_NODE_BIN_OPTIONS_WIRED_NOT_INSTALL_UI_TESTED"
+  },
+  "credential_boundary": {
+    "company_token_stays_parent": true,
+    "native_host_receives_ephemeral_loopback_capability": true,
+    "company_configuration_used": false,
+    "synthetic_gateway_requests_only": true
+  },
+  "services_changed": false,
+  "user_installations_changed": false,
+  "company_requests": 0,
+  "upstream_bundle_overlays": 0,
+  "company_publish_allowed": false,
+  "cloud_entry_removal_allowed": false,
+  "auth_source_reuse": [
+    {
+      "file": "auth.cjs",
+      "source": "output/github-maimi-20261017/repository/desktop-local/auth.cjs",
+      "source_sha256": "828ac1cfff7d604013d502c680e3ebbfa82a2e2231aa8d27f4243b91ac661d0b",
+      "candidate_sha256": "828ac1cfff7d604013d502c680e3ebbfa82a2e2231aa8d27f4243b91ac661d0b",
+      "unchanged": true
+    },
+    {
+      "file": "deployment.cjs",
+      "source": "output/github-maimi-20261017/repository/desktop-local/deployment.cjs",
+      "source_sha256": "1b73dc2e847fda710f8b900ebc96e020511788d256a688b206abdf7d2ced90bd",
+      "candidate_sha256": "1b73dc2e847fda710f8b900ebc96e020511788d256a688b206abdf7d2ced90bd",
+      "unchanged": true
+    }
+  ],
+  "candidate_files": [
+    {
+      "path": "src/activation-gate.mjs",
+      "bytes": 1404,
+      "sha256": "65563e80fb810116fc96222886e19f19c860e3bfa77bc6dc8ad9308669c818c1"
+    },
+    {
+      "path": "src/company-auth/auth.cjs",
+      "bytes": 10018,
+      "sha256": "828ac1cfff7d604013d502c680e3ebbfa82a2e2231aa8d27f4243b91ac661d0b"
+    },
+    {
+      "path": "src/company-auth/deployment.cjs",
+      "bytes": 977,
+      "sha256": "1b73dc2e847fda710f8b900ebc96e020511788d256a688b206abdf7d2ced90bd"
+    },
+    {
+      "path": "src/company-auth/deployment.json",
+      "bytes": 69,
+      "sha256": "b2b84fe22401b8354893f6ae0339e7169869ff0168c9d3d7fc930c6f73244a00"
+    },
+    {
+      "path": "src/company-desktop-session.mjs",
+      "bytes": 7902,
+      "sha256": "13640ffd18155f6471dcd7535b9e8944fc76a84c835050058b324f41fe05ad61"
+    },
+    {
+      "path": "src/company-host-child.mjs",
+      "bytes": 2387,
+      "sha256": "2a4433fbeff58bc2f815b9e14018d9300b9119f18549b2d704ea1d70a4a694d7"
+    },
+    {
+      "path": "src/company-model-bridge.mjs",
+      "bytes": 5321,
+      "sha256": "ed32f03b1948c4f8060d229bb6759c50afc65847388050b216ef3a78fbe6379f"
+    },
+    {
+      "path": "src/company-shell-host.ts",
+      "bytes": 3191,
+      "sha256": "a414c7ee56aaf2204ec96e9683b94b4275065fe7f2ffecc6c7ba200c56d1cf33"
+    },
+    {
+      "path": "src/native-build.mjs",
+      "bytes": 6788,
+      "sha256": "b3fad864b4c65120514b95ac41f28bf0e69e8b7638f15bd076070b5f790bf49c"
+    },
+    {
+      "path": "src/native-company-host.mjs",
+      "bytes": 4350,
+      "sha256": "5009b3f7f4a9083ea532dcb9a26cd2ee787844d9fe5d22d0405981d817218ab7"
+    },
+    {
+      "path": "src/native-desktop-ui/client.js",
+      "bytes": 772,
+      "sha256": "11a82adc9a9ac833d72c7dcd0055b326fe95ce5b0aae23701a80f54908241dad"
+    },
+    {
+      "path": "src/native-desktop-ui/index.mjs",
+      "bytes": 27,
+      "sha256": "5b2df8275a78de7a341e1ec852d93a8d31e85501c46f9359e8136d7e3033bbef"
+    },
+    {
+      "path": "src/native-desktop-ui/package.json",
+      "bytes": 352,
+      "sha256": "86bcfa477037fcfd6e2776d96a546aaa50d7e8989497e30acae53964d622e49e"
+    },
+    {
+      "path": "src/upstream-native/LICENSE",
+      "bytes": 1065,
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+    },
+    {
+      "path": "src/upstream-native/quit-inspection.ts",
+      "bytes": 1961,
+      "sha256": "d732d8706a6fe5eb993c4dfd90fdec7203889507b0b13b957cfebebd80cd16e2"
+    },
+    {
+      "path": "src/upstream-native/update-tasks.ts",
+      "bytes": 2952,
+      "sha256": "ace98160f307323fd04055dc990ab1d52faeb848a0a03ec9cf43c475fad9972b"
+    },
+    {
+      "path": "scripts/build-wsl.sh",
+      "bytes": 1071,
+      "sha256": "e13b161b1a6a257207e7eae07ea1e939666754f4bcc30f7ebcdcffae59d8d400"
+    },
+    {
+      "path": "scripts/fetch-source.py",
+      "bytes": 3462,
+      "sha256": "c2f89124e1f528b3baf791afe20a28dbfc54f1bb441bdd6e9add1ddf6350b149"
+    },
+    {
+      "path": "scripts/native-build.mjs",
+      "bytes": 1517,
+      "sha256": "6e1567e4647b89e76ca61fbb5d0c416d6e00b2579968334a18924c2fab3d1302"
+    },
+    {
+      "path": "scripts/prepare-native-shell.py",
+      "bytes": 6902,
+      "sha256": "790b167b81c7b2662de351fb33064542cdc933e00ec2b852854cf7f0f5f724bf"
+    },
+    {
+      "path": "scripts/seal-source.py",
+      "bytes": 2052,
+      "sha256": "aa325c9b198f556f254a533a6aaca9c756b57e29d08fc3d09816a1a7a080047d"
+    },
+    {
+      "path": "tests/auth-protocol.test.cjs",
+      "bytes": 5485,
+      "sha256": "5db07f950abe045d8d971aa6ee3916a847b258c98fcde7d219097b26d858855b"
+    },
+    {
+      "path": "tests/company-session.test.mjs",
+      "bytes": 3025,
+      "sha256": "bcfde1d2cb1ad2b05d49895727fb5d8971529da0cb6612d51b525bd7d69bd016"
+    },
+    {
+      "path": "tests/iam-expiry.test.cjs",
+      "bytes": 1502,
+      "sha256": "cc79a9c65a55708e1fbdd3038f1739f116e078c006b2cc157934969cb5235812"
+    },
+    {
+      "path": "tests/native-build.test.mjs",
+      "bytes": 4993,
+      "sha256": "78006cd96a17dcf6ff43fc54f5d25da655b62301689a36b8a9e1343e55240b3c"
+    },
+    {
+      "path": "tests/native-host-child.mjs",
+      "bytes": 1314,
+      "sha256": "8ccfb82d4c6d488e57bdcb6b9d70e0a67aa3203a0ddf1463e8f52c790df9bd43"
+    },
+    {
+      "path": "tests/native-integration.test.mjs",
+      "bytes": 7121,
+      "sha256": "763f49e00a5d0fad0c1737b52ca01c946f785bd0ebc347e8f17d05366c9d6e7a"
+    },
+    {
+      "path": "tests/shell-adapter.test.mjs",
+      "bytes": 4812,
+      "sha256": "0e0110d9300dab42625c3ce4e4ba1ebc9a64422da73e6b674d10ecf2bd032069"
+    },
+    {
+      "path": "patches/native-shell.patch",
+      "bytes": 8600,
+      "sha256": "d5e642d66e0be364521627c0d2562b5c59f438c73c391ff27271a21a98e1ea23"
+    },
+    {
+      "path": "package.json",
+      "bytes": 447,
+      "sha256": "380896da56a237b975d914900a7921cf0f25a3478cbbd5b78850fd77f284010b"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 1472,
+      "sha256": "aaaa1c82350349a487c1b579d3ce13bff15ff650bace7a7d143eaea780096dc5"
+    },
+    {
+      "path": "upstream-source-lock.json",
+      "bytes": 3563143,
+      "sha256": "0e38f184a0d61c8c9148ca5f375e10f6c396f36984dcee831de1139b1b0c8c6b"
+    },
+    {
+      "path": "README.md",
+      "bytes": 9339,
+      "sha256": "570b48f526be5533009e6da215c7fed1e9b325134b5c4751e0f28994abd22046"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 91,
+      "sha256": "4842c4c70fc5cfca61a661a0ff65aae02efece667f8cc3eb5eb117f68a171286"
+    }
+  ],
+  "build": {
+    "platform": "WSL_LINUX_X64_NODE_22.20.0",
+    "package_manager": "pnpm@11.28.5",
+    "frozen_install": "PASS",
+    "command": "DSH_CLIENT_COMMIT_HASH=687f282e8625c6b8d11ff58211a90524be2e4317 pnpm run build:artifacts",
+    "gates_passed": 7,
+    "gates_failed": 0,
+    "client_artifacts": 325,
+    "windows_install": "EPERM_RENAME_THEN_IMPORT_STALL",
+    "windows_installer": "NOT_BUILT",
+    "electron_gui": "NOT_LAUNCHED",
+    "company_iam": "NOT_CONTACTED"
+  }
+}

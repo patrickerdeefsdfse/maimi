@@ -1,0 +1,105 @@
+name: Native DSH candidate checks
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - native-upgrade/**
+      - services/gateway/**
+      - services/personal-cloud/**
+      - runtime-overlays/worker/**
+      - .github/workflows/native-dsh-candidate.yml
+permissions:
+  contents: read
+jobs:
+  cloud-admission-and-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify tested modules are the manager image sources
+        run: python native-upgrade/ci/check-activation-sources.py
+      - name: Prepare isolated test dependencies
+        run: |
+          python -m venv "$RUNNER_TEMP/maimi-cloud-ci"
+          "$RUNNER_TEMP/maimi-cloud-ci/bin/python" -m pip install fastapi==0.115.6 httpx==0.28.1
+      - name: Admission, activation and recovery fault tests
+        working-directory: native-upgrade/gateway/activation
+        env:
+          DOCKER_HOST: unix:///nonexistent/maimi-ci-no-docker.sock
+        run: |
+          # Receipt tests enforce root ownership. Only synthetic temporary files
+          # and fake Docker responses are used; this job does not run a daemon.
+          sudo -- env DOCKER_HOST="$DOCKER_HOST" PYTHONDONTWRITEBYTECODE=1 \
+            "$RUNNER_TEMP/maimi-cloud-ci/bin/python" -B -m unittest \
+            test_admission test_release test_snapshot_guards -v
+  synthetic-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install exact native runtime
+        run: npm ci --prefix native-upgrade/upstream/runtime-linux --no-audit --no-fund
+      - name: Prepare pinned desktop source and test tooling
+        run: |
+          npm ci --prefix native-upgrade/desktop --ignore-scripts --no-audit --no-fund
+          python native-upgrade/desktop/scripts/fetch-source.py
+      - name: Native desktop login, sign-out and process credential boundaries
+        env:
+          DSH_R65_RUNTIME: ${{ github.workspace }}/native-upgrade/upstream/runtime-linux
+        run: |
+          node --test --test-concurrency=1 \
+            native-upgrade/desktop/tests/device-login.test.mjs \
+            native-upgrade/desktop/tests/native-env-boundary.test.mjs \
+            native-upgrade/desktop/tests/session-device-native.test.mjs \
+            native-upgrade/desktop/tests/session-startup-cleanup.test.mjs \
+            native-upgrade/desktop/tests/shell-device.test.mjs \
+            native-upgrade/desktop/tests/signout.test.mjs \
+            native-upgrade/desktop/tests/staging.test.mjs
+      - name: Readiness and request media guards
+        run: |
+          python -m unittest discover -s services/gateway/tests -p test_readiness.py
+          python -m unittest discover -s services/gateway/tests -p test_proxy_media.py
+          python -m unittest discover -s native-upgrade/web -p test_pack_runtime.py
+      - name: Native API and profile migration contracts
+        env:
+          DSH_R65_RUNTIME: ${{ github.workspace }}/native-upgrade/upstream/runtime-linux
+          MAIMI_TEST_RUNTIME: ${{ github.workspace }}/native-upgrade/upstream/runtime-linux
+        run: |
+          node --test services/gateway/tests/worker-adapter.test.mjs native-upgrade/web/test-community-profile.mjs native-upgrade/web/test-verify-runtime.mjs
+          node native-upgrade/upstream-audit/rpc-policy/check-policy.mjs
+  observability-metadata:
+    name: Monitor metadata (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install monitor test dependencies
+        run: python -m pip install -r native-upgrade/ci/requirements-monitor-tests.txt
+      - name: IAM, metadata, usage provenance and cancellation contracts
+        run: python -B -m pytest -q -p no:cacheprovider services/gateway/tests/observability
+# This workflow has no deployment job, company credential, SSH or Docker socket.

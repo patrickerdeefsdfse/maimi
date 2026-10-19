@@ -1,0 +1,12 @@
+{
+  "schema": "r65-monday-real-docker-v1",
+  "status": "PASSED",
+  "company_requests": 0,
+  "actual_manager_restore_mount_mapping": true,
+  "newer_source_bytes_preserved": true,
+  "old_backup_content_restored": true,
+  "real_manager_global_activation": true,
+  "real_new_owner_empty_proof": true,
+  "real_snapshot_manager_admission": true,
+  "test_volumes_remaining": 0
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "maimi-native021-local-image-build-v1",
+  "status": "BUILT_NOT_DEPLOYED",
+  "base": {
+    "id": "sha256:cc7303e44347adbf8c2cbec80e45f72966f829f7e0bdda07878d33ee6495041d",
+    "os": "linux",
+    "arch": "amd64"
+  },
+  "image": {
+    "id": "sha256:10ec86583e9117fcd9702c4569d2fdb97af52d941f99741bc405a0bfdade084f",
+    "os": "linux",
+    "arch": "amd64"
+  },
+  "tag": "maimi-native021-worker:r65-final-local",
+  "archive_sha256": "82a2a02a1244ff11f33b1984eb484a8f2e6d7e955740004a99f8e792edefb1cc",
+  "manifest_sha256": "bfc30c315058062a18013291230a3224d9a9505a7e3da59977544ae5eef29573",
+  "company_changed": false
+}

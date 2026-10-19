@@ -1,0 +1,41 @@
+{
+  "schema": "maimi-native021-integration-summary-v1",
+  "date": "2026-10-18",
+  "status": "LOCAL_CANDIDATE_NOT_DEPLOYED",
+  "runtime": "0.2.1-rc.2",
+  "official_release_channel": "prerelease",
+  "upstream_commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "company_runtime_unchanged": "r62 / 0.2.0-rc.2",
+  "company_desktop_unchanged": "0.13.0",
+  "company_requests": 0,
+  "checks": {
+    "gateway_python_contracts": 17,
+    "native_api_and_profile_and_integrity_tests": 16,
+    "archive_scope_tests": 4,
+    "desktop_tests": 32,
+    "official_desktop_build_gates": 7,
+    "manager_contract_tests": 8,
+    "snapshot_unit_tests": 10,
+    "snapshot_real_docker_tests": 1,
+    "native_service_ui": "PASS_SYNTHETIC",
+    "native_subagents_and_approvals": "PASS_SYNTHETIC",
+    "native_office_pptx_pdf_png": "PASS_SYNTHETIC",
+    "old_history_fixtures": "46/51 accepted by both old and new; same 5 missing-context failures"
+  },
+  "pending": [
+    "COMPANY_BASE_IMAGE_AND_MAINTENANCE_VALIDATION",
+    "COMPLETE_ACTIVATION_AND_RESTORE_ORCHESTRATION",
+    "WINDOWS_INSTALLER_AND_GUI",
+    "REAL_IAM_AND_LOCAL_ENTERPRISE_FILE_BRIDGE",
+    "COMPANY_ENCRYPTED_UPLOAD_ACCEPTANCE",
+    "BACKGROUND_GOALS_SCHEDULES_DYNAMIC_PLUGIN_AUTHORIZATION",
+    "RUNSC_TASK_POOL_ACTIVATION"
+  ],
+  "production_publication_allowed": false,
+  "source_publication_destination": "USER_AUTHORIZED_PUBLIC_DEVELOPMENT_BRANCH",
+  "limits": [
+    "LOCAL_COMPILE_IS_NOT_WINDOWS_INSTALLATION",
+    "SYNTHETIC_TESTS_ARE_NOT_COMPANY_BUSINESS_ACCEPTANCE",
+    "HISTORY_VERSION_MATCH_IS_NOT_DOWNGRADE_SAFETY"
+  ]
+}

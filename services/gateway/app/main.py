@@ -22,10 +22,14 @@ from .enterprise_plugins import router as enterprise_plugins_router
 from .personal_cloud import router as personal_cloud_router
 from .personal_cloud_web import router as personal_cloud_web_router
 from .enterprise_connectors import router as enterprise_connectors_router
+from .local_service import router as local_service_router
 from .office_remote import router as office_router
 from .personal_search import router as personal_search_router
 
 app = FastAPI(title="Megmeet AI Gateway", version="0.1.0")
+# Read-only monitoring is opt-in and has its own exact IAM read allowlist.
+from .observability.bootstrap import install as install_monitor
+monitor_runtime = install_monitor(app)
 app.add_middleware(PlatformAuthMiddleware)
 app.include_router(iam_router)
 app.include_router(desktop_auth_router)
@@ -34,6 +38,7 @@ app.include_router(enterprise_plugins_router)
 app.include_router(personal_cloud_router)
 app.include_router(personal_cloud_web_router)
 app.include_router(enterprise_connectors_router)
+app.include_router(local_service_router)
 app.include_router(office_router)
 app.include_router(personal_search_router)
 dsh_adapter = DshAgentAdapter.from_environment()
@@ -149,13 +154,18 @@ def ready() -> dict[str, object]:
         with _connect() as conn, conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT to_regclass('platform.schema_migrations'),
-                       to_regclass('platform.users'),
-                       to_regclass('platform.conversations'),
-                       to_regclass('platform.messages')
+                SELECT to_regclass('platform.schema_migrations') AS schema_migrations,
+                       to_regclass('platform.users') AS users,
+                       to_regclass('platform.conversations') AS conversations,
+                       to_regclass('platform.messages') AS messages
                 """
             )
-            if any(value is None for value in cur.fetchone()):
+            # _connect uses psycopg dict_row: unnamed columns overwrite each
+            # other, and iterating a dict checks keys rather than table values.
+            tables = cur.fetchone()
+            required_tables = {"schema_migrations", "users", "conversations", "messages"}
+            if (not isinstance(tables, dict) or set(tables) != required_tables
+                    or any(tables[name] is None for name in required_tables)):
                 failures.append("database_migrations")
             else:
                 required = os.getenv("MIGRATIONS_REQUIRED_VERSION", "005_history_write.sql")

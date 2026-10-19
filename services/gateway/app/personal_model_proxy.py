@@ -29,6 +29,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from .desktop_auth import TrustedActor, require_trusted_actor, validate_trusted_actor
 from . import iam_oauth as iam
+from . import usage_producer as metering
 from .iam_oauth import IAMFailure
 
 HEADERS = {"Cache-Control": "no-store", "Pragma": "no-cache"}
@@ -568,6 +569,7 @@ class PersonalModelBroker:
             raise IAMFailure(403, "personal_model_not_authorized")
         client = httpx.AsyncClient(timeout=httpx.Timeout(120, connect=10), verify=True,
                                    trust_env=False, follow_redirects=False, transport=self.transport)
+        meter = metering.model(current)
         try:
             request = client.build_request("POST", self.base_url + "/chat/completions",
                                            headers={"Authorization": "Bearer " + credential.api_key}, json=body)
@@ -582,8 +584,11 @@ class PersonalModelBroker:
                 status = 429 if response.status_code == 429 else 502
                 await response.aclose()
                 raise IAMFailure(status, "personal_model_upstream_unavailable")
+            response.extensions["maimi_usage_meter"] = meter
             return client, response, current, credential.expires_at
         except BaseException as exc:
+            if meter:
+                meter.finish("cancelled" if isinstance(exc, asyncio.CancelledError) else "failed")
             await client.aclose()
             if isinstance(exc, (IAMFailure, asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
                 raise
@@ -591,6 +596,7 @@ class PersonalModelBroker:
 
     async def complete(self, actor: TrustedActor, body: dict) -> dict:
         client, response, current, expires = await self.open(actor, {**body, "stream": False})
+        meter = response.extensions.get("maimi_usage_meter")
         try:
             raw = bytearray()
             async for chunk in response.aiter_bytes():
@@ -603,18 +609,33 @@ class PersonalModelBroker:
             result = json.loads(raw)
             if not isinstance(result, dict) or not isinstance(result.get("choices"), list):
                 raise ValueError()
+            if meter:
+                meter.finish("failed" if result.get("error") is not None else "succeeded", result.get("usage"))
             return result
+        except asyncio.CancelledError:
+            if meter:
+                meter.finish("cancelled")
+            raise
         except IAMFailure:
+            if meter:
+                meter.finish("failed")
             raise
         except (httpx.HTTPError, ValueError, TypeError):
+            if meter:
+                meter.finish("failed")
             raise IAMFailure(502, "personal_model_response_invalid") from None
         finally:
+            if meter:
+                meter.finish("unknown")
             await response.aclose()
             await client.aclose()
 
     async def streaming(self, actor: TrustedActor, body: dict):
         client, response, current, expires = await self.open(actor, {**body, "stream": True})
+        meter = response.extensions.get("maimi_usage_meter")
         if "text/event-stream" not in response.headers.get("content-type", ""):
+            if meter:
+                meter.finish("failed")
             await response.aclose()
             await client.aclose()
             raise IAMFailure(502, "personal_model_response_invalid")
@@ -631,11 +652,25 @@ class PersonalModelBroker:
                         await self.actor_validator(current)
                         checked = time.monotonic()
                     yield chunk
+                    # Tap only after forwarding: no metric store await or I/O
+                    # is added before the first yielded upstream byte.
+                    if meter:
+                        meter.feed(chunk)
+                if meter:
+                    meter.finish()
+            except (asyncio.CancelledError, GeneratorExit):
+                if meter:
+                    meter.finish("cancelled")
+                raise
             except (IAMFailure, httpx.HTTPError):
+                if meter:
+                    meter.finish("failed")
                 # Headers have already been sent. Emit a fixed SSE failure,
                 # without echoing upstream errors, request data or credentials.
                 yield b'data: {"error":{"message":"personal_model_stream_ended"}}\n\n'
             finally:
+                if meter:
+                    meter.finish("unknown")
                 await response.aclose()
                 await client.aclose()
         return StreamingResponse(chunks(), media_type="text/event-stream", headers=HEADERS)
