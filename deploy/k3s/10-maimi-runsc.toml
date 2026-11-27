@@ -1,0 +1,9 @@
+version = 3
+
+[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.maimi-runsc]
+  runtime_type = "io.containerd.runsc.v1"
+  runtime_path = "/data/maimi-production/runtime/gvisor-20261019.0/containerd-shim-runsc-v1"
+
+[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.maimi-runsc.options]
+  TypeUrl = "io.containerd.runsc.v1.options"
+  ConfigPath = "/data/maimi-production/runtime/runsc.toml"

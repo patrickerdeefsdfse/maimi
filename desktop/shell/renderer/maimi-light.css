@@ -1,0 +1,34 @@
+/* Shared by the installed workspace, first-run window and update dialogs.
+   Change application surfaces only; document paper, image pixels and code
+   syntax colours stay under the control of their native viewers. */
+@media (forced-colors: none) {
+  html body:not([data-ds-dark-theme]) {
+    --dsw-alias-bg-base: #edf4e9;
+    --dsh-boot-bg: #edf4e9;
+    --dsw-alias-bg-layer-1: #f4f8f0;
+    --dsw-alias-bg-layer-2: #f0f6ed;
+    --dsw-alias-bg-layer-3: #e8f1e5;
+    --dsw-alias-bg-layer-4: #e1ebdf;
+    --dsw-alias-bg-module-platform: #e7efe3;
+    --dsw-specific-sidebar-fill: #e1ecdc;
+    --dsw-specific-sidebar-nav-item-active: #cddfc8;
+    --dsw-specific-input-major: #f5f9f2;
+    --dsw-specific-bubble: #dcebd9;
+    --dsw-menu-surface-fill: rgb(243 248 239 / 97%);
+    --dsw-specific-menu: var(--dsw-menu-surface-fill);
+    --dsw-alias-hovercard-bg: #f4f8f0;
+    --dsw-alias-button-elevated-fill: #f3f8ef;
+    --dsw-alias-markdown-code-block: #e6eee3;
+    --dsw-alias-markdown-code-block-banner: #dce8d9;
+    --dsw-alias-button-tool-bar-fill: #e7efe3;
+    --welcome-tint: #edf4e9;
+  }
+}
+/* Before the Host resolves the user's saved preference, follow Electron's
+   native palette. Its effective colour follows the app's theme selection. */
+@media (prefers-color-scheme: dark) {
+  html:not([data-ds-theme-source]) body:not([data-ds-dark-theme]) {
+    --dsw-alias-bg-base: #151517;
+    --dsh-boot-bg: #151517;
+  }
+}

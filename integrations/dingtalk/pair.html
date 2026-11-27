@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>麦米 · 钉钉私聊授权</title>
+<link rel="stylesheet" href="/maimi/im/dingtalk/pair.css"><script src="/maimi/im/dingtalk/pair.js" defer></script></head>
+<body><main><a href="/maimi/">← 返回麦米</a><h1>钉钉私聊授权</h1>
+<p>登录麦米后，在这里把自己的钉钉账号与麦米账号配对。已配对的用户可直接授权问答。</p>
+<section><h2>连接我的钉钉</h2>
+<button id="start">生成配对指令</button><div id="claim-box" hidden><p>在五分钟内，将下面的指令私聊发送给公司已有的麦米机器人。</p><output id="claim"></output>
+<label for="proof">机器人私聊返回的确认码</label><input id="proof" maxlength="64" autocomplete="off" spellcheck="false"><button id="confirm">确认配对</button></div></section>
+<section><h2>使用我的模型权限</h2><p>本次授权允许本人钉钉私聊通过个人麦米账号发送单条文字问答，最长 15 分钟。退出麦米、撤销绑定或到期即停止使用。</p>
+<button id="consent">授权本次文字问答</button><button id="revoke">撤销授权并解除绑定</button></section>
+<p id="result" role="status"></p><a href="/maimi/web/">打开网页版登录</a></main></body></html>

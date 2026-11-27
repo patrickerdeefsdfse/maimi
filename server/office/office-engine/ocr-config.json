@@ -1,0 +1,5 @@
+{
+  "Det.model_path": "PP-OCRv6_det_small.onnx",
+  "Rec.model_path": "PP-OCRv6_rec_small.onnx",
+  "Cls.model_path": "ch_ppocr_mobile_v2.0_cls_mobile.onnx"
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@changfenhuang/dsh-genui",
+  "version": "0.15.0",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "engines": {
+    "dsh": "0.2.2-rc.5"
+  },
+  "dsh": {
+    "client": {
+      "inject": [],
+      "platform": "web"
+    }
+  },
+  "maimi": {
+    "upstreamPackage": "@changfenhuang/dsh-genui",
+    "upstreamVersion": "0.15.0",
+    "enterpriseDerivative": true
+  }
+}

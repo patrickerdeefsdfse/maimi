@@ -1,0 +1,26 @@
+{
+  "name": "@megmeet/dsh-review-skills",
+  "version": "1.0.0",
+  "description": "\u9ea6\u7c73\u4e13\u5229\u5ba1\u6838\u4e0e\u5165\u804c\u4f53\u68c0\u62a5\u544a\u8f85\u52a9\u590d\u6838\u6280\u80fd\uff1b\u4f7f\u7528\u73b0\u6709 DSH \u6a21\u578b\u3001\u6587\u4ef6\u53ca\u529e\u516c\u80fd\u529b\u3002",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.mjs",
+    "skills"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.4",
+    "@deepseek-ai/dsh-skill": "0.2.2-rc.3"
+  },
+  "scripts": {
+    "test": "node --test tests/native-registration.test.mjs"
+  },
+  "private": true
+}

@@ -1,0 +1,30 @@
+[Unit]
+Description=Maimi PostgreSQL managed by Patroni
+After=network-online.target maimi-dcs.service systemd-modules-load.service systemd-udev-settle.service
+Wants=network-online.target maimi-dcs.service systemd-udev-settle.service
+RequiresMountsFor=/data/maimi-pg-r93
+AssertPathIsMountPoint=/data
+StartLimitIntervalSec=120
+StartLimitBurst=3
+[Service]
+Type=simple
+User=postgres
+Group=postgres
+UMask=0077
+ExecStart=/opt/maimi-production/patroni-venv/bin/patroni /etc/maimi-pg-r93/patroni.yaml
+Restart=on-failure
+RestartSec=5
+KillMode=process
+TimeoutStopSec=120
+SendSIGKILL=no
+LimitNOFILE=65536
+LimitCORE=0
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/data/maimi-pg-r93
+DevicePolicy=closed
+DeviceAllow=/dev/watchdog0 rw
+[Install]
+WantedBy=multi-user.target

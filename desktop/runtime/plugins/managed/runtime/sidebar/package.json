@@ -1,0 +1,34 @@
+{
+  "name": "dsh-better-sidebar",
+  "version": "0.28.2",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "engines": {
+    "dsh": "0.2.2-rc.5"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-modules"
+      ],
+      "platform": "web"
+    }
+  },
+  "maimi": {
+    "upstreamPackage": "dsh-better-sidebar",
+    "upstreamVersion": "0.28.2",
+    "enterpriseDerivative": true
+  }
+}

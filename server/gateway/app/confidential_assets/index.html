@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>保密工作区 · 麦米办公助手</title><link rel="stylesheet" href="/maimi/confidential/ui.css">
+<script defer src="/maimi/confidential/ui.js"></script></head>
+<body><main><nav><strong>麦米办公助手</strong><a href="/maimi/web/chat">返回普通聊天</a></nav>
+<section><h1>保密工作区</h1><p>保密技能的每一步都需要在完全离线的环境中执行。</p>
+<label for="skill">已授权的保密技能</label><select id="skill" disabled></select>
+<a href="/v1/iam/login?return_to=%2Fmaimi%2Fconfidential" id="login" hidden>通过公司 IAM 登录</a>
+<p id="status" role="status" aria-live="polite">正在获取已授权技能…</p>
+<button id="reload" hidden>重新获取技能</button></section></main></body></html>

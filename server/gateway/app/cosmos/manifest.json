@@ -1,0 +1,45 @@
+{
+  "/maimi/web/cosmos/706865ac8e46fffe.css": {
+    "name": "706865ac8e46fffe.css",
+    "type": "text/css",
+    "sha256": "d63423724076869f3df2326984cad41cd7aaa9b791c794e477c73a3840c65b4d"
+  },
+  "/maimi/web/cosmos/706865ac8e46fffe.js": {
+    "name": "706865ac8e46fffe.js",
+    "type": "text/javascript",
+    "sha256": "1475938e71cfc3d4bbd35b4583ff56d12e351c5e10a758d7ce831682b6098270"
+  },
+  "/maimi/web/cosmos/17c9ab51caed8424dbae-nebula.png": {
+    "name": "17c9ab51caed8424dbae-nebula.png",
+    "type": "image/png",
+    "sha256": "17c9ab51caed8424dbae132ad21f3ba4323cf2b60a20bbf7363a1d33c84d4238",
+    "requires_site_asset": true
+  },
+  "/maimi/web/cosmos/17432e1a34777091a186-maimi.png": {
+    "name": "17432e1a34777091a186-maimi.png",
+    "type": "image/png",
+    "sha256": "17432e1a34777091a18608f0918e1f30e6aa6021c586f8fc5e50ead84b6c9de3",
+    "requires_site_asset": true
+  },
+  "/maimi/web/cosmos/nebula-nov5.png": {
+    "name": "nebula-nov5.png",
+    "type": "image/png",
+    "sha256": "2675fc3fb1dc4fa3fcaadf0281775c0e664958d008989708006b54eeefebe35a",
+    "requires_site_asset": true
+  },
+  "/maimi/web/cosmos/df995358f7975ea84a3b.css": {
+    "name": "df995358f7975ea84a3b.css",
+    "type": "text/css",
+    "sha256": "df995358f7975ea84a3b215c2402fc798f9dd5371376fd70e26d4fdbf59785b8"
+  },
+  "/maimi/web/cosmos/135c51a9bb2b6b3db615.js": {
+    "name": "135c51a9bb2b6b3db615.js",
+    "type": "text/javascript",
+    "sha256": "135c51a9bb2b6b3db61509e1911c0bfe91e4c78dede8d4ac161f58664e902280"
+  },
+  "/maimi/web/cosmos/73191fa1c6b23564d02f-maimi-home.webp": {
+    "name": "73191fa1c6b23564d02f-maimi-home.webp",
+    "type": "image/webp",
+    "sha256": "73191fa1c6b23564d02fe606a3810d9a45cfd63dbace44eb5140b8affe7ceb4b"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "snapshot_date": "2026-11-27",
+  "upstream_desktop": {
+    "version": "0.15.10",
+    "dsh": "0.2.2-rc.5",
+    "commit": "9c2670d3bce5275e0d1610272958121af87787bb"
+  },
+  "deployed_components": {
+    "gateway": {
+      "generation": 93,
+      "image": "docker.io/library/maimi-secured-gateway@sha256:e9fbdaedcf77a3e4a40c2de732a1f6b28fca761c8f933d39e80a198be7246334"
+    },
+    "orders": {
+      "generation": 23,
+      "image": "docker.io/library/maimi-secured-sales-orders@sha256:6037c2115ac68ed82e6271b6d56d47cf72c164cd429f0df4c4a9c8c103b81051"
+    },
+    "chat": {
+      "generation": 54,
+      "image": "docker.io/library/maimi-secured-personal-cloud-manager@sha256:148bf201e4149dc881b0c629a1a537433f0e76e4e9220d36f0d57f0952240565"
+    },
+    "execution": {
+      "generation": 50,
+      "image": "docker.io/library/maimi-secured-personal-cloud-manager@sha256:148bf201e4149dc881b0c629a1a537433f0e76e4e9220d36f0d57f0952240565"
+    },
+    "office-engine": {
+      "generation": 5,
+      "image": "docker.io/library/maimi-office-dependencies-office@sha256:36c8611593951a6d3b930a00b79c0730fd26e3486cf5edb2c8cdd2a2d39e006e"
+    },
+    "office-api": {
+      "generation": 5,
+      "image": "docker.io/library/maimi-office-dependencies-office@sha256:36c8611593951a6d3b930a00b79c0730fd26e3486cf5edb2c8cdd2a2d39e006e"
+    }
+  },
+  "worker_base_images": {
+    "chat": "docker.io/library/maimi-task-files@sha256:a984952c5865ce16152fb45f52a7f8cef7b278eefc84b4abf3dca6ab512faeb3",
+    "execution": "docker.io/library/maimi-task-files@sha256:5167751957c12efad81386d5fe068838c860bd9b3b576ff4bdd4a0a0ee2ca734"
+  },
+  "build_scope": "Linux images are immutable deployment inputs supplied by the operator. See server/README.md for build contexts, mounts and site settings."
+}

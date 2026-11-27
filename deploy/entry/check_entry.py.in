@@ -1,0 +1,53 @@
+#!/usr/bin/python3
+"""Keepalived readiness only: loopback HTTPS, strict TLS, no credentials/output."""
+import http.client
+import json
+import signal
+import socket
+import ssl
+import sys
+
+ORIGIN = '{{HOSTNAME}}'
+CA_FILE = {{CA_FILE_LITERAL}}
+EXPECTED = {'status': 'ready', 'database': 'ready', 'redis': 'ready'}
+
+
+def accepted(status, media_type, body):
+    if status != 200 or media_type.split(';', 1)[0].strip().lower() != 'application/json':
+        return False
+    if len(body) > 4096:
+        return False
+    try:
+        value = json.loads(body)
+    except (UnicodeError, ValueError):
+        return False
+    return isinstance(value, dict) and all(value.get(k) == v for k, v in EXPECTED.items())
+
+
+def deadline(_signum, _frame):
+    raise TimeoutError('readiness deadline')
+
+
+def main():
+    signal.signal(signal.SIGALRM, deadline)
+    signal.setitimer(signal.ITIMER_REAL, 2.5)
+    try:
+        context = ssl.create_default_context(cafile=CA_FILE)
+        # Name validation/SNI use the unchanged origin; no DNS dependency for VIP health.
+        with socket.create_connection(('127.0.0.1', 443), timeout=0.8) as raw:
+            with context.wrap_socket(raw, server_hostname=ORIGIN) as stream:
+                stream.settimeout(0.8)
+                stream.sendall(('GET /ready HTTP/1.1\r\nHost: ' + ORIGIN +
+                                '\r\nConnection: close\r\n\r\n').encode('ascii'))
+                response = http.client.HTTPResponse(stream)
+                response.begin()
+                body = response.read(4097)
+                return 0 if accepted(response.status, response.getheader('Content-Type', ''), body) else 1
+    except (OSError, ValueError, http.client.HTTPException):
+        return 1
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

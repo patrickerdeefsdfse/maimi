@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>麦米办公助手 · 公司登录</title>
+  <link rel="stylesheet" href="company-login.css">
+</head>
+<body>
+  <header><img src="maimi-icon.png" width="34" height="34" alt="">麦米办公助手</header>
+  <main>
+    <section aria-labelledby="title" class="panel">
+      <div class="mark" aria-hidden="true"><img src="maimi-icon.png" width="68" height="68" alt=""></div>
+      <h1 id="title">正在连接公司登录</h1>
+      <p id="detail" role="status">正在准备企业身份验证，请稍候。</p>
+      <div class="code" id="code-area" hidden><span>本次验证码</span><strong id="code"></strong></div>
+      <button id="retry" class="primary" hidden>重新登录</button>
+    </section>
+  </main>
+  <footer><button id="update" class="text-button">检查更新</button></footer>
+  <dialog id="confirmation" aria-labelledby="confirm-title" aria-describedby="confirm-detail">
+    <h2 id="confirm-title">打开公司登录页？</h2>
+    <p id="confirm-detail">请在系统浏览器完成 IAM 登录，确认网页显示的验证码与这里一致。</p>
+    <div class="code"><span>本次验证码</span><strong id="confirm-code"></strong></div>
+    <div class="actions"><button id="cancel" class="secondary">取消</button><button id="authorize" class="primary">打开公司登录页</button></div>
+  </dialog>
+  <script src="company-login.js"></script>
+</body>
+</html>

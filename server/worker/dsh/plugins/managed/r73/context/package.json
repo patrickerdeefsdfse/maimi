@@ -1,0 +1,35 @@
+{
+  "name": "dsh-context",
+  "version": "0.81.0",
+  "type": "module",
+  "private": true,
+  "license": "Apache-2.0",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "engines": {
+    "dsh": "0.2.2-rc.5"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ],
+      "platform": "web"
+    }
+  },
+  "maimi": {
+    "upstreamPackage": "dsh-context",
+    "upstreamVersion": "0.81.0",
+    "enterpriseDerivative": true
+  }
+}

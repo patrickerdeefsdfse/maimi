@@ -1,0 +1,17 @@
+{
+  "version": "1.0.66",
+  "artifacts": [
+    {
+      "name": "dws-windows-amd64.zip",
+      "bytes": 21025934,
+      "sha256": "64dcf850b32db1e07861ba971a9a251d1ed95a86bbe5bb248866377a67520d53",
+      "source": "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli/releases/download/v1.0.66/dws-windows-amd64.zip"
+    },
+    {
+      "name": "dws-skills.zip",
+      "bytes": 3317903,
+      "sha256": "30a872a3b472af235baf633662d26ad1ddd0c47d75c31b4452b2ea82dd966e44",
+      "source": "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli/releases/download/v1.0.66/dws-skills.zip"
+    }
+  ]
+}

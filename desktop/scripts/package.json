@@ -1,0 +1,11 @@
+{
+  "name": "maimi-desktop-release-tools",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "tsdown": "0.22.2",
+    "electron-builder": "26.17.0",
+    "resedit": "1.7.2",
+    "pe-library": "0.4.1"
+  }
+}

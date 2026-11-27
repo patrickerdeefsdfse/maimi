@@ -1,0 +1,1 @@
+export const TARGET = Object.freeze({ version: '0.2.2-rc.5', commit: '9c2670d3bce5275e0d1610272958121af87787bb', pnpm: '11.28.5', sourceArchiveSha256: 'ed1f1739744cf1314871d772764288e99ae09aad3103ab7631ef8626a8c33c2a' });

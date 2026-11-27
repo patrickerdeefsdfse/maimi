@@ -1,0 +1,21 @@
+{
+  "name": "maimi-documents",
+  "version": "0.6.2",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "engines": {
+    "dsh": "0.2.2-rc.5"
+  },
+  "maimi": {
+    "upstreamPackage": "dsh-files",
+    "upstreamVersion": "0.6.2",
+    "enterpriseDerivative": true
+  }
+}

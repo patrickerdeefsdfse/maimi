@@ -1,0 +1,24 @@
+{
+  "name": "@deepseek-ai/dsh-api-workspace-controller",
+  "version": "0.2.2-rc.5",
+  "private": true,
+  "type": "module",
+  "description": "Company Client-only discovery adapter; original upstream Host stays disabled.",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "external": [
+        "@deepseek-ai/dsh-api-gateway/client"
+      ],
+      "inject": [
+        "@deepseek-ai/dsh-api-gateway",
+        "@deepseek-ai/dsh-client-connection"
+      ],
+      "platform": "web"
+    }
+  }
+}

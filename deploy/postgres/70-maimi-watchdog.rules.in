@@ -1,0 +1,1 @@
+SUBSYSTEM=="watchdog", KERNEL=="watchdog0", ATTR{identity}=="Software Watchdog", OWNER="postgres", GROUP="postgres", MODE="0600"

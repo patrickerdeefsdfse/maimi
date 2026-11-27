@@ -1,0 +1,10 @@
+:root{font-family:"Microsoft YaHei","Segoe UI",sans-serif;color:#21372b;background:#eef4ea;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}main{max-width:820px;margin:auto;padding:24px clamp(16px,4vw,44px) 70px}
+nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;margin-bottom:38px}
+section{padding:clamp(18px,4vw,32px);background:#fff;border:1px solid #d6e3d6;border-radius:18px;margin-bottom:16px}
+h1,p{margin-top:0}h1{font-size:clamp(25px,4vw,34px)}p{color:#4c6352;line-height:1.6}
+label{display:block;margin:14px 0 7px;font-weight:600}select,button{font:inherit}
+select{width:100%;border:1px solid #a9bdaf;border-radius:9px;padding:10px;background:#fbfdf9;color:inherit}
+button{background:#286445;color:white;border:0;border-radius:9px;padding:9px 15px;cursor:pointer}button:disabled{opacity:.55;cursor:default}
+a{color:#215c40}#reload,#login{display:inline-block;margin-top:16px}#status{margin:14px 0 0}
+[hidden]{display:none!important}

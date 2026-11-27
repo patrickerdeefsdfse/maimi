@@ -1,0 +1,25 @@
+{
+  "name": "maimi-managed-plugins",
+  "version": "0.0.0-r73",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "dsh": "0.2.2-rc.5"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-deliverables",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  }
+}

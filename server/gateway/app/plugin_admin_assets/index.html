@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>企业插件管理 · 麦米办公助手</title>
+  <meta name="theme-color" content="#242b30">
+  <link rel="stylesheet" href="/maimi/plugins/assets/app.css">
+  <script defer src="/maimi/plugins/assets/app.js"></script>
+  <script defer src="/maimi/web/web-idle.js"></script>
+</head>
+<body data-view="locked">
+  <header class="topbar"><nav aria-label="管理导航">
+    <a class="brand" href="/maimi/"><span class="brand-mark"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 16.5 7.4 7.9l4.1 8.6M11.5 16.5l4.1-8.6 4.9 8.6"/></svg></span>麦米办公助手</a>
+    <a class="monitor-link" href="/maimi/monitor/">运行监控 <span aria-hidden="true">↗</span></a>
+  </nav></header>
+  <main>
+    <h1 id="page-title" tabindex="-1">企业插件管理</h1>
+    <nav id="sections" aria-label="插件管理" hidden>
+      <a href="#grants" data-panel="grants">目录与分发</a>
+      <a href="#releases" data-panel="releases">版本</a>
+      <a href="#activity" data-panel="activity">操作记录</a>
+      <a href="#roles" data-panel="roles" hidden>管理员</a>
+      <a href="#guide" data-panel="guide">接入指南</a>
+    </nav>
+    <p id="status" role="status" aria-live="polite">正在加载插件目录…</p>
+    <a id="login" hidden href="/v1/iam/login?return_to=%2Fmaimi%2Fplugins%2F">通过公司账号登录</a>
+    <button type="button" id="retry-load" hidden>重新读取</button>
+    <div id="grants-panel" hidden>
+      <form id="lookup" data-manager-only>
+        <label for="employee">员工工号</label>
+        <p id="employee-help">支持粘贴多个工号，以空格、逗号或换行分隔。</p>
+        <div class="lookup-row">
+          <textarea id="employee" rows="2" placeholder="输入或粘贴员工工号" autocomplete="off" spellcheck="false" aria-describedby="employee-help"></textarea>
+          <button type="submit">查看授权</button>
+        </div>
+      </form>
+      <section id="catalog" aria-labelledby="list-title" hidden>
+      <div class="toolbar">
+        <div><h2 id="list-title">已发布的插件</h2><p id="count"></p><p id="client-status-note" hidden>网页端和桌面端分别汇总已回报的设备。旧客户端缺少设备编号时显示该端最近回执。</p></div>
+        <div class="filters">
+          <input type="search" id="search" aria-label="搜索插件" placeholder="搜索插件名称">
+          <select id="scope" aria-label="按授权状态筛选"><option value="all">全部插件</option><option value="on">已开放</option><option value="off">未开放</option><option value="retained">停用后保留授权</option></select>
+        </div>
+      </div>
+        <div class="batch-actions" data-manager-only>
+          <label class="bulk-checkbox"><input id="select-visible" type="checkbox"> 全选筛选结果</label>
+          <output id="batch-summary" class="batch-summary" aria-live="polite"></output>
+          <button id="bulk-grant" type="button" class="primary" disabled>批量开通</button>
+          <button id="bulk-revoke" type="button" disabled>批量收回</button>
+        </div>
+        <div id="batch-confirmation" class="inline-confirm" hidden>
+          <strong id="batch-confirm-title"></strong><p id="batch-confirm-targets"></p>
+          <ul id="batch-confirm-items"></ul>
+          <div class="commands"><button type="button" id="batch-accept" class="primary">确认执行</button><button type="button" id="batch-cancel">取消</button></div>
+        </div>
+        <p id="network-scope-note" data-manager-only tabindex="-1">沙箱保密设置对该技能的全部员工和版本生效，分发时沿用已保存的设置。</p>
+        <p id="network-status" role="status"></p><button id="reload-network" type="button" hidden>重新读取沙箱设置</button>
+        <ul id="items"></ul><p id="empty" hidden>没有符合条件的插件或技能。</p>
+        <div id="extra-network" hidden><h3>其他内置技能的沙箱设置</h3><ul id="network-list"></ul></div>
+      </section>
+      <section id="jobs" data-manager-only aria-labelledby="jobs-heading">
+        <div class="toolbar">
+          <div><h2 id="jobs-heading">我的批量任务</h2><p>任务提交后在后台执行，关闭网页后可回来查看。</p></div>
+          <button id="refresh-jobs" type="button">刷新进度</button>
+        </div>
+        <div class="job-body">
+          <p id="jobs-note" role="status"></p>
+          <div id="job-picker" hidden>
+            <label for="job-select">选择任务</label>
+            <select id="job-select"></select>
+            <nav class="job-pages" aria-label="任务列表分页" hidden id="job-list-pages">
+              <button type="button" id="job-list-prev">上页</button><span id="job-list-range"></span><button type="button" id="job-list-next">下页</button>
+            </nav>
+          </div>
+          <div id="job-detail" hidden>
+            <div class="job-title"><h3 id="job-title"></h3><span id="job-state" class="state"></span></div>
+            <p id="job-origin" hidden></p>
+            <label for="job-progress" id="job-count"></label><progress id="job-progress" value="0" max="1"></progress>
+            <div class="job-actions"><a download id="job-export">导出结果 CSV</a><button type="button" hidden id="job-retry">只重试失败项</button></div>
+            <details id="job-items"><summary>逐项结果</summary>
+              <ul id="job-results"></ul>
+              <nav class="job-pages" id="job-item-pages" aria-label="任务明细分页" hidden>
+                <button type="button" id="job-item-prev">上页</button><span id="job-item-range"></span><button type="button" id="job-item-next">下页</button>
+              </nav>
+            </details>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div id="releases-panel" hidden>
+      <form id="upload" class="card">
+        <label for="archive">上传插件包</label>
+        <p id="archive-help">选择不超过 4 MiB 的 ZIP。上传后保存为草稿，可在下方检查并发布。</p>
+        <div class="input-line"><input type="file" id="archive" accept=".zip,application/zip" aria-describedby="archive-help" required>
+        <button type="submit" class="primary">上传草稿</button></div>
+      </form>
+      <section aria-labelledby="versions-heading">
+        <div class="toolbar"><h2 id="versions-heading">插件版本</h2><button type="button" id="reload-releases">刷新版本</button></div>
+        <ul id="versions"></ul><p id="versions-empty" class="empty" hidden>还没有上传插件包。</p>
+      </section>
+    </div>
+    <div id="activity-panel" hidden>
+      <form id="activity-lookup" class="card">
+        <label for="activity-employee">按员工筛选操作记录</label>
+        <div class="input-line"><input id="activity-employee" placeholder="留空查看全部" pattern="M[0-9]{8}" maxlength="9" autocomplete="off">
+        <button class="primary" type="submit">查询记录</button></div>
+      </form>
+      <section aria-labelledby="activity-heading"><div class="toolbar"><h2 id="activity-heading">最近操作</h2><small>最多显示最近 100 条</small></div>
+        <ol id="events"></ol><p id="events-empty" class="empty" hidden>暂无符合条件的记录。</p>
+      </section>
+    </div>
+    <div id="roles-panel" hidden>
+      <form id="role-search" class="card">
+        <label for="role-number">查询员工管理权限</label>
+        <div class="input-line"><input id="role-number" aria-label="员工工号" pattern="M[0-9]{8}" maxlength="9" placeholder="输入完整工号" required autocomplete="off">
+        <button type="submit">查询</button></div>
+        <p id="role-status" role="status"></p>
+      </form>
+      <section class="card" id="role-result" hidden>
+        <h2 id="role-label"></h2><p id="role-value"></p>
+        <button type="button" id="role-change" hidden></button>
+        <div id="role-confirm" hidden><p id="role-question"></p>
+        <button type="button" class="primary" id="role-save">确认</button>
+        <button type="button" id="role-cancel">取消</button></div>
+      </section>
+    </div>
+    <div id="guide-panel" hidden>
+      <section aria-labelledby="guide-title" class="guide">
+        <h2 id="guide-title">制作插件包</h2>
+        <p>从下方示例开始，将文件直接放在 ZIP 根目录。每次修改内容都使用新的版本号，保留相同的插件标识。</p>
+        <div class="examples">
+          <article><h3>工作技能</h3><p>适用于网页版和桌面版。用 UTF-8 编写 <code>SKILL.md</code>，说明适用场景、输入和执行步骤。</p>
+            <a download="weekly-summary-1.0.0.zip" href="data:application/zip;base64,UEsDBBQAAAAIAAAAIVygRdA7hgAAAJ4AAAANAAAAbWFuaWZlc3QuanNvbqvmUlBQKsgpTc/Mi89OrVSyUlAqT03NzqnULS7NzU0sqlTSAakoSy0qzszPA0kb6hnoGUBE8xJzU0FCTyeueNa19NnULc8ntEFkUlKLk4syC0qgeiBSz6eseNax/Vn/hCf7Zj+f1fJ0+9Ine+e8WLfh6d6pEF3ZmXkpIOXF2Zk5OUpctVwAUEsDBBQAAAAIAAAAIVyWRLQS6gAAABIBAAAIAAAAU0tJTEwubWR9zEFOwkAYBeD9nKKJ67kAtyHaBdGiAY1hB4bS0hQsaDUqWBpp0o1T1CaVSuEwzP/P7LyCf8Le3Xt5eR/nnDXrllkzrk3z9KzD21eWVW912InZPm41Li4b582agZ6n7lN0C7wN5PZFPfehSGQ102IFVYhhroIBugFMUvQSxslkR8ahHUbGcLHGkYDqDoYjyNY6m8vv93/Q342P/hCKTxA+0ftuD7Y2eK8w9SmoWGixBHegfvr77o3czVX4BOMIHxxiwSnVeEUgPiY4i+ii80jnb7IsiVWbEpYfchdjL8OFg18pgTpOwLaJYn9QSwECFAAUAAAACAAAACFcoEXQO4YAAACeAAAADQAAAAAAAAAAAAAAgAEAAAAAbWFuaWZlc3QuanNvblBLAQIUABQAAAAIAAAAIVyWRLQS6gAAABIBAAAIAAAAAAAAAAAAAACAAbEAAABTS0lMTC5tZFBLBQYAAAAAAgACAHEAAADBAQAAAAA=">下载周报技能示例</a></article>
+          <article><h3>桌面原生插件</h3><p>仅在桌面端运行。包内包含 <code>manifest.json</code>、<code>package.json</code> 和 <code>index.mjs</code>。入口导出 <code>apply(ctx)</code>。</p>
+            <a download="hello-desktop-1.0.0.zip" href="data:application/zip;base64,UEsDBBQAAAAIAAAAIVw/GzlQjAAAAKQAAAANAAAAbWFuaWZlc3QuanNvbqvmUlBQKsgpTc/Mi89OrVSyUlDKSM3JyddNSS3OLskvUNIBKShLLSrOzM8DyRrqGegZQETzEnNTQULPFva8nLvoadeCF3v3Pl+y68m+bog80IjkosyCEqjOl6t6XqxvfDZnzbM5uyCKn81peLqh/2nf/OdT5j/taYXoys7MSwEpz0ssySxLVeKq5QIAUEsDBBQAAAAIAAAAIVwVEh84UAAAAGEAAAAMAAAAcGFja2FnZS5qc29uq+ZSUFDKS8xNVbJSUMpIzcnJ101JLc4uyS9Q0gFJlaUWFWfm54FkDfUM9AwgoiWVBWANufkppTmpELHcxEywMj39zLyU1Aq93KxiJa5aLgBQSwMEFAAAAAgAAAAhXN6Jvx5TAAAAWwAAAAkAAABpbmRleC5tanMNyUEKgCAQBdB9p/jLgsijdAaxkYTJkXEsI7p7ve1zDmuMnDKBxW+g7o/CNONKtkszmAhXiP5jpNkzKumZAtVloF5EDbHlYEkyfCl8j8H6hOcdPlBLAQIUABQAAAAIAAAAIVw/GzlQjAAAAKQAAAANAAAAAAAAAAAAAACAAQAAAABtYW5pZmVzdC5qc29uUEsBAhQAFAAAAAgAAAAhXBUSHzhQAAAAYQAAAAwAAAAAAAAAAAAAAIABtwAAAHBhY2thZ2UuanNvblBLAQIUABQAAAAIAAAAIVzeib8eUwAAAFsAAAAJAAAAAAAAAAAAAACAATEBAABpbmRleC5tanNQSwUGAAAAAAMAAwCsAAAAqwEAAAAA">下载桌面插件示例</a></article>
+        </div>
+        <h3>填写 manifest.json</h3>
+        <dl class="fields"><dt>plugin_key</dt><dd>以小写字母开头，用小写字母、数字和单个连字符组合，最多 64 个字符，例如 weekly-summary。</dd>
+          <dt>version</dt><dd>使用三段数字版本号，例如 1.0.0。原生插件的 package.json 也应使用这个版本。</dd>
+          <dt>name、description</dt><dd>员工看到的名称和用途说明。</dd>
+          <dt>kind</dt><dd>工作技能填 skill，桌面原生插件填 native。</dd></dl>
+        <h3>发布与分发</h3>
+        <ol class="steps"><li>在“版本管理”上传 ZIP，点击“预检”查看检查结果。包中只放必需文件，凭据留在公司服务配置中。</li>
+          <li>原生包使用 ES 模块，不带依赖、安装脚本或 node_modules。请将该版本的 SHA-256 交给运维，登记到网关及目标桌面版本的受信清单。网页预检核对网关清单，桌面加载时会核对本机清单。</li>
+          <li>点击“发布”，在“授权与分发”输入工号并分发。可分别查看网页和桌面的最近回执，以及“操作记录”中的操作人和时间。</li>
+        </ol>
+      </section>
+    </div>
+    <dialog id="confirm-change" aria-labelledby="confirm-title" aria-describedby="confirm-detail">
+      <h2 id="confirm-title"></h2><p id="confirm-detail"></p>
+      <form method="dialog" class="dialog-actions">
+        <button value="cancel" autofocus>取消</button><button value="confirm" class="primary" id="confirm-submit">确认</button>
+      </form>
+    </dialog>
+  </main>
+</body>
+</html>

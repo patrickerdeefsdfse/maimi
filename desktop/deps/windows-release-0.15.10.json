@@ -1,0 +1,18 @@
+{
+  "release": "0.15.10",
+  "dsh": "0.2.2-rc.5",
+  "electron": "44.11.5",
+  "installerBytes": 370216838,
+  "installerSha256": "91c81eb2159eec95aca3a88b8601403054828fcfb2a544b6a4cec0f04361c19f",
+  "payloadSha256": "be7864085d08805aa5320a4a3854b429211c5a3f29c7445753676dc821c01b01",
+  "previousPayloadSha256": "72d4d76feb688bb7bce9a16853e37da8a430ddfb8b894d40beaab73d3fca9782",
+  "previousRelease": "0.15.9",
+  "sourceCommit": "9c2670d3bce5275e0d1610272958121af87787bb",
+  "installerTemplateSha256": "433ea528a0f0611d1ed41d70a13c501fb4fc4c33c4a6261112e10ddc52b28aac",
+  "verifiedUpgradePreservedUserPlugin": true,
+  "userPluginActivatedAfterUpgrade": true,
+  "artworkInputs": {
+    "rail.bmp": "3e9e63701fde4d653a26fb3c86952bc3417e9a330f75856f9f8b8156d8f10dd2",
+    "header.bmp": "839ac921cc058b15053a5178c2e4eace1484b7abbddb961b1921263c40818808"
+  }
+}

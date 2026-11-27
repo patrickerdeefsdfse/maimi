@@ -1,0 +1,13 @@
+[Unit]
+Description=麦米业务文件共享
+Wants=network-online.target
+After=network-online.target
+
+[Mount]
+What={{NAS_IP}}:/{{NAS_EXPORT_NAME}}
+Where={{NAS_MOUNT_PATH}}
+Type=nfs
+Options=defaults,_netdev
+
+[Install]
+WantedBy=multi-user.target

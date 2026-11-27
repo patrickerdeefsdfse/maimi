@@ -1,0 +1,34 @@
+{
+  "advertise-client-urls": "https://{{A1_IP}}:12379",
+  "client-transport-security": {
+    "auto-tls": false,
+    "cert-file": "/etc/maimi-production/database/pki/dcs-client-transport/server.crt",
+    "client-cert-auth": true,
+    "key-file": "/etc/maimi-production/database/pki/dcs-client-transport/server.key",
+    "trusted-ca-file": "/etc/maimi-production/database/pki/dcs-client-transport/ca.crt"
+  },
+  "data-dir": "/data/maimi-production/database/etcd",
+  "enable-pprof": false,
+  "force-new-cluster": false,
+  "initial-advertise-peer-urls": "https://{{A1_IP}}:12380",
+  "initial-cluster": "maimi-dcs-a1=https://{{A1_IP}}:12380,maimi-dcs-b1=https://{{B1_IP}}:12380,maimi-dcs-b2=https://{{B2_IP}}:12380",
+  "initial-cluster-state": "new",
+  "initial-cluster-token": "{{DCS_CLUSTER_TOKEN}}",
+  "listen-client-urls": "https://{{A1_IP}}:12379",
+  "listen-peer-urls": "https://{{A1_IP}}:12380",
+  "log-level": "warn",
+  "log-outputs": [
+    "stderr"
+  ],
+  "logger": "zap",
+  "name": "maimi-dcs-a1",
+  "peer-transport-security": {
+    "auto-tls": false,
+    "cert-file": "/etc/maimi-production/database/pki/dcs-peer-transport/server.crt",
+    "client-cert-auth": true,
+    "key-file": "/etc/maimi-production/database/pki/dcs-peer-transport/server.key",
+    "trusted-ca-file": "/etc/maimi-production/database/pki/dcs-peer-transport/ca.crt"
+  },
+  "strict-reconfig-check": true,
+  "tls-min-version": "TLS1.2"
+}

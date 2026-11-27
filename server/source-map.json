@@ -1,0 +1,3366 @@
+{
+  "snapshot_date": "2026-11-27",
+  "hash_algorithm": "sha256",
+  "files": [
+    {
+      "path": "integrations/sales-order-mcp/README.md",
+      "sha256": "78e1067745384a34f587f0288b4872ce0de7ba735220fd97b297a79fde366418"
+    },
+    {
+      "path": "integrations/sales-order-mcp/config/integrations.example.json",
+      "sha256": "4bb9c7dec92dc8c7d8e1a6379faa84e72a3543642bf3d34eeb237a38ec954f87"
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/__init__.py",
+      "sha256": "9e7ed895054d3b99b4160283cedd139325d39d6b3df9ddca2dd4f54fcd0267c7",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/approval_assignments.py",
+      "sha256": "0ac29da5b701bb423baab077dbe3a35755079ef697b6a2da4fc9f5e87503310b",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/cloud.py",
+      "sha256": "736ed56eecc61cd9da5d1bad74378c232f2ba43c209645c348c82ca03ebf4555",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/cloud_store.py",
+      "sha256": "197abb4c6b4c58d02b886dba9fd30ae02c52acdacddd6d38c490978a1b3e6edc",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/config.py",
+      "sha256": "b1bddf10750c28d340c07fccbc949fa839b5cfbf836ec954f98c68ac1863bb6a",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/fastapi_extract.py",
+      "sha256": "154a9932ca2c3611f736310c7d653d1cdebe89119c05854c5bff92de1c0253c7",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/fastapi_rows.py",
+      "sha256": "6752d704d347b13dcdf369d56effd6fd18ea413cf1e56c6fbd812cd8ff6f513c",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/hongyi.py",
+      "sha256": "805b9a3637a76df33b743f86137161534843e3c62aceaa68956d7ea172ca7af2",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/hongyi_collection.py",
+      "sha256": "c5e212d6dabe54acf147b05305b9527e8ee6258c0b68fd0a754a805a0f73912b",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/ingest.py",
+      "sha256": "58cca492c52df9095482a75766e28e521bb7f3f04a9ebd79a0a5444fc24d3167",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/integrations.py",
+      "sha256": "e94ca6ebf657a4c5b236850976715874c2f65508d9432d06f57fba94fcb64dd6",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/oracle.py",
+      "sha256": "3994b6d124674d08a7ed1ea49ea175242d4f13240a172d42e67eef9f0d501e43",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/oracle_test_validation.py",
+      "sha256": "d027ffd8ac1025ebececcd3e98b7b696298a7f3de5d41e28ae24de5c5a13a42d",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/order_approvals.py",
+      "sha256": "75961ece4e63bddbef2397f4a6b4b60f594218e3bfa4e5f44396e2b03c89560f",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/order_batch.py",
+      "sha256": "ee67d580a61b8042da40979971ab61024735808fb797880b3e375f494d80ae9e",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/order_suggestions.py",
+      "sha256": "8bc278ad389dc24cac4981df82f0abdc97bc6374be2da1f6f045d5f632ac9522",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/rules.py",
+      "sha256": "55d13a0864cad98a8ac1d6ec62d659bb79532115d1f8763b7ec818095f253682",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/sales_reference.py",
+      "sha256": "d9b19c6c2dab12606f3844d12370490bc986dee288f7b2602cc758db2e5f1eb7",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/schema.py",
+      "sha256": "5fdcbc530f0a52832227739cfaf8b3f015408654a070f448e98431846292b2d3",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/server.py",
+      "sha256": "3a02be629aa7add55234b695e2123cf6b9c2b9ad2b8a78b91c2940c21087ff95",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/service.py",
+      "sha256": "3f6dd159cf2f4ed8ade096e5e3b596e1c8db73bc1308f2e857be9d5c98d1be01",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/order_mcp/store.py",
+      "sha256": "fc3a50b731616ae2fdbd21cba934646e74108462253f1d9c4d891ea5dbc9e977",
+      "compared_with": [
+        "orders"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "integrations/sales-order-mcp/pyproject.toml",
+      "sha256": "d66a5c54be0f554e3d761b0da06125f5c91c7dfd77609bf90c876be7551af0ac"
+    },
+    {
+      "path": "integrations/sales-order-mcp/requirements.lock.txt",
+      "sha256": "67af4a4cd55c761865aadc1a8949d06c80b484e50f8821ee6e7fd90ad8e107fc"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_adapters.py",
+      "sha256": "28a9466f6369df32b5fe99152248f3444219f02df89a6a9df14196a821556657"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_all_employees.py",
+      "sha256": "8fd7d7026250fbb490b43585e26f736dc6ab9c3375028170bbcf2b6706c61943"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_approval.py",
+      "sha256": "a62ddb4c5f813bd88937605bae1e873334e028543cb372f90c8ef7450e8c408f"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_approval_assignments.py",
+      "sha256": "e65c720a0ce24e7acff46f487ba353ecbfeaa865e30e8b50c320f17e0902b3f0"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_booking_to_collection.py",
+      "sha256": "09ea54c12b95db88a82e6cb8b2a1dceef8ff12ce164609bd41a024e1edd34dbb"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_business_defaults.py",
+      "sha256": "92bb9e5b6a73be9c4255108b92fa78121cffcfa168e52ea83904b15c515c4120"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_fastapi_contract.py",
+      "sha256": "1a1dd8950329cf5ee063229d7740d865409bcd5de24b7863c6a2c6e8b1474147"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_gateway_recognition.py",
+      "sha256": "bfa8dba3767b5352ce0671bb4c3436f50309a7bf3ee954c318340f8289b83783"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_hongyi.py",
+      "sha256": "eb990ad57444d0458cced16939320ad3d81d862ccea4037239ae08a2935a65a2"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_maimi_business_approval.py",
+      "sha256": "f8086fa36ed3a91891cd1332eb75e0b6d13c7ea66b465214c83a9b56db91e983"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_mcp.py",
+      "sha256": "67e5301bc1c69bf05e2d6c0c7d3c6a88c554af85214995a7b8539a28c26e5a2b"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_one_click_confirmation.py",
+      "sha256": "2bbf166db1b42c1a5688b3170a33dc60267a33ee7611bf96a6727f373cc1d3f6"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_oracle_validation_receipt.py",
+      "sha256": "302fb6e1366b6bcc776663adcddf7e6505a8fd33986930ee9eb660651424239a"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_order_batch.py",
+      "sha256": "f1ea561f3ed57def3c91383936d00696c44adbc86f697e645f1334dc9c577477"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_order_originals_archive.py",
+      "sha256": "1f115c80afe9db3e4fca88dd7d01d8e60226419406ad0cc447f911ac7647c51b"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_orders.py",
+      "sha256": "ffabb74e3d296d7bf554ab5749bcb53fd6d5046f6bdce8a926a029a8b3f679f8"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_review_warehouse_tax.py",
+      "sha256": "a6cec3fa9adff09d88634ee7054c5af209e808df895998596d33174f067957dc"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_sales_item_resolution.py",
+      "sha256": "c2e38d370f05a4ce25eaeb8f906736c8d068a72646bcb71637cf554ca8ada190"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_sales_order_suggestions.py",
+      "sha256": "12e60aee29a894e3f2e8c0607f00f01a1638f922faec17c767ae922e3f4f95b5"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_sales_reference.py",
+      "sha256": "a2079ed8a853745d017d0246ce02726de60fbe8588dfd504a6ffceed5441ce87"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_web_workflow.py",
+      "sha256": "7b4c674d666e21eaecca38657f8fe343b237aa36d83b07a811a4024b99a2091d"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tests/test_workflow_completion.py",
+      "sha256": "651bf22b786ec12313be26d0bc79b7fb0d78fd3fd43f33795cb544ac3b26fb2e"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tools/oracle_network_policy.py",
+      "sha256": "04aad89dbbf20ef5008d109c325fa245ccf349f82318b51a1e36d62780170066"
+    },
+    {
+      "path": "integrations/sales-order-mcp/tools/oracle_preflight.py",
+      "sha256": "21348cd3a4e5f5b618a937a63919f3df63ecd12a3287a1a087b0c488d393ca08"
+    },
+    {
+      "path": "server/README.md",
+      "sha256": "4ea0b5d97159206a3ab050ceec38185c2fa0feba53be6351940eb8d259a850c0"
+    },
+    {
+      "path": "server/gateway/Dockerfile",
+      "sha256": "cdc26048d740da22880752b6d5e4bed75828d24a7ce37d0971b473ded6bd968e"
+    },
+    {
+      "path": "server/gateway/app/access_control.py",
+      "sha256": "1327a23217572b3468db0b3819b9d436a1dfaa6c58f0bce682ecb70e089b21ef",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/auth_client.py",
+      "sha256": "956c67c62beee92fe1a93f9101ef95e6a85b119110535a2ac2578a137f8324dd",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/auth_middleware.py",
+      "sha256": "69dcb4108c8ec93e81f0abae6b6181de459e9d786c0a79c07e167985461e6def",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/badge_grants.py",
+      "sha256": "bdf2f3c2c9203dd1e73101e9c61a0cffbf07452630837eb72980e6a47c6133ac",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/badge_result_client.py",
+      "sha256": "f031c71a20c82cb4ec902ddbbf4ad4a6ed6478497a73374a3d845d70c4d356c7",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/bundled_task_instructions.json",
+      "sha256": "d91dd7d0f95fa6c8544f1c4b9cfef15e5538f7fbd30d3ba1c5041fc1c662007a",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/cloud_history.py",
+      "sha256": "b0c1e4192a3958a9f888abf42e0d217e17fbf4df519ff8b92e00976e147af1dd",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/cloud_retention.py",
+      "sha256": "07d3c528966df0d5112def79b22e72ebf104edf9d32eaa11c59ff1e160f2f5f3",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/cloud_session.js",
+      "sha256": "dc3e648e631f476b11f52de42b95064ee275dedadb08c9e37e86d78b2abcecb5",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/confidential_assets/client.js",
+      "sha256": "3ecfed653e832521e14589a3b52293eff20dfa2cc3c35bbe32d6cdcc3a4bffd5",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/confidential_assets/entry.js",
+      "sha256": "5a64ae022c8382edb2f8058a950fe2165e3539f749355a2a4131ad26d704a78e",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/confidential_assets/index.html",
+      "sha256": "f7db72fcc68453c8e381d1483e87c1c082476d269c1c7a13e4fe2d1c89a46853",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/confidential_assets/style.css",
+      "sha256": "01c6780c26940ccc27ca6387b555b908d011ed22f23439bb14e4d410aa56f38f",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/confidential_policy.py",
+      "sha256": "e26d51dffa0802afba680198a36e31310913ac08ab5dc025b5f3a80a6ad57399",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/confidential_web.py",
+      "sha256": "95c82d28323ac6e67c44de9ec4698ef40f4d13738083ec7c72a0c56213a0e755",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/connection_repair.py",
+      "sha256": "215c3f751ba843dc1c323f443a661fb0f339e0e2e21ba27ab0842228028a3ab3",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/connector_desktop_handoff.py",
+      "sha256": "123663d18732498ba46629e3f368271ab533be4a4a22646e13d21993ac227586",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/connector_dingtalk_cli.py",
+      "sha256": "0d0bfbc414bc75ce16bfa4abd4e8121df8041694f5c2cfae2a5795e326961da9",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/connector_dingtalk_mcp.py",
+      "sha256": "f8381a0d209266ae69c8a422fcc6d363ab488375a045f34ac93825cb53d07f11",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/connector_official_search.py",
+      "sha256": "5e61c4caa74f32e5879fec102011e819283be2b246ad5ae8a6acdf3c61d52ea1",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/connector_search_bing.py",
+      "sha256": "dc37f7659c9af840f91da4aa3f12027f7b6f97db89e4af2505a09322ce00777f",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/connector_web_reader.py",
+      "sha256": "cbe7cd4f47724b259d42ccaf66fa788aba6a9c719033444a803f4928c4ae4953",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/conversation_router.py",
+      "sha256": "c320450fef8288d763757b86e178488ae3912dd54ae134a3a354c925df054e42",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/cosmic_entry.py",
+      "sha256": "ee4ef850d3d4fc8e98b9007f92fb180f063b3bb3ce9f167b2d4c4ce5197aeb60",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/cosmos/135c51a9bb2b6b3db615.js",
+      "sha256": "135c51a9bb2b6b3db61509e1911c0bfe91e4c78dede8d4ac161f58664e902280"
+    },
+    {
+      "path": "server/gateway/app/cosmos/706865ac8e46fffe.css",
+      "sha256": "d63423724076869f3df2326984cad41cd7aaa9b791c794e477c73a3840c65b4d"
+    },
+    {
+      "path": "server/gateway/app/cosmos/706865ac8e46fffe.js",
+      "sha256": "1475938e71cfc3d4bbd35b4583ff56d12e351c5e10a758d7ce831682b6098270"
+    },
+    {
+      "path": "server/gateway/app/cosmos/df995358f7975ea84a3b.css",
+      "sha256": "df995358f7975ea84a3b215c2402fc798f9dd5371376fd70e26d4fdbf59785b8"
+    },
+    {
+      "path": "server/gateway/app/cosmos/manifest.json",
+      "sha256": "1ce65999138e3b1fc08af76354cf6776c680d7dfc6b03d93e82df10423f0c6b5"
+    },
+    {
+      "path": "server/gateway/app/cosmos_assets.py",
+      "sha256": "38a9618c96fdf4c7b72efde53ba75e106fc832eac8f28fddef117fbfac249c9f"
+    },
+    {
+      "path": "server/gateway/app/desktop_auth.py",
+      "sha256": "fb06b2f98d6f7ef5ea920dd0654db97ca98ee2b9c1cca37aad8c5740cf6e6ea2",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/desktop_device_auth.py",
+      "sha256": "36242c30e507e079af48b08d66e3d7af606b68438f22221888b2ba3c4c671f67",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/dingtalk-cli-catalog.json",
+      "sha256": "15446243c7d428e9ba55a559084d5566e2dc9f00a210e1c91f9477fc4b697971",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/distribution.py",
+      "sha256": "f16935fb3883480a183b7518d928daed8485c88ecb03451dd8647bc2bc4d283e",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/drawing_office.py",
+      "sha256": "d500689e4bc531c429e38957ad0542f3c4eed4ffeae1a02cd74bb3ea17463b0a",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/dsh_adapter.py",
+      "sha256": "968ba45f4b11774711e12bf75a9a21f5b22cedac0210f670d9febc07603b6003",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/enterprise_connectors.py",
+      "sha256": "5d269344ca71588a4a7ca8c2a9eee7233f2b2d4f9bd5d4980ca09cd5cf169cf1",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/enterprise_plugins.py",
+      "sha256": "196db15e23992d79a072fe966995692593d082ba2848095fbb9bf6ae5063b742",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/enterprise_storage.py",
+      "sha256": "e2bb44e637e23a21538eb15b5939928b63028e87bf0a7a08c0ad886cf43ab171",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/enterprise_tasks.py",
+      "sha256": "630305fcb1a23cab9129e9427ce6917f0a46a933531babc6d2e30915bf8d6942",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/entry_compression.py",
+      "sha256": "4618d0636d4251eac9562c65599b0e5ee297ac167eb2ad1fa3053d6b543009d5",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/execution_bridge.py",
+      "sha256": "5c4e9bb9b6835be93c39eef6484d4a86d98ddc0735acba64750526821bd4a2a0",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/file_store.py",
+      "sha256": "b394c21ed90960685b2ebfe2ffc0e88d38e36985755afc445e3fd9f3f972c0cc",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/history_store.py",
+      "sha256": "2b71e5f22d775fab6250cb977c5e6a72f80e1d79127ed03b3d988ee81d8e6559",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/host_catalog.py",
+      "sha256": "dd5006c0d8cf9f60fbe7967542cb93f7e4908ad3939e3d1edad976051b2e9d50",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/iam_directory.py",
+      "sha256": "c5af3234e2474af1559206bcfdd59236044613c3293a0a8a6e3ef56a3bf50475",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/iam_oauth.py",
+      "sha256": "bdf84f51ba9d8cdf9b63c8f1a11fb459002af047ca400872b672b8d53c7f1efb",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/local_service.py",
+      "sha256": "c7813d57de01f1f5be6a8e47391013df6af964cfe013a8410a9774f6e6d26f26",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/main.py",
+      "sha256": "033bffc5ceee9845cffcbd3c62ce7aa94a2ada7d0b3822162be238788c199277",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/maintenance_metrics.py",
+      "sha256": "bd85c1d0075feec512d5e6d62ee716086c3f9e055b22b7327526486eaf13325c",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/migrate.py",
+      "sha256": "b1b605a5e1a8f4922255086fdbfa9d9f0bc59838ad26521e6e6bd82e685ec46f",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/model_policy.py",
+      "sha256": "bcba5a81d962352b63594357bd7ecb24f2822eff4e93697698e17974f411a099",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/native_history.py",
+      "sha256": "08451e17b997beeaea1f2b4f95c5857fbfe20e0c05f0da2d1fa50eb1417adee2",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/native_history_ui.py",
+      "sha256": "1d46172cd8730282a6c0caa921d158218d7b68192581e0514dd4e06cf70a98c5",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/native_workspace_state.py",
+      "sha256": "3020a7d629270c359af9712b403e02bac5ee91d8e82c7c33013e1f4db909ecbb",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/__init__.py",
+      "sha256": "3111328635f352de9b9dd43d831a2de5c0394655ee2f2ab0bd5e81d5cca5d99b",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/assets/index.html",
+      "sha256": "172bbccf7016ebcda29580230dd72ede792528ce294417ede625c3f7071ad739",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/assets/monitor.css",
+      "sha256": "83ce666ce94d574483ba422de8193030c33b148f30a6e7287472bd7d7ce8fdb0",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/assets/monitor.mjs",
+      "sha256": "e09a12d0e57e2365d1038a96ff392bcda9eab1325e29984e33dab25fce1b37ae",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/observability/bootstrap.py",
+      "sha256": "c1d8e3b1b1e4c7c16c1a037d6b8c20382fa60d91c5bb27a08a189227a052ae65",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/observability/cluster-assets/app.css",
+      "sha256": "f065a288d7a5e702b574948f9dd1237cf8e378c84a8d4e28919fcd4bb45861c7",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/cluster-assets/app.js",
+      "sha256": "c5c07fe49b98c614228f6bfbbe62dd9edf432a812b201765ed61d771be4dec03",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/cluster-assets/index.html",
+      "sha256": "8b46fddb4f24e1e37182672a58e77d06d1dd797fd758c4da23c4dae9d7539934",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/cluster_monitor.py",
+      "sha256": "d016c764dcf9089fb82fafefa629fbd1a23b17bc7b3018b0781caf71d9b4cf46",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/collector.schema.json",
+      "sha256": "f08f8e86919a0e587fcdd8c3daa09b1043f1aa6143288421afb6ede57f8e5203",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/observability/collector_adapter.py",
+      "sha256": "accc29e3b6ea5cc232b18a405ae814902150316b8c315b247dca299bf725438c",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/history_runtime.py",
+      "sha256": "78dffe36be89fac6d806e0a5cef1becbd17232ba591265684cf44ab088eb1d90",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/history_store.py",
+      "sha256": "ae6cc777b6d627978602567eeb5e14db20cdd6cd515b16f8a4d048cd1f068992",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/observability/monitor.py",
+      "sha256": "48b74f27371e9b1fc857d57c6caba782f3e0b0e065682f0346342ce2a361e064",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/observability/owner_monitor.py",
+      "sha256": "7c2ed59558a70e9ba36239f60d5cfa20666f6d1534d40a0ec635b4fc351e7f4d",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/observability/production_monitor.py",
+      "sha256": "0e4b38327b2d8a2d215d993cd3b78e7490b3133ccf3ab4064ac24a6578bed04f",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/office_remote.py",
+      "sha256": "ba0889dc488480a37b3a4449dc71615a45ea5e3304280abf1571b661b73a58a5",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/order_confirm_client.py",
+      "sha256": "b582626150a81780df4787eadec2b6cc6244f24e396f45f94f28337ba34c007a",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/persistent_login.py",
+      "sha256": "04b28638fa75b044b9cb6782ebbf1785c2fa92e6ef74098d49f1e925062fe14c",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/personal_cloud.py",
+      "sha256": "32bafa930f04eee7c9aa4c0ca5e403f7114323a41feda48e8af52571ef5472d6",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/personal_cloud_files.py",
+      "sha256": "9e8c6d685cc3104b76d2fca2f4d56fabb47dfa05d929f26ae2bc4573e65b133d",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/personal_cloud_images.py",
+      "sha256": "f2270a5765cc3a732147e43905b0b337e0f00361f862523973e7c96451566864",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/personal_cloud_plugin_static.py",
+      "sha256": "6531c16777e7dae10847e02bd15d6eae84ccc2f5db9d89c2850a245762217073",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/personal_cloud_preview.py",
+      "sha256": "9469d104ab5b621c24a4a7d4e40b1b6f09a319d893e2094bd00298fb59271823",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/personal_cloud_queue.py",
+      "sha256": "18613d54375e3bf42934ccb40ed2b1e39ce3373f7979aa5f16bc0cd4aa47e72e",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/personal_cloud_static.py",
+      "sha256": "9f7bcf7f32bd5ea4e4ef48b14fc27d75077c6c6e79bbccbefc14ed751648d1c2",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/personal_cloud_transport.py",
+      "sha256": "440f8568147e998e22a1b110602fbf750ae1247664fab9ead26518f4031056e8",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/personal_cloud_web.py",
+      "sha256": "eaa571a43b7e09186ab052891d6a0c174a73fda850d3c83a46417cdc7a101b64",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/personal_model_proxy.py",
+      "sha256": "1098b233bbea60264c12113526e42b4b5f5a7ac609d2b8328c13d50adc9c6c5c",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/personal_search.py",
+      "sha256": "7ff30d69a1c033e86d15b7d561e1605f2304fe86196b8a2f8ef2f743b2d98897",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/plugin_admin.py",
+      "sha256": "00742ea1bddc94d1d35fe8b8b6129dcd7435b973f58b8674001b63c7be566204",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/plugin_admin_assets/app.css",
+      "sha256": "715a01b9e0b11b2374bd699407cdabd91a07fdd34c047f398357701bb4d51d49",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/plugin_admin_assets/app.js",
+      "sha256": "6255184cb5324a45dcc0d8e709032ad94607362218e0c54e3e25a319c2943718",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/plugin_admin_assets/entry.css",
+      "sha256": "2000a3737827968198f20c4af6b583a7f2200bb1cbe7f48d9ca3670e18388c7b",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/plugin_admin_assets/index.html",
+      "sha256": "81c0deefcfaf5e31e612a7cb925559e6b96281d7b99ec8458d592a1f52267dc6",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/plugin_batches.py",
+      "sha256": "e5466a7dd659613d837f34181c4ddf8ecec78a50a7a0da261cfb9ada42578254",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/plugin_distribution.py",
+      "sha256": "18324dd807062bc4f81878bc6f96b31462041bc1ce513e3674e80b3f8ed7db92",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/plugin_packages.py",
+      "sha256": "7d255a090904860beff12e81d47c5d1c579ec15eca142357769ed99705eaebb4",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/plugin_release_routes.py",
+      "sha256": "1b98df70159612efe23b7519110595eed3ae03dc55fde2886a554f376c41e6f6",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/portal_assets.py",
+      "sha256": "1074ee47dcca9d5148524bad95c6ee5d4ba4b85231db3ae7d133e034c0e247d7",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/portal_theme/135c51a9bb2b6b3db615.js",
+      "sha256": "135c51a9bb2b6b3db61509e1911c0bfe91e4c78dede8d4ac161f58664e902280"
+    },
+    {
+      "path": "server/gateway/app/portal_theme/706865ac8e46fffe.css",
+      "sha256": "d63423724076869f3df2326984cad41cd7aaa9b791c794e477c73a3840c65b4d"
+    },
+    {
+      "path": "server/gateway/app/portal_theme/706865ac8e46fffe.js",
+      "sha256": "1475938e71cfc3d4bbd35b4583ff56d12e351c5e10a758d7ce831682b6098270"
+    },
+    {
+      "path": "server/gateway/app/portal_theme/background.jpg",
+      "sha256": "d6d1bc79c0a3764e4dc0561467e9ee5071420118dc87f0147e64eb8a330fb22e"
+    },
+    {
+      "path": "server/gateway/app/portal_theme/background.png",
+      "sha256": "434f9fa6a920c79a58179f0fa8f7acb8659892695170d0319b7b0fa728b80c3f"
+    },
+    {
+      "path": "server/gateway/app/portal_theme/df995358f7975ea84a3b.css",
+      "sha256": "df995358f7975ea84a3b215c2402fc798f9dd5371376fd70e26d4fdbf59785b8"
+    },
+    {
+      "path": "server/gateway/app/portal_theme/landing_html.html",
+      "sha256": "07376b4e11141c9a0e789f66a48698027b10f2a98862b3fe5b7ba5ae3eb8403e"
+    },
+    {
+      "path": "server/gateway/app/portal_theme/logo.png",
+      "sha256": "2200f6533834fc5d44ff8b70ebde31fd8622afed9d3c0938e25dfa564e95648a"
+    },
+    {
+      "path": "server/gateway/app/portal_theme/waiting_html.html",
+      "sha256": "3f29ca9c25f6842e61983c78cb900ae4dcae4101d09ac98611fc015da5099f38"
+    },
+    {
+      "path": "server/gateway/app/production_landing.py",
+      "sha256": "adaef5552ed7a9bec877ae9edfd839790b5f81db4f81cf31daa44b88089d1e99",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/project_card_lifecycle.py",
+      "sha256": "316d945139299c47a5527465e6aa714961d7e981c9e16413227e80af70448fcc",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/project_card_retention.py",
+      "sha256": "300bfd342336895baf30c2d05a1571287465ff00bc1ae237bb92450290260af0",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/project_platform.py",
+      "sha256": "5815ddbef8e7114ba18a4bd6746ee36f05c76797573e21102501769ec5e9827f",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/r78_database_bootstrap.py",
+      "sha256": "be9a79262ca5d3e6ced143a9b6e914f8efe47607115e5356687dc04087b3f26f",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/restricted_transfer.py",
+      "sha256": "9e5fe8d694957e24d83ff835a9b4016c1ad60a917d475eacbf42e94227e8ba84",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/retention_policy.py",
+      "sha256": "09bd889687027eaf5f984e90c1c0e8af6513fbedc77412a5e849a5027137727e",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/retention_worker.py",
+      "sha256": "abb6dad9b9619ff64910708268f2a8267162f80dedf41082d7ccecefebfada10",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/sales_order_transport.py",
+      "sha256": "4e737a35cd12718e6ac0b6662348644c22debf6679a24d9eb063810b693be291",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/shared_redis.py",
+      "sha256": "7aead4bcfb353f43d5b1ddf4d50faf26160c70a2b46c0610da39ca9795b9b142",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/site_access.py",
+      "sha256": "3ad9d6010e5b9ac5c7cc5f5a90ff056068d15227c5e70b028213e676d83aa523"
+    },
+    {
+      "path": "server/gateway/app/skill_network_policy.py",
+      "sha256": "1e23037917182b3afdf619c068f7e788f1fe6ff2f660020d8882b3d08b807d3a",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/skill_picker_client.py",
+      "sha256": "9ccf32a5346f8d667e91b46f3e16e1980ead93e4763108af549efb1a18f25d3f",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/source_reclamation.py",
+      "sha256": "fac688d6b0e51d27dec2941a441966ea7019ce6755b3fa2f18c7df795dd1cd41",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/storage_api.py",
+      "sha256": "2f2714df449e19f2b633c3bbdac98749506413a01c4623f3c8bf95af2534d32e",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/storage_cache_delivery.py",
+      "sha256": "14775690355af3335e32a66f0b8d5460a721c94f26d9946c5104a28631166072",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/storage_lifecycle.py",
+      "sha256": "9cb8b39cfe968ebad5ddf84ce893abc0e9ccb2e389fb9b3a1266e86c705fabcc",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/storage_local_test.py",
+      "sha256": "d5184ed7778c09de60ce40547e28afad25aaec8d0008590f45b86b802ddddbac",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/storage_maintenance.py",
+      "sha256": "330b07be9f27f32ee134b4ebb123db3870797a831c998f5d198b31c79bd023bf",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/task_network_scope.py",
+      "sha256": "b81eefc7832aad0ab8eff18cd8626e56e49526fd56e8835a4851b773b9f40467",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/usage_producer.py",
+      "sha256": "f5bc74948db2d1c064e27cb9c844382a90853e1e22726f35d1d3dc90843f8a44",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/web_idle.js",
+      "sha256": "c4660d7e7c495d8868b8e047b39249da5e8fcaa15200279e13a041fea8a27f9b",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/web_idle.py",
+      "sha256": "8c03d83b027b2ab9c5f314d82ffb5289da1cb8337dfdb15438ae1af6659a2e7d",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/web_login_entry.py",
+      "sha256": "b657cc873eb2c2dbbaee5795664a09565e39ca04eb7e13e122f5093e592c73da",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/web_plugin_delivery.py",
+      "sha256": "5ef7d9b37d6b4d146d40f521fd038a19749524152115737b4e24d87570339165",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/app/web_upload.py",
+      "sha256": "167c9607fc8165d7b813278b8822dc8c58c112846c5bf31ddbea4851ca0c0388",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/workspace_admin.py",
+      "sha256": "807cbb63f2b104502977a94cdaa0aa2ebcaed15afd3901712cde0e57c9712fd4",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/workspace_contention.py",
+      "sha256": "e52093f99faf3411961820bd2863f04b16ec87821c0c4bda41929abc608afdda",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/workspace_office_preview.py",
+      "sha256": "1d5fd513293d34982d442ec0d988ee2640259a76479fc060b2a1edd5f3a3f880",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/workspace_resources.py",
+      "sha256": "094cfb3222ae13df59eb7df149ca53684f7a30765bcb0f0c661dacc03b42381a",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/app/workspace_state.py",
+      "sha256": "7ad75febc83a1ce6694a306aee25afcd3cda82bd4d3e3a090cacd8108faffe38",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/__init__.py",
+      "sha256": "6e5f9a1214f8bb71caa3b220b9970e7013db71b2a356d7053a22baf028f3fe8a",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/badge_flow.py",
+      "sha256": "31fcefda4b7106420cb16871da1b6e4e304ccacd3f4273968cb54a1804962542",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/badge_photos.py",
+      "sha256": "dd3bcbe49b9fbad2941afa84f3798c57813788caa712f56a236aed8ab112bd98",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/contracts.py",
+      "sha256": "504269b60bda3d62402e842c8f47a50989c2874a32856295371a8a1581b519ae",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/disk_alerts.py",
+      "sha256": "0fba882a4b81c103ba7c492bf6d2618a14b4d22e8588183eafd4d6041fe2e96e",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/disk_semantics.py",
+      "sha256": "d98ad04493d4e7affe0c93780f446be6cc70c3ee7b9ed59109566be48435c13a",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/UNICODE-LICENSE.txt",
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/__init__.py",
+      "sha256": "9032fe46abdbf8d95e4fd5b8c82bec8e04b9d21425727c3023315fc944695c35",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/artwork.py",
+      "sha256": "5752c8701c40ee05e9669a303b5bf6680f74c5cd54f4cc014486a51f8db4334e",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/assets/card-background.bmp",
+      "sha256": "674af34f643a4b91df54aa28a94158c65f4ba12fabe165cb577a02dad6c6e6d1"
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/assets/fonts/LICENSE.txt",
+      "sha256": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2"
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/assets/fonts/SourceHanSansSC-Regular.otf",
+      "sha256": "f1d8611151880c6c336aabeac4640ef434fa13cbfbf1ffe82d0a71b2a5637256"
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/build_pinyin_data.py",
+      "sha256": "2bc748ee270b0c675941e3d0d6de6979d9440416533c769aa2ad44400643246b"
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/name_pinyin.py",
+      "sha256": "92ddb7cad73e4ea8777d750ee84ffff8c852f9606f258a6de734809e04218240",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/name_pinyin_data.py",
+      "sha256": "82b959b8c6d70848bf1284b80decfc1065fc75a86e6cea07ce3b8779e1516204",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/employee_badges/workbook.py",
+      "sha256": "42e06b792c84b66ea40f002931cb00414ae317ef492ebf7e87691dc7098e81e5",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/heatcost.py",
+      "sha256": "9c75492ca545efcb45b9ea2dc5c3785039c54f5cd0d0d4d5bef555a250c54ebf",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/heatcost_actions.py",
+      "sha256": "4dae4404a0fc65239764a049d3bd3cd93dbc56ed867b5f6f9c7e2f267331a042",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/heatcost_flow.py",
+      "sha256": "c758dced7c7c6bdac31fee095a77c60bf3d0012e25ef410259e4f50dec2ff48f",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/meeting.py",
+      "sha256": "32e3cc0594b1788b0e691cfc6ec2e9c097698c860eeafb4b48c06903677c2c59",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/meeting_flow.py",
+      "sha256": "9850df4613306c0eb4d5233a5f207fac7cfd7a2300bcc10c65c1d0af30d8ea03",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/meeting_source/__init__.py",
+      "sha256": "1ed332220c8b259fbb189e70be885b165fbe5d13db09af60179a1cfa1f288fcb",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/meeting_source/board_signatures.py",
+      "sha256": "720415291f5f9207a50a968660d18466f2e1dd64862ca1bcf7f2339f533fbe19",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/meeting_source/meeting_documents.py",
+      "sha256": "24165083ae80ee76a4445695f8b2644e0a0c5ff199c1b87c099c7c35068b1802",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/monitor.py",
+      "sha256": "5af9ba89d972dda09986597f0a899d7a95ef9a157227293cce90d20d8499cc57",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/monitor_projection.py",
+      "sha256": "11fc5c6d419ea4c4ad03204c8f8a69a93fa0f70f69e752598e0f7a972c3cc1dd",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/maimi_projects/order_approvals.py",
+      "sha256": "45dd8ccee8153a54b0ed5d04e4b4fd5fe99a3218926b8df441294f996cce11e4",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/sales_orders.py",
+      "sha256": "0213d27e775d9e6e2cdcc9adc6fe74682ad4d57c6e1bacc056e336d54775872c",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/maimi_projects/server_operations.py",
+      "sha256": "11d7666fc43ff743362a3f1d8151efbccc583e273a4849ecc30b4ff3fb2320ba",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/maimi_projects/service.py",
+      "sha256": "1544722adcee0ea5c712f095843db6f90ee67107bb126bac9801b82f912226c5",
+      "compared_with": [
+        "gateway"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/gateway/migrations/001_initial.sql",
+      "sha256": "3554595f934f2c36e5c0a81228881bf4ffbea86d42aba8ce0f692ae2eb5d0ef2"
+    },
+    {
+      "path": "server/gateway/migrations/002_controls_and_jobs.sql",
+      "sha256": "135b8a0d9fbb2dc9e6c27c7348285ebfb1054443065d6ea3f254443e6856b659"
+    },
+    {
+      "path": "server/gateway/migrations/003_projects_and_shared_capabilities.sql",
+      "sha256": "b3d4fbba43390bfeb97cb64f4a4ea3bd198c1d93f44b4c64625ef6006fa69e85"
+    },
+    {
+      "path": "server/gateway/migrations/004_routing_and_retention.sql",
+      "sha256": "80338110355c607864b81fbea05c54a24cde7f60fbfc040b7a35ae256bbbd780"
+    },
+    {
+      "path": "server/gateway/migrations/004_tokenkey_default_model.sql",
+      "sha256": "84f0ea40f31a1ba4dc8e2dbff55d1849d889f1ec4401d3c5d9244d2e3a10ff30"
+    },
+    {
+      "path": "server/gateway/migrations/005_history_write.sql",
+      "sha256": "72437920548da65c942ea7afddfac14a72e788c08169be1d797859e0630eb481"
+    },
+    {
+      "path": "server/gateway/migrations/006_tokenkey_only_provider.sql",
+      "sha256": "a9a69eef1caa5e046bda0a6f21fc75de329d8fbc4f0e97b9e5e77dcd16eec339"
+    },
+    {
+      "path": "server/gateway/migrations/007_project_acl_indexes.sql",
+      "sha256": "f5bae32acb2da5f29007323a57d8177886175ab8cf01b01bea4f0829c43dcd16"
+    },
+    {
+      "path": "server/gateway/migrations/008_hybrid_workspaces.sql",
+      "sha256": "232dd7d5b944123cb0ecce3da04bd0eaecc3751858f4259aabe57e49a450262a"
+    },
+    {
+      "path": "server/gateway/migrations/009_workspace_resources.sql",
+      "sha256": "97f24291675f2b9ce23e0933f92dc66b13a8011fe04697776df1a9d3e04ee022"
+    },
+    {
+      "path": "server/gateway/migrations/010_cloud_history_pagination.sql",
+      "sha256": "985d463e747482b01a17123b7691775409d364705ce3bcb9323ac44cc479b680"
+    },
+    {
+      "path": "server/gateway/migrations/011_personal_cloud.sql",
+      "sha256": "1298402389adf2b5e3ed4f46f1d09f021c7a95dc592d3f1b641aefd52c09fabd"
+    },
+    {
+      "path": "server/gateway/migrations/012_personal_enterprise_plugins.sql",
+      "sha256": "7eb12287f0e6ff7151822a2c77a59a6293ffee82ca8f1f98025fdf971b5107ee"
+    },
+    {
+      "path": "server/gateway/migrations/013_native_session_identity.sql",
+      "sha256": "6e8242b71ab6ead68066dfb88ea6027021cbf1f68d9808106de209bbeb4bd6c5"
+    },
+    {
+      "path": "server/gateway/migrations/014_personal_storage_lifecycle.sql",
+      "sha256": "ea6d752b29b2dc02f4ccac8488833161ffb9e12de367f8115e08f5c6c0d7ddb7"
+    },
+    {
+      "path": "server/gateway/migrations/015_cloud_workspace_retention.sql",
+      "sha256": "3cfbf8a1879ec0a83d416cf237f86f462f4ba70954c7fe3c76e160321a038696"
+    },
+    {
+      "path": "server/gateway/migrations/016_project_session_state.sql",
+      "sha256": "6d28110af7a7b53f0626e2e74d3dd6e7a196303f775213e45ccb450c3b5f50e1"
+    },
+    {
+      "path": "server/gateway/migrations/017_card_print_artifact_limit.sql",
+      "sha256": "dbbbd9221a51f20bca6ce853c348a0bc8315c68b0b9f279e6d49e41c0a28c375"
+    },
+    {
+      "path": "server/gateway/migrations/018_card_file_lifecycle.sql",
+      "sha256": "e2a63922d22556acd6fa53e204ab85828017442eb6640ba3778ba1f61f804d71"
+    },
+    {
+      "path": "server/gateway/migrations/019_worker_runtime_reservations.sql",
+      "sha256": "fe2ae36dbbbb552f1db692a4c66fa48d7dbe1f712fe3724fce3196082148c700"
+    },
+    {
+      "path": "server/gateway/migrations/020_native_history.sql",
+      "sha256": "7843e9b552a2014ef080d6faefb8d0c1408391ce2f3a7712149e18b0cb939093"
+    },
+    {
+      "path": "server/gateway/migrations/021_storage_lifecycle.sql",
+      "sha256": "0061b0218b228959cdc698d03469970777ca663bf1a60fe78ec658e44d613ec9"
+    },
+    {
+      "path": "server/gateway/migrations/022_sandbox_lifecycle.sql",
+      "sha256": "47c64a46c70c0b8102417ed7f235958575a5ad4b482b4e20b28dcc4ee17df9b2"
+    },
+    {
+      "path": "server/gateway/migrations/024_native_history_budget.sql",
+      "sha256": "ed93eafadfaaf548d43ccbad3610b9bcfe00a1ccc59f4e084639671127e0ff85"
+    },
+    {
+      "path": "server/gateway/migrations/025_source_retention_runtime.sql",
+      "sha256": "9f5dfdada2339c5b50d6ee9b73ed98b1df4db417c31e6db8d120539ce1ad7858"
+    },
+    {
+      "path": "server/gateway/migrations/026_source_copy_reclamation.sql",
+      "sha256": "1b680cd28afc73de114c2d2246dad6042395a3fec003c58304378c9ecf96c5cb"
+    },
+    {
+      "path": "server/gateway/migrations/027_execution_pool.sql",
+      "sha256": "af2693c8fe79bbc007d15e1bc3c6676074b1001efccab0bf0a6567a4bf5523b9"
+    },
+    {
+      "path": "server/gateway/migrations/028_retire_employee_cards.sql",
+      "sha256": "eccea19a7e62e4b484ea73fb6344963e27bedf2ca3629e3913397487db77fcaf"
+    },
+    {
+      "path": "server/gateway/migrations/029_enterprise_plugin_releases.sql",
+      "sha256": "5d4832581243fd86a13f8519ecc34083dbaec16a138e01eba5cf096692d5c058"
+    },
+    {
+      "path": "server/gateway/migrations/030_plugin_release_permissions.sql",
+      "sha256": "1f652f102f79a025344f4b2e8dff7d3cfab8e9d2857be8504770a1f2cbd5191d"
+    },
+    {
+      "path": "server/gateway/migrations/031_plugin_grants_by_employee.sql",
+      "sha256": "e0a522d40502133fa2908d46dfc2cb7e5e03c7ae542700cbc75e415ea012b86d"
+    },
+    {
+      "path": "server/gateway/migrations/032_confidential_workspace.sql",
+      "sha256": "a8037f5cab1d6186b718d5b15efe2b4ccc4d54b7181eb07544d846e6ce95fda3"
+    },
+    {
+      "path": "server/gateway/migrations/033_plugin_batch_jobs.sql",
+      "sha256": "d3a5e53261c9fce5550bae4c0ebb8f916e4a79ad33ee3fe15165eb72377dc1b0",
+      "compared_with": [
+        "release-artifact"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/gateway/requirements-linux.lock.txt",
+      "sha256": "256eff065aa53e932246a27438081f295523c81cc6445d5e415b36f4ea5a0143"
+    },
+    {
+      "path": "server/gateway/requirements.txt",
+      "sha256": "12806295d7efcafdd142ba48020308ec80db7728737aa2ce3631667d7d3e56f2"
+    },
+    {
+      "path": "server/manager/Dockerfile",
+      "sha256": "64556d5c7ae6071ef86fd5d72d1433229e055ac6f4cde483d0bf4d1ca2ddbf4f"
+    },
+    {
+      "path": "server/manager/execution-overrides/k8s_worker_provider.py",
+      "sha256": "e4c51544696e4b3b06ec49c8b189564c1879096d55ababd66f42d7ecf577990b",
+      "compared_with": [
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/execution-overrides/manager_kubernetes.py",
+      "sha256": "829ac7b1f99d25407c17145c4a1a4a80ca04fd036f78151c89f4ae59f3312423",
+      "compared_with": [
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/execution-overrides/source_retention_kubernetes.py",
+      "sha256": "9b8a5eda687c0af34f5ba8bf67676530efcf5b5c08bdb7cb1b65a221c1509497",
+      "compared_with": [
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/execution-overrides/terminal_execution.py",
+      "sha256": "4ea7e7cfa1e7db4fea8d80cd83eb82a02b412e4892621e14759d570725eb79fb",
+      "compared_with": [
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/execution-overrides/worker_reservations.py",
+      "sha256": "c08e9114ec0741654ba162721135fe4ca63572253dae4f3a6c1ffac393c43aaf",
+      "compared_with": [
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/attachment_cache_retention.py",
+      "sha256": "776efd33de6fed110af25ffd0e3278b150ce6d26af5df85943ff726b8fb6a25f",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/card_retention_kubernetes.py",
+      "sha256": "0745077fe2b96bb54314bd7402fc576bdf86ce150768542a31f5cac7ed03b3f6",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/card_retention_manager.py",
+      "sha256": "693224656e909008ebadbb7d81807b7e9f35ec9a9752f5a5b485ac60bae53f27",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/execution_pool.py",
+      "sha256": "69b25870650b6135b9ec4a0cfc551074a4fbaf50ef6b72eaa57aac3737fdfed9",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/k8s_bootstrap.py",
+      "sha256": "5e0f30ebdf94a9bf045144019dab3b0c519bb85ca84f2d83fddbfb02a67454db",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/k8s_worker_proofs.py",
+      "sha256": "b3c06eddfaaae8778131b2fcdacec044a5ea7ce467b01e3cb5fb2cf77ce19d31",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/k8s_worker_provider.py",
+      "sha256": "263425ac534f56067b19e679504eaf47c5dfb129337188f6c411d3f5fcf1a59f",
+      "compared_with": [
+        "chat"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/local_files_contract.py",
+      "sha256": "2fdcd55a037ad390ca2b301b30449ead7d2f3a637147d7c92dc496666a4b020a",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/local_files_provisioner.py",
+      "sha256": "f2d640a904163f35b590034559d61a6b1b13dd3675278051c110d0ddaf223253",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/manager.py",
+      "sha256": "f6897f9fba671995ae0fe12c6d44edac9782e4b9083b31d314c6de4d55539249",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/manager_entry.py",
+      "sha256": "40260d3180f81fd7895d1d4ba1ac6c7b7a5cddf1e59035b6c1aca0f3c49a3d5e",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/manager_kubernetes.py",
+      "sha256": "2364c1a5325fad5f3368280c1a9a79a64844844dd9fe586b8108222d9a9e4f2f",
+      "compared_with": [
+        "chat"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/node_execution_observer.py",
+      "sha256": "31b25c48e9b803fd02ad5139308d41878ddbf8fe9d2b4d21b2d61cd35f37bb81",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/owner_transfer.py",
+      "sha256": "f3881bf007f952b5a166347d1b60ac89a1285b33527618c331f5695dd3a9f0cc",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/runtime_admission.py",
+      "sha256": "ab253cfe5cc2520858cc828569ae6ac03bc083a356b91bfbbc34e917ba8d2452",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/runtime_release.py",
+      "sha256": "01e93423d408b416372ff6e1a61eb7927c1893013f415964664d062139d5d3b2",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/runtime_snapshot.py",
+      "sha256": "f5c4e126484cf70b02a7ef4847a23033781c383bcdd14a6add797891a33c0574",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/sandbox_lifecycle.py",
+      "sha256": "0f7355403293678aace524bc2262292b6e5dcb836c9dc3a26511cdda8d59eddc",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/shared_storage_fence.py",
+      "sha256": "2dd995680153c24fb733de2076e004ec70163039a8a0829681d4f4bff8f13f0b",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/source_retention_contract.py",
+      "sha256": "e20d9bf3afb54325cf1d39fda41fef277c139582c09c7e66e121f567ed643e10",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/source_retention_kubernetes.py",
+      "sha256": "18a31dc777e92934e567f499d9c189d03820319e60583102803ff8c6c2c77f12",
+      "compared_with": [
+        "chat"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/state_placement.py",
+      "sha256": "cd973d7c2350981182db10fd29abf5df5e21374fa68bf4f371600f4a35921c6f",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/terminal_execution.py",
+      "sha256": "4ea7e7cfa1e7db4fea8d80cd83eb82a02b412e4892621e14759d570725eb79fb"
+    },
+    {
+      "path": "server/manager/personal-cloud/transfer_owner_once.py",
+      "sha256": "e23e6d3b34b9d56b9f80b97b14f5f9e5d7e246e2a3951363833de1a0cebeb8e9",
+      "compared_with": [
+        "chat",
+        "execution"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/manager/personal-cloud/worker_reservations.py",
+      "sha256": "31921901d82ea9c4fe055c663156a2b50d01e2b740fcde546756ce4ffd9ed9e6",
+      "compared_with": [
+        "chat"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/office/office-engine/Dockerfile",
+      "sha256": "b4b456e3bc6dd872aba902d89677a85c694d0df220b8662c362331d085b75c1b"
+    },
+    {
+      "path": "server/office/office-engine/build_linux.sh",
+      "sha256": "2035dfc8ec096dff09dd07d5b5ff16a40de058157fff287e9cd11c6fcc20fd94"
+    },
+    {
+      "path": "server/office/office-engine/engine.py",
+      "sha256": "5c65bb5dcab002c8b2f9d0751463678ebeeb12f40f024f4c5d68a0fb9bdd55b6",
+      "compared_with": [
+        "office-engine"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/office/office-engine/libreoffice-source.json",
+      "sha256": "8d616ff0ea39be837ae7276ce0df1b62da76aaefb4abaa66f2a59d4c28e63662"
+    },
+    {
+      "path": "server/office/office-engine/ocr-config.json",
+      "sha256": "8aa5096f183940aa95da719cd9d4cb744b33ce17aa097438ffcbdb222a25d2b6"
+    },
+    {
+      "path": "server/office/office-engine/ocr-models.json",
+      "sha256": "443b46639f4be8b623287d5f52ec0e3b900335cf3a3108804b6e8918895384e2"
+    },
+    {
+      "path": "server/office/office-engine/prepare_libreoffice.py",
+      "sha256": "7b7e3810ccc68023d08bc01ccbe0e5a71803b497b8e7266217a4c930ded44dbe"
+    },
+    {
+      "path": "server/office/office-engine/prepare_ocr.py",
+      "sha256": "c9f484c9b43e072deab67fd2ab895eb54a30c47d73cf72d244fade5c194ef6c7"
+    },
+    {
+      "path": "server/office/office-engine/python-source.json",
+      "sha256": "032f0d1edb559383623ed1c0dc7fa0daf066d6784c30d5caed59167c1e18a7f7"
+    },
+    {
+      "path": "server/office/office-engine/requirements-linux.lock.txt",
+      "sha256": "923eee97697ab8feb35e41d6032dbce7505dbef408f197feae5afb83ef3a0410"
+    },
+    {
+      "path": "server/office/office-engine/requirements.in",
+      "sha256": "6b9eb5f91034bf1553d4102389a9ac7467ddd0b41a172b2056a2606c9b9b027b"
+    },
+    {
+      "path": "server/office/office-engine/requirements.lock.txt",
+      "sha256": "74c7eba3badf55f46268afda2f3514638c2a453e85aa195417d9498eeb2551dc"
+    },
+    {
+      "path": "server/office/services/office-service/Dockerfile",
+      "sha256": "7c17a46b54e738708193fb300436575631704e3a690d6cb187981384e589dd28"
+    },
+    {
+      "path": "server/office/services/office-service/app.py",
+      "sha256": "eb4bffbd51a6d7cf29340d4c84b8d541af5cc88f20c37741a51bb7515ec3a1f6",
+      "compared_with": [
+        "office-api"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/office/services/office-service/requirements.txt",
+      "sha256": "2fe0e8fb5413ed8ec9ab79a5ac94ceaffa08bd4a540cdb9f7d171d7c7087162d"
+    },
+    {
+      "path": "server/office/services/office-service/runner.py",
+      "sha256": "25bc1982acd96ec0fa967f14530ca55bf72517e710df73e40c6c5366694676bb",
+      "compared_with": [
+        "office-api"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/office/services/office-service/runtime_smoke.py",
+      "sha256": "27bf1130a6d7bb332fcac12cb09a0e17e9e35de4ef4201588a01fc774d374bf6"
+    },
+    {
+      "path": "server/tests/history_contract.mjs",
+      "sha256": "d198ec3b109f52c1bdd89b1da70820165828517ec3db899c5dd949943d4d2bec"
+    },
+    {
+      "path": "server/tests/test_confidential_workspace.py",
+      "sha256": "19842b434eaa375f118c1cc1a703237f0fbf6e6209c4d9c5d99b245834d48a84"
+    },
+    {
+      "path": "server/tests/test_landing_share.py",
+      "sha256": "1829683f1c40d14872547c1d3a6ec7072a7fb91c4bef66203a0e925b49bb6afc"
+    },
+    {
+      "path": "server/tests/test_manager_readiness_pg.py",
+      "sha256": "82eb3c47a4d7cb564a861a8be85d4bf59c687165f71f95f65ddc95016bc767ad"
+    },
+    {
+      "path": "server/tests/test_sales_access.py",
+      "sha256": "329c5db89ce294ca35563434d9975b2c047a821538bd8a4aa86c8a8ab6bf3915"
+    },
+    {
+      "path": "server/tests/test_sales_batch.mjs",
+      "sha256": "9a6c312d272640990e985a6a82a5dffdb036b45737aa4c67b782421132511500"
+    },
+    {
+      "path": "server/tests/test_sales_download_lifecycle_pg.py",
+      "sha256": "9a6d46dc1d2fa0fe2539f09c12119b212041d69a52d56c72ba944afa6665a551"
+    },
+    {
+      "path": "server/tests/test_web_file_recovery.py",
+      "sha256": "236680d1bf2d38a5e25a3f36f3f621d0f80a1df1efa1246cb18e3eeae2936a89"
+    },
+    {
+      "path": "server/tests/test_web_image_multipart.py",
+      "sha256": "e0ea46affc08c570a450d58565c1e70c49752e320acaa5d3e266a6587b4a69ba"
+    },
+    {
+      "path": "server/worker/.dockerignore",
+      "sha256": "a5f9ff1c5580d4e6e3d6d6df4030153c28a8fbda82cd67613ef6219a18ca2639"
+    },
+    {
+      "path": "server/worker/Dockerfile",
+      "sha256": "2ba8dd0f5033937004591ff9cbeff628a88e3f8be6a9a2e9caf417f92c5c0922"
+    },
+    {
+      "path": "server/worker/dsh/community.patch.json",
+      "sha256": "f43eb7b03c832227468230ff160ff72c249da193b0562a49d1fde82853cfb7f2",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/company-ppt-template/index.mjs",
+      "sha256": "eb6f22367de289c128adc1a04850026f550cc5b50130f06c50e75c263c4e044c",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/company-ppt-template/skills/company-ppt-template/SKILL.md",
+      "sha256": "aafacb6b24debf98e311c67f47666e3bee6b3ad6b40858dd800ddaa4f0bcf867",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/company-ppt-template/skills/company-ppt-template/references/template-guide.md",
+      "sha256": "f993f7aa0eaf28bb19ce8a1060045977806919e9d153b1cc3ff8d45cda668b4a",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/company-ppt-template/skills/company-ppt-template/scripts/company_ppt.py",
+      "sha256": "97de643035ddcbfaa005e9ce4b1f849989a7ff29b2b1d5b62ce3347eea398c48",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/company-ppt-template/skills/company-ppt-template/scripts/preview_pdf.py",
+      "sha256": "84e81357062e9a93b01f5d8192c0e85bf1b30f68abc1a4a97c120997bbc2e291",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/company-ppt-template/skills/company-ppt-template/template-manifest.json",
+      "sha256": "f68f86c10a917df0230523a7b92a991f88840d32a74336ed23d5798da50e35b9",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/employee-badges/SKILL.md",
+      "sha256": "95bd2800dbfa0ea43b9cebb4a44af6e0322d3cc27642c5d4693607e1eec9c427"
+    },
+    {
+      "path": "server/worker/dsh/employee-badges/build_skill.py",
+      "sha256": "65b3afef1d04a3952d26a91547e8e7a6055d8f3791517d32f092c55f635d057e"
+    },
+    {
+      "path": "server/worker/dsh/employee-badges/manifest.json",
+      "sha256": "6f0a73f17330037b7f315b19b639ce82550b8c228256bfdc2e7f5dbc39d808e9"
+    },
+    {
+      "path": "server/worker/dsh/enterprise-native.mjs",
+      "sha256": "7d94b9b2eba0f34743075ea20eb1a737cd740a4175138614a430152cb9060e54",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/office-adapter/adapter.mjs",
+      "sha256": "bb4ee256325a6805c82300ef448967b9e9c214c64bb71581109eeb915ed10a7e",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/office-adapter/index.mjs",
+      "sha256": "9cf2e5edcf44a5f6270bb7fab51b935d344c97b2ffce350b25eeaab49a1112eb",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/office-adapter/preview-converter.mjs",
+      "sha256": "8fde40f4661dbca84f22f9a9ef875e1ca1d44d534c01b4795fffe467f4ee4c6c",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/office-adapter/probe-native-host.mjs",
+      "sha256": "d4a4a3f7a9e8a2ba1cc1be89093c91836767516324b684b00c40178e74810721",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/office-adapter/publish-output.py",
+      "sha256": "d49a653ac390a9075588bcf2f51cfeaad3ffb6fdc94a647462215925e4770615",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/office-adapter/transport.mjs",
+      "sha256": "5a73156323e92360afc7e53573f0a69bae09fed4b8023cadc10804481caae3a0",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/office-response-client.mjs",
+      "sha256": "62d6b3b0a21dbf04c85b35a1918bfb57d7019b09b2020b72f10f391cc196a6ac",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/package-lock.json",
+      "sha256": "ec2523af36f91b0600d2bf518aacd03f1c3c13325604bd261607666f54e2afb2",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/package.json",
+      "sha256": "8d23b0e8c4fbd514ff8600dc53a9999cc50bbedf1be3c9a54b3ef11c387b820b",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/company-ui/client-assets.json",
+      "sha256": "f1de922d605458893087a54a1099309a739c1df9d422b2b8dafb88ea2dfe29e1",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/company-ui/client.template.js",
+      "sha256": "184f3fa9b311acd472480b4dc0dbfaaad6b73d40c660725189d4c991ac1b89cf"
+    },
+    {
+      "path": "server/worker/dsh/plugins/company-ui/index.mjs",
+      "sha256": "5b2df8275a78de7a341e1ec852d93a8d31e85501c46f9359e8136d7e3033bbef",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/company-ui/package.json",
+      "sha256": "14c6185c7cc957b9c7258793dbaef87797c5f48dfb5c8af6fb3219a291490c01",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/plugins/company-ui/render_client.py",
+      "sha256": "c9377e8d89cb49f0fa14c24f1a30b8f7c74c6ff788ece2d65686cc09c443ff0f"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/README.md",
+      "sha256": "e654ace65c45fcb61c8cbf7b3c48efbbe8c61c6442a96ee4f4c96974f06231d4",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/appearance/index.mjs",
+      "sha256": "cbcc02b9bb1870d174cde3632a829cf9952e63817e2e412e55e2316b971770d1",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/browser/index.mjs",
+      "sha256": "63be72f71329a303a05dea5cc627892761fe87fc1c2bd2a082078b2e88297684",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/build-managed.mjs",
+      "sha256": "944869960c76d18693d3734e67f76f93fc7e94d270e62e1eaf0f6468e2e802b9",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/context/index.mjs",
+      "sha256": "dd5c1ddb63da873c8d82f335a575a8ef5ac2f5cbba82b129c9b60cf52f3acdd9",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/dependencies/package-lock.json",
+      "sha256": "88edd6704cdb6ea4d7e064935643ad783fdbc761d7cfbb0590a9f2f2577b861c",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/dependencies/package.json",
+      "sha256": "86ae1680cb52d87e4f363b2a6a3bd0f535c1900634c5b9ca0d06837dceb0e457",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/files/index.mjs",
+      "sha256": "3c283b50d9de2658ad579741a6a9a0b1ccc46d172b1a1fadc57752d2ec1c9227",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/genui/index.mjs",
+      "sha256": "ccea326a861fc977e7c6747c39441a90bc30114a915fef297b4d6fe0b922e475",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/index.mjs",
+      "sha256": "c74b4d62027bdd4cfc6479602b7061c46e194dfe79175533fe982130405c64aa",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/package.json",
+      "sha256": "50752e33a033262e863f3a4e21f6f0913caedcbeb1c84638e64c0043e830922e",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/policy.mjs",
+      "sha256": "a6d71be78edfda9ed0ad7c07ae8612b026fbc745414d7e7b8b875cdd436c1a71",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/profile.mjs",
+      "sha256": "898a1ae00eb62c2faf82ba457ae9a194c0b9b034c33e2810e238473d61eb3c65",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/appearance/index.mjs",
+      "sha256": "cbcc02b9bb1870d174cde3632a829cf9952e63817e2e412e55e2316b971770d1"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/appearance/package.json",
+      "sha256": "a16042b3cd3f2a4b026862e750642e0f31757dc5d322906b6464d475da861648",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/browser/index.mjs",
+      "sha256": "63be72f71329a303a05dea5cc627892761fe87fc1c2bd2a082078b2e88297684"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/browser/package.json",
+      "sha256": "6c4a78f29f70385fb96a693a51c3fcf26ddc3beae9318d5293249e779be8fb1b",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/context/index.mjs",
+      "sha256": "dd5c1ddb63da873c8d82f335a575a8ef5ac2f5cbba82b129c9b60cf52f3acdd9"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/context/locale/en.json",
+      "sha256": "8c31e0e780b5d8179c8ddc6a201c0639850863074fa0717b215361623a2dac7e"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/context/locale/zh.json",
+      "sha256": "5e1ce76ef7b0ebf600368289f9e685c4f4697dec9dd4a69469f887172ed53c46"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/context/package.json",
+      "sha256": "5f9996369e4562ad8b9ccc1b2ef1fcbf2c1609f8446a9bea8fc2e733e8839efc",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/files/index.mjs",
+      "sha256": "3c283b50d9de2658ad579741a6a9a0b1ccc46d172b1a1fadc57752d2ec1c9227"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/files/package.json",
+      "sha256": "f164aac6b021fd597d4be75377cc60770c22ce9c95175a767775f80c3d2b817e",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/genui/THIRD_PARTY_NOTICES.md",
+      "sha256": "ed50eb77449fa7a928f490de62882653cab3b1422c16287f4bbe27f255bcae5b"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/genui/index.mjs",
+      "sha256": "ccea326a861fc977e7c6747c39441a90bc30114a915fef297b4d6fe0b922e475"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/genui/package.json",
+      "sha256": "1701466d8a9ca4a92f9e8a6f97b22fb95ea92508db3de4c3c411c35e6258f23e",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/index.mjs",
+      "sha256": "c74b4d62027bdd4cfc6479602b7061c46e194dfe79175533fe982130405c64aa"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/package.json",
+      "sha256": "18747cbb80da0e2d502ecbf13e36f4180c761b5e5033b776bcc1c0051cca67fa",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/policy.mjs",
+      "sha256": "727f3503e14187f757134245287dcf6461ae35a8c1dccf026b98a7ad29c0af46",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/sidebar/index.mjs",
+      "sha256": "0dd21793e98ac36c27e24db52217bc9acef6cf909b8184f5c6f0a71e8a8572dc"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/sidebar/locale/en.json",
+      "sha256": "6b9d1ffb3c4cf70436fbe4ae15df7d6ccb1908375602db452573f975176f8b45"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/sidebar/locale/zh.json",
+      "sha256": "2a12195111442a74fa98de0cdedd54b2c3a076a37d0c542560a716628f087f5c"
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/r73/sidebar/package.json",
+      "sha256": "5a0e60e98705cbe23c3f671c51af568ac6d7047007f965001c190bff4a86aac5",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/sidebar/index.mjs",
+      "sha256": "0dd21793e98ac36c27e24db52217bc9acef6cf909b8184f5c6f0a71e8a8572dc",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/plugins/managed/source-lock.json",
+      "sha256": "644869c499590dd295759a015d9836b0d5c9307327fa3f134e1af16c24b95d5f",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/review-skills/index.mjs",
+      "sha256": "9735d045a0eea88464439db1eceea80c93e1cfb19a561aa3ab3791ce6c8f37c2",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/review-skills/package.json",
+      "sha256": "0d88e3db349965c45c9dbb514e32ad0bdc359a2092ad3d96d68f42f05f69ce64",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/review-skills/skills/onboarding-health-review/SKILL.md",
+      "sha256": "1a8e7d263c39f06637e620e3d43565489e82ec99fa0d99e0e0072fa9e9f854e5",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/review-skills/skills/onboarding-health-review/references/official-sources.json",
+      "sha256": "319dd221985f168f7dc81b1e26cab9ae15bb21c517476c3a6aca75e477b9f261",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/review-skills/skills/onboarding-health-review/references/review-contract.md",
+      "sha256": "b014733ec280ec22633463f3216970ba074edd66201a2e1530b5baf95beaee35",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/review-skills/skills/patent-review/SKILL.md",
+      "sha256": "0b5ed0229de62a69bc792e4424ffd8df9d6e653c6f714916c79cf7e01cd049fc",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/review-skills/skills/patent-review/references/report-contract.md",
+      "sha256": "f7ed7391f2c77e099abc2133d01210858ca97618b5867097b6381594d32d0cc9",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/review-skills/skills/patent-review/references/review-workflows.md",
+      "sha256": "9fd482de46c03db004df69979347814c66f1fab44240837e0b984e3426cbd325",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/review-skills/skills/patent-review/references/rule-catalog.json",
+      "sha256": "7aceaa53752c3431869f381411627ed2b6a93345dba57a0dcd31b1adeabdcb72",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/adapter/index.mjs",
+      "sha256": "f4e2f9d782c20349af6076075fe7044be4d4ed7c78eb3a3160b698698cb67f16",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/adapter/project-tool-request.mjs",
+      "sha256": "ac473fc6190fcbec3f25e947802a214374101dd429dffaed9a76a0acee6a09f2",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/badge-task.mjs",
+      "sha256": "9895763c3fa59b616aa0f1f40dd30962ce3744da0287c8b1a6caf50276d61ded",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/connector-failure.mjs",
+      "sha256": "d1522e64934a80829fec8a8118ee1502ff3be9c4831ee6e1cbf5950ae5274a93",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/drawing-extraction.mjs",
+      "sha256": "e4c45ebb12db4b6dde0ae177fbd0ce5dcf2ea69495770f9385067677b76f8008",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/enterprise-task-skills.mjs",
+      "sha256": "cbd0312b1104a2345983fe0c8d91e71cf25538e0f6cb13f4fea1a881ffcecfbf",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/http.mjs",
+      "sha256": "b43e5a36495bb7d33cebffbecffeddc62bab130397a3cfb9054ac7b8d0255450",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/dsh/toolkit/project-bridge.mjs",
+      "sha256": "3d2025d30ae5c9fc16b7ff8d76ec68d0c1ab4777b0b2e049214d0bd603c7fa18",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/project-failure.mjs",
+      "sha256": "1ba881c239debc7fd1b1078d5477b4915066c2e7dfdad8151346b3067d5af365",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/project-routing.mjs",
+      "sha256": "804c8eb4a9590ccdd531f6322dbb84032cb7bd9ed7f6076af4b58cb4c6c27eb9",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/toolkit/session-tools.mjs",
+      "sha256": "893b2dba8577b63bf207f1900b183328618b378eda465aa8742b964a8c2626ce",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/dsh/workspace-pinned-overlay.mjs",
+      "sha256": "114ae551b241932c83184a96d98364175332cc811ddaa1d0d75c4e71fda004ef",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/execution-overrides/dsh/toolkit/adapter/index.mjs",
+      "sha256": "0163ebfd6de6c3a3933a025e3071b58122611527f9bba8f7915d40ee23e14ff7",
+      "compared_with": [
+        "release-artifact",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/execution-overrides/dsh/toolkit/project-bridge.mjs",
+      "sha256": "0583eca8f2cea34bc416045c326a36b322eccaf4c42be19871fdc8f5a6a41916",
+      "compared_with": [
+        "release-artifact",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/execution-overrides/dsh/toolkit/session-tools.mjs",
+      "sha256": "dea446c7af9d308ab54b5b8560463cb39807c37377ef92626bc79206e9f2e76c",
+      "compared_with": [
+        "release-artifact",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/harden-runtime.py",
+      "sha256": "a83ff190601acb8d3dab7881487b08713aa46dbe3057c938dcaadf5d9ceab92e"
+    },
+    {
+      "path": "server/worker/install-word-libraries.py",
+      "sha256": "6b369852db09b6a56b57521dd4a4d7903bf48f05de1853f267cf191f832561f8"
+    },
+    {
+      "path": "server/worker/patch-native-chat.py",
+      "sha256": "6a2ba532f85a82610780254791eb0f50053ef6093e9491cf5ca386682710d97f"
+    },
+    {
+      "path": "server/worker/personal-cloud/attachment-bridge.mjs",
+      "sha256": "769ec50784c75ae7c7058bb35f2d734ae4ad78422e21844a94ead541c6b3c730",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/attachment_cache_retention.py",
+      "sha256": "36b8129e349a52b4357271dd91ed00ea24e93d93eb4356854831046b47bbc6c2",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/cache_empty_shell.py",
+      "sha256": "25a98ba94dffc309b8c46e9165a44a7e6f3c6a610332e00980c2bd21a8cf2f55",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/card-store-client.mjs",
+      "sha256": "e07147ec7ef2d687df452868cf88138bf1d658dbb0f7bb6232fe39f39729f6d1",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/card_retention_server.py",
+      "sha256": "c6b7e9ac9eb7dcb7e30294a4037171424ecedd769ec1a559f887b02be5f44c02",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/card_store.py",
+      "sha256": "022b4ab48971c19e113504872f963a0d79581567aad9388d4cf5f37e0f68cdf7",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/personal-cloud/catalog.mjs",
+      "sha256": "278e3761da800cd18572f123fa93acd8b122fd7d6e0af3139f7a345f6511a6e5"
+    },
+    {
+      "path": "server/worker/personal-cloud/community-profile.mjs",
+      "sha256": "c2995d45d3d2827b45468a664341ddb2b7780ecc56153d6163a879223420b265",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/company-system-prompt.mjs",
+      "sha256": "7ceab58bbff88b1fd15470e4919edc8c67bc2ed4b77e2cbd87007ee9b3f39063",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/company-workspace-controller.mjs",
+      "sha256": "b94d0088d46c52423bd9e5e22b0ff0ee835c22005d1fc51e2c79e3279cdc8fcc",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/distributed-skills.mjs",
+      "sha256": "feff9a3f34121639e9f829ce1242cde8195bfc7da30fbd6d12b12d2ef982673c",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/enterprise-model-policy.mjs",
+      "sha256": "ae054ee1cb3c77933700e05652912388d35760f0011b76a54968beae9a7abbe7",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/enterprise-profile.mjs",
+      "sha256": "384b36f28d266f94aa75b09127306abd1bed5a2347f6025ba98eb43560bbdd08",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/execution-agent.mjs",
+      "sha256": "b2bbd9d96793c33865da1640887e6b57e0ca705f301e532009603fdd091ab5aa",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/execution-outcome.mjs",
+      "sha256": "35ae430ec4cff312ab84f7d4a5c9f0faa2341a3a46338bd8fc068b4b8ded05c4"
+    },
+    {
+      "path": "server/worker/personal-cloud/execution-relay.mjs",
+      "sha256": "c6b72095a07b0ea3fcb734362fe2dbdc1406c007a3414308840023603150a50c",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/execution-rpc-core.mjs",
+      "sha256": "7a92ac099778c9835e93d7a218f74ac7454d8a72b803db7620b80ca8bd3823d9",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/history-admission-rc2.mjs",
+      "sha256": "040363eb4ddc66201ccb1f530515293fbff9fe9b720319c1ea8d1b1044284094",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/history-migration.mjs",
+      "sha256": "21face92868643149a36a1a551e5eb31c844075ff1fba1762f2bd4bf03a0e2fd",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/personal-cloud/history-native.mjs",
+      "sha256": "f6a53f4fefe17a8cc7bf1c677008d569491736e13188d2d4559e666e203722ea",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/personal-cloud/history-runtime-snapshot.mjs",
+      "sha256": "9b80a67d327f1b1932058bfb50ff42f8c3a4ddc75e723bd7e5ffb2ed8a27f6ef",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/personal-cloud/history-server.mjs",
+      "sha256": "55ba48496b2118b19637078a919de7237f538cf205970c7492ae3984f5125c5b",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/personal-cloud/idle-control.mjs",
+      "sha256": "afb824809c103b291792c3a3303db60cdcd8fa2cd76e3bedf54a04e3cf1b66f2",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/personal-cloud/image-description.mjs",
+      "sha256": "9b7917539eac0124e0f6d45a5f16dd1e2ec5cb261bd3bcc6f1ad5e3641f3ff88",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/live-task-root.mjs",
+      "sha256": "3f74626dcd24804031ac03fcfd3838cf99fda0e323e79891da1772d3c28a6510",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/managed-outputs-plugin.mjs",
+      "sha256": "c15e5802b17867b72bff742741054dfccdf48f0abc0248396fe606af4ec92c6c",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/managed-profile.mjs",
+      "sha256": "bbb77ad51f3e4a6d9adc2b8f1f546e57b7b17e203666f2d705e89f40c9e8ce54"
+    },
+    {
+      "path": "server/worker/personal-cloud/native-attachment-plugin.mjs",
+      "sha256": "7a939230b3227f3775a3378ed1858c1dbfb437e5469c4c081927ea476f0111ee",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/native-bootstrap-summary.mjs",
+      "sha256": "30ee1a96df223c0268ce96eef548906963df5a6b2dd20b240ba11552d5b45d15"
+    },
+    {
+      "path": "server/worker/personal-cloud/native-cancel-fence.mjs",
+      "sha256": "f797be5a57792a4e317572d18aa725094d4c26182c363d850cabb0cc386ea7c1",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/native-history-plugin.mjs",
+      "sha256": "b9467bbbfceb39c7c4621beb6b9aad5a947f3979330a1234df792fbc14f04c17"
+    },
+    {
+      "path": "server/worker/personal-cloud/native-model-scope.mjs",
+      "sha256": "c00b693e4bc72d3da1570d56cd4e9b5d8734232fe2ac2848e33b089e3b29fd93",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/native-scoped-credentials.mjs",
+      "sha256": "f0b672082f7c4e870c06855a7b8106d080de6464ba156c7b6c71f2e0c0cc68f7",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/native-search-connection.mjs",
+      "sha256": "7f4af8a2d80061c2db4bff08405de58f5471fe18bb840bf986935fd8cbcb6f5c",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/native-search-install.mjs",
+      "sha256": "2701c85475039f48eb97c2ec3f5a595478c92d838c359da6e28d0cf6fdcb2868",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/native-task-context.mjs",
+      "sha256": "fa2840e23a4a33e5bee4379b894cd70bdc3c6fe43e3ca273caa14219a6c33e15",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/native-workspace-state.mjs",
+      "sha256": "8fdc1aaf571c2e28e611c971b5774053c43056f76d5469e8254ec10938a42f5e"
+    },
+    {
+      "path": "server/worker/personal-cloud/office-bridge.mjs",
+      "sha256": "6c6756ee5595f10cb6a69979a3ab35b07e9860c06a00fbf0a48c628db559a37c",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/personal-cloud/office-kit-bridge.mjs",
+      "sha256": "cb7f3085b3e758dcb2efc77880c59b9f7b9bdbc3678f3e97a1958695a732f2d0",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/office-kit-executor.mjs",
+      "sha256": "8cefeb7abccdaefcefda621bd0341a721f92760f69e77541fdf1b6483515bd02",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/official-search-plugin.mjs",
+      "sha256": "09170db6ede0bce6461bfc6224f90b4291417eb89061ac2b30318cbe37c948ef",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/official-search-provider.mjs",
+      "sha256": "2ea6622d0dc0660b3226e8fec5d382db502bcb51c5e07c61a66f2bd9e24c3d11",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/order-document-receipts.mjs",
+      "sha256": "8f6e636611989aca3214396ed7ca822fad9679f9dd15b95941160907463442ac"
+    },
+    {
+      "path": "server/worker/personal-cloud/outputs-bridge.mjs",
+      "sha256": "71b6d68d08926c619e13c4ac0890a8828f1222908028f4410f9fd019eab53e5d",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/plugin-static-policy.mjs",
+      "sha256": "ddc261ff5ea80aa9cb0152a4318e8f6b1a5dbb2a7f93886f09090990b730b9a6",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/project-file-transfer-gate.mjs",
+      "sha256": "b07bb6631ee9900379d698186cfa42060fe56633ebf4ceedce4a5e70b334e477",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/project-files-plugin.mjs",
+      "sha256": "81c62c06b8206dc091d1c38d3db35c21e6719ed3c6bb000fd9b85920f437739b",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/provider-readiness.mjs",
+      "sha256": "580797a3421796ee6203ad74e01b39a179d656383edb7513f951e53ea9ccbd71",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/remote-execution-client.mjs",
+      "sha256": "1b32c36d57a0cb08461560a63b9ff921fbd71eeac00224bfae35bbcef679d989",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/remote-execution-plugin.mjs",
+      "sha256": "cf9b8c75cdb33e91cfee280a07d700bbe602b3df42b61360c9b0b26713d394e7",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/scoped-credential-mode.mjs",
+      "sha256": "ca694cc6183387522873375e55f1bf71eabdb6ed263f1ab876b442a14143bfb8"
+    },
+    {
+      "path": "server/worker/personal-cloud/search-host.mjs",
+      "sha256": "43004b8d3e854ff067361cd0742f2b0865826471d163b7a153e02fd4f7fbb800",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/search-loopback.mjs",
+      "sha256": "09d6f59a9e07dda0e9880ef7da8a31b4caa298a32f16f37a5da4c488b71d2df6"
+    },
+    {
+      "path": "server/worker/personal-cloud/search-permits.mjs",
+      "sha256": "490d442476048cb999257c9fcd84e073e6006b69b31556ee80d4db1fba9cb787",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/source_retention_contract.py",
+      "sha256": "e20d9bf3afb54325cf1d39fda41fef277c139582c09c7e66e121f567ed643e10",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/source_retention_server.py",
+      "sha256": "6280ef12efb854420ee118802af223eaeb811a0e51e133ad587ee2cc347d5460",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/source_retention_store.py",
+      "sha256": "c2f7acade6c1278b3edabcf435de372e12202669ccd861f9b56bef9e95f6adc9",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/state-portability.mjs",
+      "sha256": "8603eb8822ac04d992f1589a422c29c4cee2da9ee1e605a696c9aa18f640df85"
+    },
+    {
+      "path": "server/worker/personal-cloud/task-authority.mjs",
+      "sha256": "515250d53be26d3fc33d8d0c1113c4b57cbb732316dc50cdaf8b96c40ae25a9d",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/task-control-plugin.mjs",
+      "sha256": "2443199ab78e6cbf637d483948be6b1d92c858c4eb1da71be581a906fe52a2c7",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/task-files.mjs",
+      "sha256": "2d6b0a901a2bdf58fd07b0e4d563d3636358a6ef2afd7d9a264a4cd06c2326cc",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/task-tickets.mjs",
+      "sha256": "011ed1ab1c7509b3285c9f60f8c16811a3c61991bcf1eaa2ab732f8d4e2fa7de",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/transfer-scope.mjs",
+      "sha256": "1d041208a9591d825aeb611bb5d537fa4de42ac8f4d92c1612998a9afc428b07",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/vision-admission.mjs",
+      "sha256": "9e960708e4908a352569004d4df59c522d12fda129a4f8903ee9d98df03dd302"
+    },
+    {
+      "path": "server/worker/personal-cloud/vision-control-plugin.mjs",
+      "sha256": "033206d53646e2eb8f28b137abcfb2a78a35ff714f38c070a61f877160716a9d",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/web-bridge.mjs",
+      "sha256": "dbf0911682889fcda3193bb8f1ff9c1032ee338507aef0c7928c52b735104a12",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/web-control-plugin.mjs",
+      "sha256": "b417bbe03bfc42e65c5065d61ed4219467cc84575859a20aa42527763a8de8d6",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/worker-identity.mjs",
+      "sha256": "77a07120fd9332f919892875465f934368fd06e94c7598c46f7f974272045116",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/worker.mjs",
+      "sha256": "2987eca40e4f7d8923147d6584fef630548bf0349d52a4eab73d1311e20c2c6a",
+      "compared_with": [
+        "release-artifact",
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/workspace-backend.mjs",
+      "sha256": "f6310141c9cfc3f9b564d439a4052c821c0eef7452a61e8a2c7f18b616232db2"
+    },
+    {
+      "path": "server/worker/personal-cloud/workspace-client/client.js",
+      "sha256": "70b58daaf44c3c3e7cd0bf9674a1c8a68d612e53338f59eaa891c7bac588021b",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    },
+    {
+      "path": "server/worker/personal-cloud/workspace-client/index.mjs",
+      "sha256": "636a946208aa3bd39983e37af1c20485c56b137069f7ee0d5199010404934687",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/personal-cloud/workspace-client/package.json",
+      "sha256": "24b848f2a7e90a2fab3aadf6fca9fbe24a6f1da9edd28f379503eee399898f7e",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": false
+    },
+    {
+      "path": "server/worker/personal-cloud/workspace-health.mjs",
+      "sha256": "ca9c6d52dae3734b7cbf1fafe93aa04b3f3340c4492adb25a438c2dd828f6c47"
+    },
+    {
+      "path": "server/worker/personal-cloud/write-shared-cache.mjs",
+      "sha256": "f530819f2ba4ff3c23d81f7c5a283f2947437aa6f20a87a68655cff6b4573e12",
+      "compared_with": [
+        "chat-worker",
+        "execution-worker"
+      ],
+      "matches_reference_bytes": true
+    }
+  ],
+  "excluded_site_artwork_count": 1
+}

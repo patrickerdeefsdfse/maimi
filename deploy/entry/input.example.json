@@ -1,0 +1,50 @@
+{
+  "schema": "maimi-direct-entry-input/v1",
+  "hostname": "maimi.example.invalid",
+  "vip": "192.0.2.12",
+  "service_cidr": "198.51.100.0/24",
+  "gateway_cluster_ip": "198.51.100.30",
+  "vrid": 100,
+  "phase": "validated",
+  "roles": {
+    "A1": {
+      "address": "192.0.2.10",
+      "node_prefix": 24,
+      "vip_prefix": 32,
+      "interface": "eth0",
+      "tls_pem_path": "/etc/entry/site.pem",
+      "health_ca_file": null,
+      "haproxy_binary": "/usr/sbin/haproxy",
+      "haproxy_library_dir": "/usr/lib",
+      "keepalived_binary": "/usr/sbin/keepalived",
+      "interface_assignment_verified": false,
+      "tls_name_chain_key_expiry_verified": false,
+      "system_trust_or_public_ca_verified": false,
+      "software_and_loadcredential_verified": false
+    },
+    "A2": {
+      "address": "192.0.2.11",
+      "node_prefix": 24,
+      "vip_prefix": 32,
+      "interface": "eth0",
+      "tls_pem_path": "/etc/entry/site.pem",
+      "health_ca_file": null,
+      "haproxy_binary": "/usr/sbin/haproxy",
+      "haproxy_library_dir": "/usr/lib",
+      "keepalived_binary": "/usr/sbin/keepalived",
+      "interface_assignment_verified": false,
+      "tls_name_chain_key_expiry_verified": false,
+      "system_trust_or_public_ca_verified": false,
+      "software_and_loadcredential_verified": false
+    }
+  },
+  "vip_reserved_and_float_allowed": false,
+  "same_layer2_verified": false,
+  "vrrp_and_gratuitous_arp_verified": false,
+  "vrid_unused_on_layer2_verified": false,
+  "gateway_internal_traffic_policy_local_verified": false,
+  "both_ap_gateway_endpoints_verified": false,
+  "ap_interconnect_18080_verified": false,
+  "private_adapter_port_18080_unused_verified": false,
+  "public_ports_80_443_handover_reviewed": false
+}

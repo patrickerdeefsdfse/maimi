@@ -1,0 +1,49 @@
+{
+  "token-file": "/etc/rancher/k3s/secrets/server-token",
+  "agent-token-file": "/etc/rancher/k3s/secrets/agent-token",
+  "write-kubeconfig-mode": "0600",
+  "data-dir": "/data/maimi-production/k3s",
+  "cluster-cidr": "{{POD_CIDR}}",
+  "service-cidr": "{{SERVICE_CIDR}}",
+  "cluster-dns": "{{CLUSTER_DNS}}",
+  "cluster-domain": "cluster.local",
+  "flannel-backend": "vxlan",
+  "flannel-external-ip": false,
+  "flannel-ipv6-masq": false,
+  "disable": [
+    "servicelb",
+    "traefik",
+    "local-storage"
+  ],
+  "disable-cloud-controller": false,
+  "disable-helm-controller": false,
+  "disable-network-policy": false,
+  "disable-kube-proxy": false,
+  "egress-selector-mode": "agent",
+  "embedded-registry": false,
+  "secrets-encryption": true,
+  "secrets-encryption-provider": "aescbc",
+  "tls-san": [
+    "{{A1_IP}}",
+    "{{A2_IP}}",
+    "{{C_IP}}"
+  ],
+  "tls-san-security": true,
+  "etcd-disable-snapshots": false,
+  "node-name": "maimi-a1",
+  "node-ip": "{{A1_IP}}",
+  "advertise-address": "{{A1_IP}}",
+  "node-label": [
+    "maimi-role=application",
+    "maimi-node=a1"
+  ],
+  "kubelet-arg": [
+    "kube-reserved=cpu=1000m,memory=1024Mi",
+    "system-reserved=cpu=1000m,memory=1024Mi",
+    "enforce-node-allocatable=pods"
+  ],
+  "kube-controller-manager-arg": [
+    "node-cidr-mask-size-ipv4=26"
+  ],
+  "cluster-init": true
+}

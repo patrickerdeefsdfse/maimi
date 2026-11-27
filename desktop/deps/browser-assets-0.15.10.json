@@ -1,0 +1,58 @@
+{
+  "files": [
+    {
+      "path": "resources/app/dsh/node_modules/@changfenhuang/dsh-genui/lib/assets/mermaid.js",
+      "previous_sha256": "1bf1325a88367723401c6bb8735b39f04a99fced074eec7d13ea8c8146905eda",
+      "sha256": "efc1c3c5e37a09835060dafa45d3eed1eab00e3e2ca3793e58c432815702bada",
+      "input": "efc1c3c5e37a09835060dafa45d3eed1eab00e3e2ca3793e58c432815702bada"
+    },
+    {
+      "path": "resources/app/dsh/node_modules/@changfenhuang/dsh-genui/lib/assets/standalone-runtime.js",
+      "previous_sha256": "8a5525258e6c2f320b8461b3f969ecf9518d16d0f1fe2bb3e8396d8cf50d02ce",
+      "sha256": "0a09901cba5e894ab0e644739aeea626a48ffa0d812457a5e3d3b356e4743242",
+      "input": "0a09901cba5e894ab0e644739aeea626a48ffa0d812457a5e3d3b356e4743242"
+    },
+    {
+      "path": "resources/app/dsh/node_modules/@changfenhuang/dsh-genui/lib/client.js",
+      "previous_sha256": "a95daf319acba1bda03cfc5a1740e0076004270b371783666fcc6ee482daa44e",
+      "sha256": "f8a7aba8b347cf3fddd3ea3b8141b2053da5285b034d8a611aa4403cf14e6c37",
+      "input": "f8a7aba8b347cf3fddd3ea3b8141b2053da5285b034d8a611aa4403cf14e6c37"
+    },
+    {
+      "path": "resources/app/dsh/node_modules/dsh-better-sidebar/lib/client-mermaid.js",
+      "previous_sha256": "33b971e644ff82c83017260868369bf6881ba986b6c600695250d82782f70d16",
+      "sha256": "eef015dc77f1ff02ed9807912537e11a047e109aa3d9bd1db4ad37e4b3db7197",
+      "input": "eef015dc77f1ff02ed9807912537e11a047e109aa3d9bd1db4ad37e4b3db7197"
+    },
+    {
+      "path": "resources/app/dsh/node_modules/mermaid/dist/chunks/mermaid.esm/katex-HNBAO5SE.mjs",
+      "previous_sha256": "07231b71dc905e62071dd4abf96cd05900f9ff899767249d0204ffe8eeda4202",
+      "sha256": "b484e1ee46fdf2ab4959c353ee76516f3aef198f0754657adf047db373ec2ba1",
+      "input": "b484e1ee46fdf2ab4959c353ee76516f3aef198f0754657adf047db373ec2ba1"
+    },
+    {
+      "path": "resources/app/dsh/node_modules/mermaid/dist/chunks/mermaid.esm.min/katex-CZ4GXH2S.mjs",
+      "previous_sha256": "9f719fd1391e8ef7121397c685dc3dc458c454c69a60ab853ffd592974545c73",
+      "sha256": "cc1950e76990f4269573b55557c8b32349a5d4adb07e3bd93968934a0228082e",
+      "input": "cc1950e76990f4269573b55557c8b32349a5d4adb07e3bd93968934a0228082e"
+    },
+    {
+      "path": "resources/app/dsh/node_modules/mermaid/dist/mermaid.js",
+      "previous_sha256": "cd38f56d0c20c6616970b40d2089d3cbd3879dcc5b6e313d69b9bd20ea58dad6",
+      "sha256": "bdfeccf4bcda6d7cf3ca45cdf23bc325fab39ea68561fb39d3b80fd6fa44cd30",
+      "input": "bdfeccf4bcda6d7cf3ca45cdf23bc325fab39ea68561fb39d3b80fd6fa44cd30"
+    },
+    {
+      "path": "resources/app/dsh/node_modules/mermaid/dist/mermaid.min.js",
+      "previous_sha256": "581ed7d74bd9048d0e3a91363927d72ef22942d7722546b27f7cc29e35390eb8",
+      "sha256": "0265f81f3e40d71a6858e0d76821b36c83fb3a3a30da418d1087ce648c62a8fe",
+      "input": "0265f81f3e40d71a6858e0d76821b36c83fb3a3a30da418d1087ce648c62a8fe"
+    },
+    {
+      "path": "resources/app/dsh/plugins/managed/runtime/genui/client.js",
+      "previous_sha256": "95b3632aba44bb945b2d5a012c3e06f0c063fb6eaaa6dbb124ffafdd3087084d",
+      "sha256": "8ad11237e467c9780866d540d6d91fd339512c4fea3f507710003bb600661660",
+      "input": "8ad11237e467c9780866d540d6d91fd339512c4fea3f507710003bb600661660"
+    }
+  ]
+}

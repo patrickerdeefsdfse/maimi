@@ -1,0 +1,25 @@
+[Unit]
+Description=Maimi AP1/AP2 direct-IP floating web entry
+Wants=network-online.target maimi-web-entry-direct.service
+After=network-online.target maimi-web-entry-direct.service
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+RuntimeDirectory=maimi-entry-vip
+RuntimeDirectoryMode=0750
+Environment=LD_LIBRARY_PATH={{KEEPALIVED_LIBRARY_DIR}}
+ExecStartPre={{KEEPALIVED_BINARY}} --config-test --use-file=/etc/maimi-web-entry-direct-20261103/keepalived.conf
+ExecStart={{KEEPALIVED_BINARY}} --dont-fork --log-console --vrrp --use-file=/etc/maimi-web-entry-direct-20261103/keepalived.conf --pid=/run/maimi-entry-vip/keepalived.pid --vrrp_pid=/run/maimi-entry-vip/vrrp.pid
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+UMask=0027
+LimitCORE=0
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=maimi-web-vip
+
+[Install]
+WantedBy=multi-user.target

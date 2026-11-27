@@ -1,0 +1,1241 @@
+{
+  "kind": "List",
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "maimi-office-maintenance",
+        "namespace": "maimi-production"
+      },
+      "data": {"until": "0"}
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "name": "maimi-monitor-runtime-usage",
+        "namespace": "maimi-production",
+        "labels": {
+          "app.kubernetes.io/part-of": "maimi",
+          "maimi.megmeet.com/release": "r96"
+        }
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods"
+          ],
+          "verbs": [
+            "list"
+          ]
+        },
+        {
+          "apiGroups": [
+            "metrics.k8s.io"
+          ],
+          "resources": [
+            "pods"
+          ],
+          "verbs": [
+            "list"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "maimi-monitor-runtime-usage",
+        "namespace": "maimi-production",
+        "labels": {
+          "app.kubernetes.io/part-of": "maimi",
+          "maimi.megmeet.com/release": "r96"
+        }
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "maimi-monitor-runtime-usage"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "gateway",
+          "namespace": "maimi-production"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "name": "maimi-monitor-runtime-usage",
+        "namespace": "maimi-production-execution",
+        "labels": {
+          "app.kubernetes.io/part-of": "maimi",
+          "maimi.megmeet.com/release": "r96"
+        }
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods"
+          ],
+          "verbs": [
+            "list"
+          ]
+        },
+        {
+          "apiGroups": [
+            "metrics.k8s.io"
+          ],
+          "resources": [
+            "pods"
+          ],
+          "verbs": [
+            "list"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "maimi-monitor-runtime-usage",
+        "namespace": "maimi-production-execution",
+        "labels": {
+          "app.kubernetes.io/part-of": "maimi",
+          "maimi.megmeet.com/release": "r96"
+        }
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "maimi-monitor-runtime-usage"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "gateway",
+          "namespace": "maimi-production"
+        }
+      ]
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "gateway",
+        "namespace": "maimi-production",
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "app.kubernetes.io/part-of": "maimi"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "gateway",
+            "maimi.megmeet.com/environment": "production"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "chat-host"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production-execution"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "execution-worker"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "from": [
+              {
+                "ipBlock": {
+                  "cidr": "{{A1_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{A2_IP}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "kube-system"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "kube-dns"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 53,
+                "protocol": "TCP"
+              },
+              {
+                "port": 53,
+                "protocol": "UDP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{A1_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{A2_IP}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 6432,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{B1_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{B2_IP}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 6379,
+                "protocol": "TCP"
+              },
+              {
+                "port": 26379,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{A1_IP}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 26379,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "personal-cloud-manager"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production-execution"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "personal-cloud-manager"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8092,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production-execution"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 3084,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{SITE_GATEWAY_ENDPOINT_9}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{A1_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{A2_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{C_IP}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 443,
+                "protocol": "TCP"
+              },
+              {
+                "port": 6443,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "0.0.0.0/0",
+                  "except": [
+                    "0.0.0.0/8",
+                    "10.0.0.0/8",
+                    "100.64.0.0/10",
+                    "127.0.0.0/8",
+                    "169.254.0.0/16",
+                    "172.16.0.0/12",
+                    "{{SITE_GATEWAY_ENDPOINT_6}}/24",
+                    "{{SITE_GATEWAY_ENDPOINT_7}}/24",
+                    "{{SITE_GATEWAY_ENDPOINT_8}}/16",
+                    "198.18.0.0/15",
+                    "198.51.100.0/24",
+                    "203.0.113.0/24",
+                    "224.0.0.0/4",
+                    "240.0.0.0/4"
+                  ]
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 443,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{SITE_GATEWAY_ENDPOINT_3}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 443,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{SITE_GATEWAY_ENDPOINT_1}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 9080,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{SITE_GATEWAY_ENDPOINT_5}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 443,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{SITE_GATEWAY_ENDPOINT_4}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 443,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{SITE_GATEWAY_ENDPOINT_4}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 443,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{SITE_GATEWAY_ENDPOINT_2}}/32"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8098,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "policy/v1",
+      "kind": "PodDisruptionBudget",
+      "metadata": {
+        "name": "gateway",
+        "namespace": "maimi-production",
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "app.kubernetes.io/part-of": "maimi"
+        }
+      },
+      "spec": {
+        "minAvailable": 1,
+        "selector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "gateway",
+            "maimi.megmeet.com/environment": "production"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "gateway-entry",
+        "namespace": "maimi-production",
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "app.kubernetes.io/part-of": "maimi"
+        }
+      },
+      "spec": {
+        "type": "NodePort",
+        "externalTrafficPolicy": "Local",
+        "internalTrafficPolicy": "Local",
+        "selector": {
+          "maimi.megmeet.com/component": "gateway",
+          "maimi.megmeet.com/environment": "production"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": 8080,
+            "nodePort": 30080,
+            "protocol": "TCP"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "gateway",
+        "namespace": "maimi-production",
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "app.kubernetes.io/part-of": "maimi"
+        }
+      },
+      "spec": {
+        "replicas": 2,
+        "revisionHistoryLimit": 3,
+        "progressDeadlineSeconds": 300,
+        "minReadySeconds": 30,
+        "selector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "gateway",
+            "maimi.megmeet.com/environment": "production"
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxSurge": 0,
+            "maxUnavailable": 1
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "maimi.megmeet.com/component": "gateway",
+              "maimi.megmeet.com/environment": "production",
+              "maimi.megmeet.com/release": "production-r96"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "gateway",
+            "automountServiceAccountToken": false,
+            "terminationGracePeriodSeconds": 45,
+            "containers": [
+              {
+                "name": "gateway",
+                "image": "docker.io/library/maimi-r106-portal-gateway@sha256:edea0aa2ab88d71e8da804cd1e511368a6006f1e4dcdd65083e7d227e46d8519",
+                "imagePullPolicy": "Never",
+                "command": [
+                  "uvicorn",
+                  "app.main:app",
+                  "--host",
+                  "0.0.0.0",
+                  "--port",
+                  "8080",
+                  "--no-access-log",
+                  "--no-proxy-headers"
+                ],
+                "envFrom": [
+                  {
+                    "secretRef": {
+                      "name": "maimi-production-connection-config"
+                    }
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "MAIMI_WINDOWS_INSTALLER_SHARE_URL",
+                    "value": "SITE_WINDOWS_INSTALLER_SHARE_URL"
+                  },
+                  {
+                    "name": "AUTH_MODE",
+                    "value": "iam_direct"
+                  },
+                  {
+                    "name": "AUTH_REQUIRED",
+                    "value": "true"
+                  },
+                  {
+                    "name": "IAM_DEV_MODE",
+                    "value": "false"
+                  },
+                  {
+                    "name": "IAM_IDENTITY_MODE",
+                    "value": "sso_tokenkey"
+                  },
+                  {
+                    "name": "DSH_ENABLED",
+                    "value": "false"
+                  },
+                  {
+                    "name": "BROWSER_SMOKE_ENABLED",
+                    "value": "false"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "PERSONAL_KEY_ADAPTER",
+                    "value": "tokenkey"
+                  },
+                  {
+                    "name": "PERSONAL_MODEL_SIMULATION",
+                    "value": "false"
+                  },
+                  {
+                    "name": "IAM_BASE_URL",
+                    "value": "https://identity.example.invalid"
+                  },
+                  {
+                    "name": "IAM_AUTHORIZATION_BASE_URL",
+                    "value": "https://identity.example.invalid"
+                  },
+                  {
+                    "name": "IAM_PUBLIC_ORIGIN",
+                    "value": "https://assistant.example.invalid"
+                  },
+                  {
+                    "name": "IAM_REDIRECT_URI",
+                    "value": "https://assistant.example.invalid/v1/iam/callback"
+                  },
+                  {
+                    "name": "IAM_LOGOUT_RETURN_URI",
+                    "value": "https://assistant.example.invalid/maimi/web/"
+                  },
+                  {
+                    "name": "IAM_POST_LOGIN_PATH",
+                    "value": "/maimi/web/"
+                  },
+                  {
+                    "name": "IAM_CLIENT_SECRET_FILE",
+                    "value": "/run/maimi/connections/iam-client-secret"
+                  },
+                  {
+                    "name": "PERSONAL_KEY_SERVICE_SECRET_FILE",
+                    "value": "/run/maimi/connections/personal-key-service-secret"
+                  },
+                  {
+                    "name": "IAM_TOKEN_ENCRYPTION_KEY_FILE",
+                    "value": "/run/maimi/auth/fernet-key"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MANAGER_URL",
+                    "value": "http://personal-cloud-manager.maimi-production.svc.cluster.local:8092"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MANAGER_SECRET_FILE",
+                    "value": "/run/maimi/manager/personal-cloud-manager"
+                  },
+                  {
+                    "name": "PERSONAL_EXECUTION_NAMESPACE",
+                    "value": "maimi-production-execution"
+                  },
+                  {
+                    "name": "PERSONAL_EXECUTION_MANAGER_URL",
+                    "value": "http://execution-manager.maimi-production-execution.svc.cluster.local:8092"
+                  },
+                  {
+                    "name": "PERSONAL_EXECUTION_MANAGER_SECRET_FILE",
+                    "value": "/run/maimi/auth/execution-token"
+                  },
+                  {
+                    "name": "MAIMI_METRICS_SECRET_FILE",
+                    "value": "/run/maimi/auth/metrics-token"
+                  },
+                  {
+                    "name": "MIGRATIONS_REQUIRED_VERSION",
+                    "value": "029_owner_placement_transfer.sql"
+                  },
+                  {
+                    "name": "MAIMI_NATIVE_HISTORY_BACKEND",
+                    "value": "postgres"
+                  },
+                  {
+                    "name": "MAIMI_WORKSPACE_STATE_BACKEND",
+                    "value": "postgres"
+                  },
+                  {
+                    "name": "MAIMI_STORAGE_POLICY",
+                    "value": "managed-cloud-files-r72"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_RETENTION_POLICY",
+                    "value": "managed-cloud-files-r72"
+                  },
+                  {
+                    "name": "MAIMI_STORAGE_BACKEND",
+                    "value": "nfs"
+                  },
+                  {
+                    "name": "MAIMI_DEPLOYMENT_MODE",
+                    "value": "production-ha"
+                  },
+                  {
+                    "name": "MAIMI_STORAGE_ROOT",
+                    "value": "/mnt/maimi-objects"
+                  },
+                  {
+                    "name": "MAIMI_STORAGE_NFS_SOURCE",
+                    "value": "{{NAS_IP}}:/{{NAS_EXPORT_NAME}}/maimi/objects"
+                  },
+                  {
+                    "name": "MAIMI_STORAGE_OWNER_BYTES",
+                    "value": "2147483648"
+                  },
+                  {
+                    "name": "MAIMI_STORAGE_SESSION_BYTES",
+                    "value": "536870912"
+                  },
+                  {
+                    "name": "MAIMI_STORAGE_GLOBAL_BYTES",
+                    "value": "107374182400"
+                  },
+                  {
+                    "name": "MAIMI_STORAGE_MIN_FREE_BYTES",
+                    "value": "10737418240"
+                  },
+                  {
+                    "name": "MAIMI_STORAGE_SHARED_BURST",
+                    "value": "true"
+                  },
+                  {
+                    "name": "MAIMI_CLUSTER_MONITOR_ENABLED",
+                    "value": "true"
+                  },
+                  {
+                    "name": "MAIMI_PROJECT_MEETING_ASSETS_DIR",
+                    "value": "/opt/maimi/r93-assets/meetings"
+                  },
+                  {
+                    "name": "MAIMI_PROJECT_MEETING_MANIFEST_FILE",
+                    "value": "/opt/maimi/r93-assets/meeting-manifest.json"
+                  },
+                  {
+                    "name": "REDIS_URL",
+                    "value": "rediss://maimi-cache/0"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_MODE",
+                    "value": "sentinel"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_MASTER_NAME",
+                    "value": "maimi-cache"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_SENTINELS",
+                    "value": "[[\"{{A1_IP}}\",26379],[\"{{B1_IP}}\",26379],[\"{{B2_IP}}\",26379]]"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_ALLOWED_DATA_NODES",
+                    "value": "[[\"{{B1_IP}}\",6379],[\"{{B2_IP}}\",6379]]"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_USERNAME",
+                    "value": "maimi-app"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_SENTINEL_USERNAME",
+                    "value": "sentinel-client"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_DB",
+                    "value": "0"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_PASSWORD_FILE",
+                    "value": "/run/maimi/redis/app.password"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_SENTINEL_PASSWORD_FILE",
+                    "value": "/run/maimi/redis/discovery.password"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_CA_FILE",
+                    "value": "/run/maimi/redis/ca.crt"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_CLIENT_CERT_FILE",
+                    "value": "/run/maimi/redis/client.crt"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_CLIENT_KEY_FILE",
+                    "value": "/run/maimi/redis/client.key"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_ACCEPTED_PRIMARY_RUN_ID",
+                    "value": "{{MAIMI_REDIS_ACCEPTED_PRIMARY_RUN_ID}}"
+                  },
+                  {
+                    "name": "MAIMI_REDIS_ACCEPTED_CONFIG_EPOCH",
+                    "value": "{{MAIMI_REDIS_ACCEPTED_CONFIG_EPOCH}}"
+                  },
+                  {
+                    "name": "MAIMI_MONITOR_ENVIRONMENT",
+                    "value": "PRODUCTION"
+                  },
+                  {
+                    "name": "MAIMI_MONITOR_LOCAL_NODE",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "spec.nodeName"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_URL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "maimi-production-db",
+                        "key": "DATABASE_URL"
+                      }
+                    }
+                  },
+                  {
+                    "name": "MAIMI_NODE_NAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "spec.nodeName"
+                      }
+                    }
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "private",
+                    "mountPath": "/run/maimi",
+                    "subPath": "private",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private",
+                    "mountPath": "/run/secrets",
+                    "subPath": "private/connections",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "objects",
+                    "mountPath": "/mnt/maimi-objects"
+                  },
+                  {
+                    "name": "objects",
+                    "mountPath": "/opt/maimi/r93-assets",
+                    "subPath": ".enterprise-r96-assets",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "pg-ca",
+                    "mountPath": "/run/maimi-db",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "monitor-api",
+                    "mountPath": "/run/maimi-monitor-api",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "office-maintenance",
+                    "mountPath": "/etc/maimi/office-maintenance",
+                    "readOnly": true
+                  }
+                ],
+                "securityContext": {
+                  "runAsUser": 1000,
+                  "runAsGroup": 1000,
+                  "runAsNonRoot": true,
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "200m",
+                    "memory": "384Mi"
+                  },
+                  "limits": {
+                    "cpu": "1500m",
+                    "memory": "1Gi"
+                  }
+                },
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/ready",
+                    "port": 8080
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 8,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 8080
+                  },
+                  "periodSeconds": 20,
+                  "timeoutSeconds": 3,
+                  "failureThreshold": 6
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/ready",
+                    "port": 8080
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 8,
+                  "failureThreshold": 36
+                }
+              }
+            ],
+            "initContainers": [
+              {
+                "name": "private-config",
+                "image": "docker.io/library/maimi-r106-portal-gateway@sha256:edea0aa2ab88d71e8da804cd1e511368a6006f1e4dcdd65083e7d227e46d8519",
+                "imagePullPolicy": "Never",
+                "command": [
+                  "python3",
+                  "-I",
+                  "-B",
+                  "-c",
+                  "import os,pathlib\nroot=pathlib.Path(\"/private/private\");root.mkdir(mode=0o700)\nsets={'manager': ['personal-cloud-manager'], 'auth': ['fernet-key', 'metrics-token', 'execution-token'], 'redis': ['app.password', 'discovery.password', 'ca.crt', 'client.crt', 'client.key'], 'connections': ['iam-client-secret', 'personal-key-service-secret', 'maimi-logistics-kuaidi100-mcp.json', 'maimi-logistics-factory-phones.json']}\nfor section,names in sets.items():\n d=root/section;d.mkdir(mode=0o700)\n for name in names:\n  data=(pathlib.Path(\"/input\")/section/name).read_bytes();assert 0<len(data)<=131072;fd=os.open(d/name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)\n  with os.fdopen(fd,\"wb\") as f:os.fchown(f.fileno(),1000,1000);f.write(data)\n os.chown(d,1000,1000)\nos.chown(root,1000,1000)\n"
+                ],
+                "securityContext": {
+                  "runAsUser": 0,
+                  "runAsGroup": 0,
+                  "runAsNonRoot": false,
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ],
+                    "add": [
+                      "CHOWN"
+                    ]
+                  },
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "10m",
+                    "memory": "16Mi"
+                  },
+                  "limits": {
+                    "cpu": "100m",
+                    "memory": "64Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "private",
+                    "mountPath": "/private"
+                  },
+                  {
+                    "name": "input-manager",
+                    "mountPath": "/input/manager",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "input-auth",
+                    "mountPath": "/input/auth",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "input-redis",
+                    "mountPath": "/input/redis",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "input-connections",
+                    "mountPath": "/input/connections",
+                    "readOnly": true
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "private",
+                "emptyDir": {
+                  "medium": "Memory",
+                  "sizeLimit": "2Mi"
+                }
+              },
+              {
+                "name": "objects",
+                "persistentVolumeClaim": {
+                  "claimName": "maimi-production-objects"
+                }
+              },
+              {
+                "name": "office-maintenance",
+                "configMap": {"name": "maimi-office-maintenance", "defaultMode": 292}
+              },
+              {
+                "name": "pg-ca",
+                "configMap": {
+                  "name": "maimi-production-db-ca",
+                  "defaultMode": 292
+                }
+              },
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "128Mi"
+                }
+              },
+              {
+                "name": "monitor-api",
+                "projected": {
+                  "defaultMode": 292,
+                  "sources": [
+                    {
+                      "serviceAccountToken": {
+                        "path": "token",
+                        "expirationSeconds": 3600
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "name": "kube-root-ca.crt",
+                        "items": [
+                          {
+                            "key": "ca.crt",
+                            "path": "ca.crt"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "input-manager",
+                "secret": {
+                  "secretName": "maimi-production-manager-auth",
+                  "defaultMode": 292,
+                  "items": [
+                    {
+                      "key": "personal-cloud-manager",
+                      "path": "personal-cloud-manager"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "input-auth",
+                "secret": {
+                  "secretName": "maimi-production-gateway-auth",
+                  "defaultMode": 292,
+                  "items": [
+                    {
+                      "key": "fernet-key",
+                      "path": "fernet-key"
+                    },
+                    {
+                      "key": "metrics-token",
+                      "path": "metrics-token"
+                    },
+                    {
+                      "key": "execution-token",
+                      "path": "execution-token"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "input-redis",
+                "secret": {
+                  "secretName": "maimi-production-redis",
+                  "defaultMode": 292,
+                  "items": [
+                    {
+                      "key": "app.password",
+                      "path": "app.password"
+                    },
+                    {
+                      "key": "discovery.password",
+                      "path": "discovery.password"
+                    },
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    },
+                    {
+                      "key": "client.crt",
+                      "path": "client.crt"
+                    },
+                    {
+                      "key": "client.key",
+                      "path": "client.key"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "input-connections",
+                "secret": {
+                  "secretName": "maimi-production-connection-files",
+                  "defaultMode": 292,
+                  "items": [
+                    {
+                      "key": "iam-client-secret",
+                      "path": "iam-client-secret"
+                    },
+                    {
+                      "key": "personal-key-service-secret",
+                      "path": "personal-key-service-secret"
+                    },
+                    {
+                      "key": "maimi-logistics-kuaidi100-mcp.json",
+                      "path": "maimi-logistics-kuaidi100-mcp.json"
+                    },
+                    {
+                      "key": "maimi-logistics-factory-phones.json",
+                      "path": "maimi-logistics-factory-phones.json"
+                    }
+                  ]
+                }
+              }
+            ],
+            "affinity": {
+              "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                  "nodeSelectorTerms": [
+                    {
+                      "matchExpressions": [
+                        {
+                          "key": "kubernetes.io/hostname",
+                          "operator": "In",
+                          "values": [
+                            "maimi-a1",
+                            "maimi-a2"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "podAntiAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "labelSelector": {
+                      "matchLabels": {
+                        "maimi.megmeet.com/component": "gateway",
+                        "maimi.megmeet.com/environment": "production"
+                      }
+                    },
+                    "topologyKey": "kubernetes.io/hostname"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

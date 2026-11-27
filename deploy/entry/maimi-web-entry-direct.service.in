@@ -1,0 +1,41 @@
+[Unit]
+Description=Maimi direct-IP HTTPS application entry
+Wants=network-online.target
+After=network-online.target maimi-production-k3s.service
+RequiresMountsFor=/data/maimi-production
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+DynamicUser=yes
+# PID 1 loads the locally provisioned PEM; do not copy its contents into reports.
+LoadCredential=entry.pem:{{TLS_PEM_PATH}}
+Environment=LD_LIBRARY_PATH={{HAPROXY_LIBRARY_DIR}}
+ExecStartPre={{HAPROXY_BINARY}} -c -f /etc/maimi-web-entry-direct-20261103/haproxy.cfg
+ExecStart={{HAPROXY_BINARY}} -db -f /etc/maimi-web-entry-direct-20261103/haproxy.cfg
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+LimitNOFILE=8192
+LimitCORE=0
+TasksMax=64
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=70
+KillSignal=SIGUSR1
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=maimi-web-entry-direct
+
+[Install]
+WantedBy=multi-user.target

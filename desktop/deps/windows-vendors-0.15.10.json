@@ -1,0 +1,64 @@
+[
+  {
+    "name": "undici",
+    "version": "6.29.1",
+    "sha256": "29c4b8e0b2d86cb8795571c1959012ce057a14ecfd34858335f47c31e770a04f",
+    "filename": "undici-6.29.1.tgz"
+  },
+  {
+    "name": "undici",
+    "version": "8.13.1",
+    "sha256": "33cceb321835a0754c60a9ac681df71dddc2ee8aafd890f763414b51574182b5",
+    "filename": "undici-8.13.1.tgz"
+  },
+  {
+    "name": "electron",
+    "version": "44.11.5",
+    "sha256": "9a86b7e5d2c6c47cdda5219f5530500062c0fb98311f622b932e4bc51cc30254",
+    "filename": "electron-44.11.5.tgz"
+  },
+  {
+    "name": "electron-windows-x64",
+    "version": "44.11.5",
+    "sha256": "2938040ee81382bb8a99954425a316fee17f23d55f5be0ef413275f7e793c8af",
+    "filename": "electron-v44.11.5-win32-x64.zip"
+  },
+  {
+    "name": "@modelcontextprotocol/client",
+    "version": "2.4.0",
+    "sha256": "55c36d1e1ee68f34b614f6f75cc1f5d9a3c6506faa0ab1ced833745244170de7",
+    "filename": "client-2.4.0.tgz"
+  },
+  {
+    "name": "fflate",
+    "version": "0.8.3",
+    "sha256": "38c2cd824402407b43153c782274aec2ea83ea688e4aa0b743c5f2c305857d92",
+    "filename": "fflate-0.8.3.tgz"
+  },
+  {
+    "name": "katex",
+    "version": "0.18.10",
+    "sha256": "ab056aae3031254cdffc64e7b886cdc43c91114b219bd7b1b68e097b8b3da6c2",
+    "filename": "katex-0.18.10.tgz"
+  },
+  {
+    "name": "@modelcontextprotocol/core",
+    "version": "2.4.0",
+    "sha256": "e0c1eb59e43eeb6c9912e8f4dbd0c473976cdd4dda21f9473958d2bd15e3a98c",
+    "filename": "core-2.4.0.tgz"
+  },
+  {
+    "name": "node-windows-x64",
+    "version": "24.22.3",
+    "sha256": "e612af99f626ab415ea225af6bce5c971feb448cb5cae250bb1c3fa50c5f7d9f",
+    "filename": "node-v24.22.3-win-x64.zip",
+    "url": "https://nodejs.org/dist/v24.22.3/node-v24.22.3-win-x64.zip"
+  },
+  {
+    "name": "pillow-win-amd64",
+    "version": "13.0.0",
+    "sha256": "ff3fe9eb621fbb9db4c4be33ab946f6bac5f98ab50ca8d3260503653656c961b",
+    "filename": "pillow-13.0.0-cp312-cp312-win_amd64.whl",
+    "url": "https://files.pythonhosted.org/packages/ff/cd/73a79ecdc822076002eb24b5e1e4a530b0bb5310fcb6d239abbec877110b/pillow-13.0.0-cp312-cp312-win_amd64.whl"
+  }
+]

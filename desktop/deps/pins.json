@@ -1,0 +1,115 @@
+{
+  "dsh": {
+    "release": "0.2.2-rc.5",
+    "commit": "9c2670d3bce5275e0d1610272958121af87787bb",
+    "source": "https://codeload.github.com/deepseek-ai/deepseek-harness/zip/9c2670d3bce5275e0d1610272958121af87787bb",
+    "sha256": "ed1f1739744cf1314871d772764288e99ae09aad3103ab7631ef8626a8c33c2a"
+  },
+  "office": {
+    "name": "@deepseek-ai/libreoffice-kit-win32-x64",
+    "version": "0.2.3",
+    "exe_sha256": "cf7d02fa0992fb376623f87be016c8ded94fb79f07ad1c394bd37f8c45c9ebd7"
+  },
+  "files": {
+    "version": "0.6.2",
+    "source_commit": "119bff5ef462ea9e4d8c0ba5d12c2bfc03b041e0",
+    "tarball": "dsh-files-0.6.2-119bff5.tgz",
+    "sha256": "0cdcd0aaa0b15f3b7fec9996cb90c8c3e5d2c29580abb114d337b4aca2fc57b6",
+    "source": "https://github.com/taxueseek/dsh-files"
+  },
+  "electron": "44.11.5",
+  "installerExtractor": {
+    "version": "26.06",
+    "extra": {
+      "name": "7z2606-extra.7z",
+      "url": "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-extra.7z",
+      "sha256": "396c180f12d2247c24b0b1fcd482c6fc2a2700f61211ffede1061dd971f5e104"
+    },
+    "source": {
+      "name": "7z2606-src.7z",
+      "url": "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-src.7z",
+      "sha256": "e0364d39e8208557d939472c9a12d02ed1c12f45ca402e3b408bcaa63b36dd93"
+    },
+    "x64Sha256": "dd3757f31c97e33776f2590317d4fb12f2da075db3dbb1e3f94d0f2a01d84ffa",
+    "licenseSha256": "39d2187b942cc88818dd959e53c6b7dddd152097a42061467c4d56050168d646"
+  },
+  "node": "24.22.3",
+  "pnpm": "11.28.5",
+  "product": {
+    "version": "0.15.10",
+    "installer_sha256": "91c81eb2159eec95aca3a88b8601403054828fcfb2a544b6a4cec0f04361c19f"
+  },
+  "baselineWindows": {
+    "version": "0.14.2",
+    "url": "https://desktop-gateway.example.invalid/maimi/updates/windows/Maimi-Setup-0.14.2-x64.exe",
+    "sha256": "5cdce7a26801b04de64f7e4d35c918043c254d2f4324707ca750cb2192fb87a0"
+  },
+  "mime": {
+    "version": "4.1.1",
+    "url": "https://registry.npmjs.org/mime/-/mime-4.1.1.tgz",
+    "sha512": "YAApRsTpM2+gnUFHhRNGfkX8NK0V5xj1nyQLufGlwEI+eX4xRsTcel2IXDuMEGSGjBvzykNW4VuoEACgwYe7BQ=="
+  },
+  "previousProduct": {
+    "version": "0.15.9",
+    "installer_sha256": "9d01a59823142d77540601b42fe85da8eef130995f6aa93506bf6726e9f18cc9"
+  },
+  "baselineUpstreamWindows": {
+    "url": "https://download.deepseek.com/dsh-desk/bin/win-x64/deepseek-harness-0.2.2-rc.3-win-x64.exe",
+    "sha512": "GiJf8kx+C7eoiZ0xQSYBcTyh5xmXQl+vh63U6uSm963McK1AkMgB8PydzuekWdUY7hyURvhVMHANM4pn+tCKzQ==",
+    "sha256": "786c9b26050c35b62c7be6a01dee2541dc1c2c5d9bd5f2dbe77beeeb8d50704e",
+    "version": "0.2.2-rc.3"
+  },
+  "upstreamWindows": {
+    "url": "https://download.deepseek.com/dsh-desk/bin/win-x64/deepseek-harness-0.2.2-rc.5-win-x64.exe",
+    "sha512": "wWySRp7Hk5gcH324jBxAc7KV0mniHzQDofyQexOJMIAWXBkgHTsRCr3IrdwX1XO8OIhDZsLYmve4mLxskikYIg==",
+    "sha256": "013e28bc8c714749331308386d814108336851914d243aa6bcfd14de1ab30923"
+  },
+  "windowsSecurityComponents": {
+    "payloadSha256": "be7864085d08805aa5320a4a3854b429211c5a3f29c7445753676dc821c01b01",
+    "primaryRuntimeDigest": "cc2ebc89976484291e5931490c514a72e6e9a48f2401f1b3a0aba582f6d7923e",
+    "nodeWindowsX64": {
+      "version": "24.22.3",
+      "archiveSha256": "e612af99f626ab415ea225af6bce5c971feb448cb5cae250bb1c3fa50c5f7d9f",
+      "exeSha256": "86fc4785327db5f5c7558dc6156c543b433c313e813a222e088086222ab4afa6"
+    },
+    "pillowWindowsCP312": {
+      "version": "13.0.0",
+      "wheelSha256": "ff3fe9eb621fbb9db4c4be33ab946f6bac5f98ab50ca8d3260503653656c961b"
+    },
+    "npmOverrides": {
+      "@modelcontextprotocol/client": {
+        "version": "2.4.0",
+        "sha256": "55c36d1e1ee68f34b614f6f75cc1f5d9a3c6506faa0ab1ced833745244170de7"
+      },
+      "fflate": {
+        "version": "0.8.3",
+        "sha256": "38c2cd824402407b43153c782274aec2ea83ea688e4aa0b743c5f2c305857d92"
+      },
+      "katex": {
+        "version": "0.18.10",
+        "sha256": "ab056aae3031254cdffc64e7b886cdc43c91114b219bd7b1b68e097b8b3da6c2"
+      },
+      "@modelcontextprotocol/core": {
+        "version": "2.4.0",
+        "sha256": "e0c1eb59e43eeb6c9912e8f4dbd0c473976cdd4dda21f9473958d2bd15e3a98c"
+      }
+    },
+    "undiciByInstallPath": {
+      "resources/app/dsh/node_modules/undici": "8.13.1",
+      "resources/app/dsh/node_modules/@liustack/modlens/node_modules/undici": "8.13.1",
+      "resources/runtime/primary-runtime/dependencies/pnpm/dist/node_modules/undici": "6.29.1"
+    },
+    "bundledBrowserAssets": {
+      "resources/app/dsh/node_modules/@changfenhuang/dsh-genui/lib/assets/mermaid.js": "efc1c3c5e37a09835060dafa45d3eed1eab00e3e2ca3793e58c432815702bada",
+      "resources/app/dsh/node_modules/@changfenhuang/dsh-genui/lib/assets/standalone-runtime.js": "0a09901cba5e894ab0e644739aeea626a48ffa0d812457a5e3d3b356e4743242",
+      "resources/app/dsh/node_modules/@changfenhuang/dsh-genui/lib/client.js": "f8a7aba8b347cf3fddd3ea3b8141b2053da5285b034d8a611aa4403cf14e6c37",
+      "resources/app/dsh/node_modules/dsh-better-sidebar/lib/client-mermaid.js": "eef015dc77f1ff02ed9807912537e11a047e109aa3d9bd1db4ad37e4b3db7197",
+      "resources/app/dsh/node_modules/mermaid/dist/chunks/mermaid.esm/katex-HNBAO5SE.mjs": "b484e1ee46fdf2ab4959c353ee76516f3aef198f0754657adf047db373ec2ba1",
+      "resources/app/dsh/node_modules/mermaid/dist/chunks/mermaid.esm.min/katex-CZ4GXH2S.mjs": "cc1950e76990f4269573b55557c8b32349a5d4adb07e3bd93968934a0228082e",
+      "resources/app/dsh/node_modules/mermaid/dist/mermaid.js": "bdfeccf4bcda6d7cf3ca45cdf23bc325fab39ea68561fb39d3b80fd6fa44cd30",
+      "resources/app/dsh/node_modules/mermaid/dist/mermaid.min.js": "0265f81f3e40d71a6858e0d76821b36c83fb3a3a30da418d1087ce648c62a8fe",
+      "resources/app/dsh/plugins/managed/runtime/genui/client.js": "8ad11237e467c9780866d540d6d91fd339512c4fea3f507710003bb600661660"
+    },
+    "workerHost": "6e0c012a56fe6bb4a9c17c73008789dd77d57f6035bb629f8f23d514a51dd8ac"
+  }
+}

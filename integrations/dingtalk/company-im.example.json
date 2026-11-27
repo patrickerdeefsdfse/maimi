@@ -1,0 +1,43 @@
+{
+  "schema": "maimi-company-im-handoff/v1",
+  "activation": "disabled",
+  "scope": "private_text_pilot",
+  "dingtalk": {
+    "transport": "existing_magicapi_private_branch",
+    "registration": {
+      "corp_id": null,
+      "client_id": null,
+      "robot_code": null,
+      "client_secret_file": "EIP host only: MAIMI_IM_DING_SECRET_FILE"
+    },
+    "accept_group_messages": false,
+    "ingress_path": "/internal/maimi-im/v1/dingtalk",
+    "expected_callback": "direct_https_with_original_headers",
+    "employee_binding": "maimi_im.binding",
+    "forward_auth": "HMAC-SHA256 with MAIMI_IM_FORWARD_KEY_FILE"
+  },
+  "personal_weixin": {
+    "transport": "ilink_qr",
+    "identity": "dedicated_administrator_controlled_account",
+    "registration_ref": null,
+    "credentials_dir": "/var/lib/maimi-im/weixin-private",
+    "allow_unpaired_peers": false
+  },
+  "execution": {
+    "employee_delegation": "disabled_by_default_qa_only",
+    "receipt_store": "local_pg_candidate_requires_deployment",
+    "outgoing_targets": "verified_inbound_private_conversation_only",
+    "offline_tasks": false,
+    "attachments": false,
+    "allowed_scope": "dingtalk-private-text-v1",
+    "consent_max_seconds": 900,
+    "slow_answers": "bounded_private_job_and_authenticated_pull",
+    "job_key_file": "MAIMI_IM_JOB_KEY_FILE",
+    "active_jobs_per_employee": 2,
+    "active_jobs_global": 32,
+    "job_result_ttl_seconds": 1800
+  },
+  "desktop_dws": {
+    "shared_credentials": false
+  }
+}

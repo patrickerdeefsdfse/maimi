@@ -1,0 +1,13 @@
+{
+  "release_sha256": "223922ac4abcc6d3b3ae405f62b68ac2347902bd539aed9b8f8e586654ba004d",
+  "assets": {
+    "wordmark.svg": {
+      "sha256": "5d440ad21c7b9eae1d778a4b23d48db7b3b66667b4f7c3770f604f3e69a56464",
+      "bytes": 59263
+    },
+    "software-icon.png": {
+      "sha256": "03668756d3b25718d909bdcf49d86f4832d27b200c09dc41ee59439b208c3235",
+      "bytes": 1204141
+    }
+  }
+}

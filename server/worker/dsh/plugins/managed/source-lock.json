@@ -1,0 +1,70 @@
+{
+  "schema": "maimi-r73-plugin-sources/v1",
+  "checked_at": "2026-10-26",
+  "dsh_npm_tags": {
+    "latest": "0.2.1-rc.2",
+    "next": "0.2.1-rc.3"
+  },
+  "dsh_release_url": "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.3",
+  "dsh_files_repository": "https://github.com/taxueseek/dsh-files",
+  "dsh_files_commit": "119bff5ef462ea9e4d8c0ba5d12c2bfc03b041e0",
+  "dsh_files_archive_sha256": "0cdcd0aaa0b15f3b7fec9996cb90c8c3e5d2c29580abb114d337b4aca2fc57b6",
+  "npm_lock_sha256": "6bf886be588c19342a6c5d0563e6a63bdfc7601838d5d2c71e8be01167c29a8b",
+  "packages": [
+    {
+      "name": "@deepseek-ai/dsh",
+      "version": "0.2.1-rc.3",
+      "resolved": "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.2.1-rc.3.tgz",
+      "integrity": "sha512-H+E9HLnHf7fJqzen84Z9Bq8ggb5xbrcbyhZjXTJLE9NabHr3zteGvTRvdvGkxPl4ov80is4WLglFmSo+/olJjg=="
+    },
+    {
+      "name": "dsh-context",
+      "version": "0.77.0",
+      "resolved": "https://registry.npmjs.org/dsh-context/-/dsh-context-0.77.0.tgz",
+      "integrity": "sha512-KDq7LlhpGJC9pA/NwjvnalOk2i1OYnYIX24hjwiJS46dSAAC0oL7r3hx9kc7s2noFgn1redUL7iN0lIxwDe9Gg=="
+    },
+    {
+      "name": "dsh-better-sidebar",
+      "version": "0.28.0",
+      "resolved": "https://registry.npmjs.org/dsh-better-sidebar/-/dsh-better-sidebar-0.28.0.tgz",
+      "integrity": "sha512-x7+/YmH/HrSlXWOBZkhL7qQqcDgZEnDcWrhR5GlizzUZjz+w84FbQ6jo8trJC9tyaQxMaNvXVnXwDxn4I330Ew=="
+    },
+    {
+      "name": "dshmarket",
+      "version": "1.70.2",
+      "resolved": "https://registry.npmjs.org/dshmarket/-/dshmarket-1.70.2.tgz",
+      "integrity": "sha512-xXaax8k5l20x8pMcQUzlLhY/H+H8fIse/iiMr+F31/9nH8ocGTsOnHeWel9ytUhkJoTbS5rYKigJuiA2YWNWeg=="
+    },
+    {
+      "name": "@liustack/modlens",
+      "version": "3.27.2",
+      "resolved": "https://registry.npmjs.org/@liustack/modlens/-/modlens-3.27.2.tgz",
+      "integrity": "sha512-Xz8BkrLgBFyTlDiRcxv+sf4V0W0xsHFPaCcXV3GpJOWBgqCb2CrgJwrA8Tfd1JoLqS0LInrILEMky/AM+0j9gA=="
+    },
+    {
+      "name": "@liustack/modsearch",
+      "version": "5.10.10",
+      "resolved": "https://registry.npmjs.org/@liustack/modsearch/-/modsearch-5.10.10.tgz",
+      "integrity": "sha512-puGQ5cZNq3WQBrdPSPUaNaUSP39O3p8fViWa+Fc/M2ZCUbSOFn2ULyao3seJK0P5rHNyVcYrpX+OvqN8bzHVEQ=="
+    },
+    {
+      "name": "dsh-files",
+      "version": "0.6.2",
+      "resolved": "file:vendor/dsh-files-0.6.2-119bff5.tgz",
+      "integrity": "sha512-eCNbEuhoU9HmLY+4n49PL14JmguDHVD+J/RB/VlYBKvVnuHjnPErYzJsQ1zpKsVjnsetT8MsOBymjrOeP0oIew=="
+    },
+    {
+      "name": "@changfenhuang/dsh-genui",
+      "version": "0.14.0",
+      "resolved": "https://registry.npmjs.org/@changfenhuang/dsh-genui/-/dsh-genui-0.14.0.tgz",
+      "integrity": "sha512-0eyRkofaLxTB2Y3nC0tHUHcnTqM7keUgAkTQpFEVR3S5o11tC8iN8u09MeTCr7LXyGfHWqNCObu5kPcn6VB89w=="
+    },
+    {
+      "name": "@wxg-prc-cpg/browser-skill-dsh-plugin",
+      "version": "0.3.3",
+      "resolved": "https://registry.npmjs.org/@wxg-prc-cpg/browser-skill-dsh-plugin/-/browser-skill-dsh-plugin-0.3.3.tgz",
+      "integrity": "sha512-YleWGGDN7re7arDD8PVgcIuTeMXHne4JKilLaKmvO9L1EzvOKNKVXZ3eHq7CXbgF7uooxRjnYviMH2QMRqZv+A=="
+    }
+  ],
+  "company_network_requests": 0
+}

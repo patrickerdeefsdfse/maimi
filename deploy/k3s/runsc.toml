@@ -1,0 +1,6 @@
+binary_name = "/data/maimi-production/runtime/gvisor-20261019.0/runsc"
+root = "/run/maimi-production/runsc"
+
+[runsc_config]
+  platform = "systrap"
+  systemd-cgroup = "true"

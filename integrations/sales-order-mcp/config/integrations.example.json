@@ -1,0 +1,191 @@
+{
+  "_note": "Oracle 分派的员工确认后按建单批次调用 BOOK_ORDER。审核成功后，原件按主体存入 100 示例销售档案，返回的电子附件 ID 用于 V6 客户销售订单收集规则。请从该专用规则导出参数与真实回执格式。",
+  "approval_assignments": {
+    "_note": "仅启用 ERP 负责人核验的销售订单终审分派。混合任务视图需填写能唯一识别本类销售单终审任务的 final_stage 和 final_value。仅含销售订单终审人的专用视图可删除这两个键，并设置 dedicated_final_view=true。视图须直接给出有权处理的个人工号、开放状态、任务标识及改派时会变化的版本或步骤实例。",
+    "enabled": false,
+    "view": "",
+    "open_value": "",
+    "dedicated_final_view": false,
+    "final_value": "",
+    "columns": {
+      "employee": "EMPLOYEE_CODE",
+      "order_number": "ORDER_NUMBER",
+      "business_entity": "BUSINESS_ENTITY",
+      "task_id": "TASK_ID",
+      "status": "TASK_STATUS",
+      "step": "STEP_ID",
+      "version": "ASSIGNMENT_VERSION",
+      "final_stage": "TASK_KIND"
+    }
+  },
+  "hongyi": {
+    "enabled": false,
+    "base_url": "https://service-1.example.invalid",
+    "allow_internal_http": false,
+    "folder_id": 0,
+    "form_id": "",
+    "ip_address": "",
+    "allowed_region_urls": [],
+    "token_env": "ORDER_ECM_TOKEN",
+    "login_name_env": "ORDER_ECM_LOGIN_NAME",
+    "integration_key_env": "ORDER_ECM_INTEGRATION_KEY",
+    "metadata_fields": {},
+    "collection": {
+      "submit_url": "",
+      "rule_name": "",
+      "token_env": "ORDER_EDRMS_COLLECTION_TOKEN",
+      "content_fields": {},
+      "accepted_response": {}
+    },
+    "destination": {
+      "name": "销售订单专用归档",
+      "parent_name": "100 示例销售档案",
+      "parent_directory_reference": "9000001",
+      "reference_url": "https://archive.example.invalid/folders/9000001",
+      "parent_folder_id": 0,
+      "folders": [
+        {
+          "name": "01 示例部门甲",
+          "folder_id": 0,
+          "parent_folder_id": 0,
+          "business_entities": [
+            "示例制造乙有限公司"
+          ]
+        },
+        {
+          "name": "02 示例部门乙",
+          "folder_id": 0,
+          "parent_folder_id": 0,
+          "business_entities": [
+            "示例制造丙有限公司"
+          ]
+        },
+        {
+          "name": "03 示例部门丙",
+          "folder_id": 0,
+          "parent_folder_id": 0,
+          "business_entities": [
+            "示例制造甲有限公司"
+          ]
+        },
+        {
+          "name": "04 示例部门丁",
+          "folder_id": 0,
+          "parent_folder_id": 0,
+          "business_entities": []
+        },
+        {
+          "name": "05 示例部门戊",
+          "folder_id": 0,
+          "parent_folder_id": 0,
+          "business_entities": []
+        },
+        {
+          "name": "06 示例部门己",
+          "folder_id": 0,
+          "parent_folder_id": 0,
+          "business_entities": []
+        },
+        {
+          "name": "07 示例部门庚",
+          "folder_id": 0,
+          "parent_folder_id": 0,
+          "business_entities": []
+        },
+        {
+          "name": "08 示例部门辛",
+          "folder_id": 0,
+          "parent_folder_id": 0,
+          "business_entities": []
+        }
+      ]
+    }
+  },
+  "approval": {
+    "enabled": false,
+    "url": "",
+    "method": "GET",
+    "header_env": {
+      "Authorization": "ORDER_COMPANY_AUTH"
+    },
+    "request_fields": {
+      "order_number": "orderNumber",
+      "business_entity": "businessEntity"
+    },
+    "success_path": "ok",
+    "success_value": true,
+    "response_fields": {
+      "order_number": "data.orderNumber",
+      "business_entity": "data.businessEntity",
+      "status": "data.status"
+    },
+    "approved_values": [
+      "APPROVED"
+    ]
+  },
+  "archive_upload": {
+    "enabled": false,
+    "url": "",
+    "method": "POST",
+    "header_env": {
+      "Authorization": "ORDER_ECM_AUTH"
+    },
+    "file_field": "file",
+    "idempotency_header": "Idempotency-Key",
+    "static_fields": {},
+    "request_fields": {
+      "order_number": "orderNumber",
+      "customer_po": "customerPo",
+      "account_number": "accountNumber",
+      "business_entity": "businessEntity",
+      "sha256": "sha256",
+      "order_json": "orderJson"
+    },
+    "success_path": "ok",
+    "success_value": true,
+    "response_fields": {
+      "document_id": "data.documentId",
+      "preview_url": "data.previewUrl"
+    }
+  },
+  "archive_query": {
+    "enabled": false,
+    "url": "",
+    "method": "GET",
+    "header_env": {
+      "Authorization": "ORDER_ECM_AUTH"
+    },
+    "request_fields": {
+      "idempotency_key": "idempotencyKey",
+      "order_number": "orderNumber",
+      "document_id": "documentId"
+    },
+    "success_path": "ok",
+    "success_value": true,
+    "response_fields": {
+      "document_id": "data.documentId",
+      "status": "data.status",
+      "preview_url": "data.previewUrl"
+    }
+  },
+  "price_list": {
+    "enabled": false,
+    "url": "",
+    "method": "GET",
+    "header_env": {
+      "Authorization": "ORDER_COMPANY_AUTH"
+    },
+    "request_fields": {
+      "account_number": "accountNumber",
+      "item_code": "itemCode",
+      "business_entity": "businessEntity"
+    },
+    "success_path": "ok",
+    "success_value": true,
+    "response_fields": {
+      "price": "data.price",
+      "price_basis": "data.priceBasis",
+      "price_list_name": "data.priceListName"
+    }
+  }
+}

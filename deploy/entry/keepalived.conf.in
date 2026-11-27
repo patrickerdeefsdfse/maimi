@@ -1,0 +1,41 @@
+# Candidate only. NIC, prefix, VRID and both AP addresses require host evidence.
+global_defs {
+    router_id MAIMI_{{ROLE}}_DIRECT
+    enable_script_security
+    script_user root
+}
+
+vrrp_script maimi_https_ready {
+    script "/usr/bin/python3 -I -B /etc/maimi-web-entry-direct-20261103/check_entry.py"
+    interval 3
+    timeout 3
+    fall 2
+    rise 2
+    weight 0
+    init_fail
+}
+
+vrrp_instance MAIMI_WEB_VIP {
+    state BACKUP
+    interface {{INTERFACE}}
+    version 3
+    virtual_router_id {{VRID}}
+    priority {{PRIORITY}}
+    advert_int 1
+    nopreempt
+    unicast_src_ip {{NODE_IP}}
+    track_src_ip
+    check_unicast_src
+    unicast_fault_no_peer
+    unicast_peer {
+        {{PEER_IP}}
+    }
+    virtual_ipaddress {
+        {{APPLICATION_VIP}}/{{VIP_PREFIX}} dev {{INTERFACE}}
+    }
+    track_script {
+        maimi_https_ready
+    }
+    garp_master_delay 1
+    garp_master_repeat 3
+}

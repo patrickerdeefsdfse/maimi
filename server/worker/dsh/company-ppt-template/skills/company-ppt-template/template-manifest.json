@@ -1,0 +1,13 @@
+{
+  "schema": "company-ppt-template-source-v1",
+  "sha256": "0e742339972cbfb37f9e5c10c8f907f0f6fd95cfcf5409118a076c7258869e99",
+  "bytes": 22275510,
+  "slides": 24,
+  "size_emu": {
+    "cx": "12192000",
+    "cy": "6858000"
+  },
+  "macro": false,
+  "embedded_objects": 0,
+  "asset": "assets/company-template-v5.3.pptx"
+}

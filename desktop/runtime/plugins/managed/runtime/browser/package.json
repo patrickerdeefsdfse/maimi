@@ -1,0 +1,21 @@
+{
+  "name": "maimi-browser-skill",
+  "version": "0.3.3",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "engines": {
+    "dsh": "0.2.2-rc.5"
+  },
+  "maimi": {
+    "upstreamPackage": "@wxg-prc-cpg/browser-skill-dsh-plugin",
+    "upstreamVersion": "0.3.3",
+    "enterpriseDerivative": true
+  }
+}

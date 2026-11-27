@@ -1,0 +1,82 @@
+# Candidate only: two TLS entries, two node-local application adapters.
+# Port 18080 must be allowed ONLY between A1 and A2 in host/platform policy.
+global
+    maxconn 2048
+    tune.bufsize 65536
+    hard-stop-after 60s
+    ssl-default-bind-options ssl-min-ver TLSv1.2
+
+defaults
+    mode http
+    retries 0
+    timeout connect 2s
+    timeout check 2s
+    timeout client 300s
+    timeout server 300s
+    timeout http-request 30s
+    timeout http-keep-alive 30s
+    timeout tunnel 1h
+    timeout client-fin 30s
+    timeout server-fin 30s
+
+frontend maimi_plain_http
+    bind 0.0.0.0:80
+    # A literal IP may redirect to the canonical HTTPS name, never arbitrary Host.
+    http-request redirect prefix https://{{HOSTNAME}} code 308
+
+frontend maimi_public_https
+    # Both APs listen before acquiring the VIP; no ip_nonlocal_bind is needed.
+    bind 0.0.0.0:443 ssl crt "${CREDENTIALS_DIRECTORY}/entry.pem" alpn h2,http/1.1
+    acl canonical_host hdr(host) -i {{HOSTNAME}} {{HOSTNAME}}:443
+    http-request deny deny_status 421 unless canonical_host
+    http-request del-header Forwarded
+    http-request del-header X-Forwarded-For
+    http-request del-header X-Real-IP
+    http-request set-header Host {{HOSTNAME}}
+    http-request set-header X-Forwarded-Host {{HOSTNAME}}
+    http-request set-header X-Forwarded-Proto https
+    http-request set-header X-Forwarded-Port 443
+    http-request set-header X-Forwarded-For %[src]
+    http-request set-header X-Real-IP %[src]
+    http-response set-header X-Maimi-Entry {{ROLE}}
+    default_backend maimi_balanced_gateways
+
+backend maimi_balanced_gateways
+    balance roundrobin
+    option httpchk
+    http-check connect
+    http-check send meth GET uri /ready ver HTTP/1.1 hdr Host {{HOSTNAME}}
+    http-check expect status 200
+    # Try the peer only when the connection failed before sending a request.
+    retries 1
+    retry-on conn-failure
+    option redispatch 1
+    http-request set-header X-Real-IP {{NODE_IP}}
+    http-response set-header X-Maimi-Backend %[srv_name]
+    server A1 {{A1_GATEWAY_BACKEND}} source {{NODE_IP}} check inter 3s fall 2 rise 2
+    server A2 {{A2_GATEWAY_BACKEND}} source {{NODE_IP}} check inter 3s fall 2 rise 2
+
+frontend maimi_trusted_local_adapter
+    bind {{NODE_IP}}:18080
+    # This listener accepts no PROXY protocol and never trusts an external peer.
+    tcp-request connection reject unless { src {{A1_IP}} {{A2_IP}} }
+    acl canonical_host hdr(host) -i {{HOSTNAME}} {{HOSTNAME}}:443
+    http-request deny deny_status 421 unless canonical_host
+    http-request del-header Forwarded
+    # X-Forwarded-For is set by the TLS entry above, trusted only from two APs.
+    http-request set-header X-Forwarded-For %[src] unless { req.hdr(X-Forwarded-For) -m found }
+    http-request del-header X-Real-IP
+    http-request set-header Host {{HOSTNAME}}
+    http-request set-header X-Forwarded-Host {{HOSTNAME}}
+    http-request set-header X-Forwarded-Proto https
+    http-request set-header X-Forwarded-Port 443
+    http-response set-header X-Maimi-Backend {{ROLE}}
+    default_backend maimi_local_gateway
+
+backend maimi_local_gateway
+    option httpchk
+    http-check connect
+    http-check send meth GET uri /ready ver HTTP/1.1 hdr Host {{HOSTNAME}}
+    http-check expect status 200
+    # Must be the verified gateway-entry Service with internalTrafficPolicy Local.
+    server local-gateway {{GATEWAY_CLUSTER_IP}}:8080 check inter 3s fall 2 rise 2

@@ -1,0 +1,768 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "collector_instance",
+    "sample_id",
+    "sequence",
+    "collected_at",
+    "monotonic_ns",
+    "stale_after_seconds",
+    "status",
+    "host",
+    "containers",
+    "owner_storage",
+    "coverage"
+  ],
+  "properties": {
+    "schema": {
+      "const": "maimi-observability-host-sample-v1"
+    },
+    "collector_instance": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$"
+    },
+    "sample_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9223372036854775807
+    },
+    "collected_at": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 9223372036854775807
+    },
+    "monotonic_ns": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9223372036854775807
+    },
+    "stale_after_seconds": {
+      "const": 120
+    },
+    "status": {
+      "enum": [
+        "available",
+        "partial"
+      ]
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cpu_count",
+        "cpu_ticks",
+        "cpu_busy_percent",
+        "memory_total_bytes",
+        "memory_available_bytes",
+        "disks"
+      ],
+      "properties": {
+        "cpu_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "cpu_ticks": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "total",
+                "idle"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9223372036854775807
+                },
+                "idle": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9223372036854775807
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cpu_busy_percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "memory_total_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "memory_available_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "disks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "root",
+            "data"
+          ],
+          "properties": {
+            "root": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "total_bytes",
+                "available_bytes"
+              ],
+              "properties": {
+                "total_bytes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 9223372036854775807
+                },
+                "available_bytes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 9223372036854775807
+                }
+              }
+            },
+            "data": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "total_bytes",
+                "available_bytes"
+              ],
+              "properties": {
+                "total_bytes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 9223372036854775807
+                },
+                "available_bytes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 9223372036854775807
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "containers": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "container_id",
+          "service_class",
+          "owner_ref",
+          "managed_namespace",
+          "state",
+          "started_at",
+          "restart_count",
+          "health",
+          "oom_killed",
+          "sampled_at",
+          "identity",
+          "sample_status",
+          "metrics"
+        ],
+        "properties": {
+          "container_id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "service_class": {
+            "enum": [
+              "cloud-worker",
+              "downloads",
+              "gateway",
+              "office-service",
+              "personal-cloud-manager",
+              "postgres",
+              "redis",
+              "retention-worker",
+              "service-broker"
+            ]
+          },
+          "owner_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{32}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "managed_namespace": {
+            "enum": [
+              "megmeet-personal-server-v1",
+              null
+            ]
+          },
+          "state": {
+            "enum": [
+              "created",
+              "running",
+              "paused",
+              "restarting",
+              "removing",
+              "exited",
+              "dead",
+              "unknown"
+            ]
+          },
+          "started_at": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"
+          },
+          "restart_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "health": {
+            "enum": [
+              "healthy",
+              "unhealthy",
+              "starting",
+              null
+            ]
+          },
+          "oom_killed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "sampled_at": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "pid_start_ticks",
+                  "cgroup_inode",
+                  "cgroup_device",
+                  "netns_inode"
+                ],
+                "properties": {
+                  "pid_start_ticks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "cgroup_inode": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "cgroup_device": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "netns_inode": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sample_status": {
+            "enum": [
+              "available",
+              "partial",
+              "unavailable",
+              "not_running",
+              "identity_changed"
+            ]
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "cpu",
+              "memory",
+              "pids",
+              "io",
+              "network"
+            ],
+            "properties": {
+              "cpu": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "usage_usec",
+                  "quota_cores",
+                  "cores"
+                ],
+                "properties": {
+                  "usage_usec": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "quota_cores": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "cores": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  }
+                }
+              },
+              "memory": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "current_bytes",
+                  "max_bytes",
+                  "limit_unlimited",
+                  "events"
+                ],
+                "properties": {
+                  "current_bytes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "max_bytes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "limit_unlimited": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "events": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "low": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9223372036854775807
+                          },
+                          "high": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9223372036854775807
+                          },
+                          "max": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9223372036854775807
+                          },
+                          "oom": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9223372036854775807
+                          },
+                          "oom_kill": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9223372036854775807
+                          },
+                          "oom_group_kill": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9223372036854775807
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "pids": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "current",
+                  "max",
+                  "limit_unlimited",
+                  "events"
+                ],
+                "properties": {
+                  "current": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "max": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "limit_unlimited": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "events": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "max": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9223372036854775807
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "io": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "read_bytes",
+                  "write_bytes",
+                  "read_operations",
+                  "write_operations",
+                  "read_bytes_per_second",
+                  "write_bytes_per_second"
+                ],
+                "properties": {
+                  "read_bytes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "write_bytes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "read_operations": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "write_operations": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "read_bytes_per_second": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "write_bytes_per_second": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  }
+                }
+              },
+              "network": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "rx_bytes",
+                  "tx_bytes",
+                  "rx_packets",
+                  "tx_packets",
+                  "rx_bytes_per_second",
+                  "tx_bytes_per_second",
+                  "shared_namespace"
+                ],
+                "properties": {
+                  "rx_bytes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "tx_bytes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "rx_packets": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "tx_packets": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "rx_bytes_per_second": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "tx_bytes_per_second": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
+                  },
+                  "shared_namespace": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "service_class": {
+                  "const": "cloud-worker"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "owner_ref": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{32}$"
+                },
+                "managed_namespace": {
+                  "const": "megmeet-personal-server-v1"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "owner_ref": {
+                  "type": "null"
+                },
+                "managed_namespace": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "owner_storage": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "owner_ref",
+          "managed_namespace",
+          "logical_bytes",
+          "sampled_at",
+          "complete",
+          "stale",
+          "stale_after_seconds",
+          "estimate"
+        ],
+        "properties": {
+          "owner_ref": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "managed_namespace": {
+            "const": "megmeet-personal-server-v1"
+          },
+          "logical_bytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "sampled_at": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "stale_after_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "estimate": {
+            "const": true
+          }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "docker",
+        "storage"
+      ],
+      "properties": {
+        "docker": {
+          "enum": [
+            "unknown",
+            "available",
+            "unavailable"
+          ]
+        },
+        "storage": {
+          "enum": [
+            "not_enabled",
+            "metadata_estimates",
+            "unavailable"
+          ]
+        }
+      }
+    }
+  }
+}

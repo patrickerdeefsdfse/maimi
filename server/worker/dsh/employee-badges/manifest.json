@@ -1,0 +1,7 @@
+{
+  "plugin_key": "employee-badges",
+  "version": "1.0.0",
+  "name": "工卡制作",
+  "description": "使用员工名单和公司制式版面生成可打印的 Word 工卡。",
+  "kind": "skill"
+}

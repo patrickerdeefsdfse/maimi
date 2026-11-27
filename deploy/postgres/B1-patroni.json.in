@@ -1,0 +1,157 @@
+{
+  "format": "maimi-patroni-site-template/v1",
+  "required_private_fields": [
+    "restapi.authentication.password",
+    "etcd3.password",
+    "postgresql.authentication.superuser.password",
+    "postgresql.authentication.replication.password",
+    "postgresql.authentication.rewind.password"
+  ],
+  "configuration": {
+    "name": "b1",
+    "scope": "maimi-production",
+    "namespace": "/maimi-production/postgresql/",
+    "log": {
+      "level": "INFO",
+      "traceback_level": "DEBUG"
+    },
+    "restapi": {
+      "listen": "{{B1_IP}}:8008",
+      "connect_address": "{{B1_IP}}:8008",
+      "certfile": "/etc/maimi-pg-r93/pki/rest.crt",
+      "keyfile": "/etc/maimi-pg-r93/pki/rest.key",
+      "cafile": "/etc/maimi-pg-r93/pki/rest-ca.crt",
+      "verify_client": "required",
+      "authentication": {
+        "username": "maimi-ha-admin"
+      }
+    },
+    "ctl": {
+      "cacert": "/etc/maimi-pg-r93/pki/rest-ca.crt",
+      "certfile": "/etc/maimi-pg-r93/pki/rest.crt",
+      "keyfile": "/etc/maimi-pg-r93/pki/rest.key"
+    },
+    "etcd3": {
+      "hosts": [
+        "127.0.0.1:12379",
+        "{{A1_IP}}:12379",
+        "{{B2_IP}}:12379"
+      ],
+      "protocol": "https",
+      "use_proxies": true,
+      "username": "maimi-patroni",
+      "cacert": "/etc/maimi-pg-r93/pki/dcs-ca.crt",
+      "cert": "/etc/maimi-pg-r93/pki/dcs-client.crt",
+      "key": "/etc/maimi-pg-r93/pki/dcs-client.key"
+    },
+    "watchdog": {
+      "mode": "required",
+      "device": "/dev/watchdog0",
+      "safety_margin": -1
+    },
+    "bootstrap": {
+      "dcs": {
+        "ttl": 60,
+        "loop_wait": 10,
+        "retry_timeout": 10,
+        "check_timeline": true,
+        "maximum_lag_on_failover": 0,
+        "synchronous_mode": true,
+        "synchronous_mode_strict": false,
+        "synchronous_node_count": 1,
+        "postgresql": {
+          "use_pg_rewind": true,
+          "use_slots": true,
+          "parameters": {
+            "wal_level": "replica",
+            "max_wal_senders": 10,
+            "max_replication_slots": 10,
+            "wal_log_hints": "on",
+            "max_connections": 200,
+            "shared_buffers": "4GB",
+            "effective_cache_size": "10GB",
+            "work_mem": "8MB",
+            "maintenance_work_mem": "512MB",
+            "max_wal_size": "4GB",
+            "min_wal_size": "1GB",
+            "max_slot_wal_keep_size": "8GB",
+            "wal_keep_size": "512MB",
+            "password_encryption": "scram-sha-256",
+            "logging_collector": "off",
+            "log_statement": "none",
+            "log_min_error_statement": "panic",
+            "log_parameter_max_length": 0,
+            "log_parameter_max_length_on_error": 0,
+            "ssl": "on",
+            "ssl_min_protocol_version": "TLSv1.2",
+            "ssl_cert_file": "/etc/maimi-pg-r93/pki/postgres.crt",
+            "ssl_key_file": "/etc/maimi-pg-r93/pki/postgres.key"
+          }
+        }
+      },
+      "initdb": [
+        {
+          "encoding": "UTF8"
+        },
+        {
+          "locale": "C.UTF-8"
+        },
+        "data-checksums"
+      ]
+    },
+    "postgresql": {
+      "listen": "127.0.0.1,{{B1_IP}}:5432",
+      "connect_address": "{{B1_IP}}:5432",
+      "data_dir": "/data/maimi-pg-r93/data",
+      "bin_dir": "/usr/lib/postgresql/16/bin",
+      "pgpass": "/data/maimi-pg-r93/run/pgpass",
+      "use_unix_socket": true,
+      "parameters": {
+        "unix_socket_directories": "/data/maimi-pg-r93/run",
+        "unix_socket_permissions": "0700"
+      },
+      "authentication": {
+        "superuser": {
+          "username": "postgres",
+          "sslmode": "verify-full",
+          "sslrootcert": "/etc/maimi-pg-r93/pki/postgres-ca.crt"
+        },
+        "replication": {
+          "username": "maimi_replicator",
+          "sslmode": "verify-full",
+          "sslrootcert": "/etc/maimi-pg-r93/pki/postgres-ca.crt"
+        },
+        "rewind": {
+          "username": "maimi_rewind",
+          "sslmode": "verify-full",
+          "sslrootcert": "/etc/maimi-pg-r93/pki/postgres-ca.crt"
+        }
+      },
+      "pg_hba": [
+        "local all postgres peer",
+        "local all all reject",
+        "hostnossl all all 0.0.0.0/0 reject",
+        "hostnossl replication all 0.0.0.0/0 reject",
+        "hostssl all postgres 127.0.0.1/32 scram-sha-256",
+        "hostssl replication maimi_replicator 127.0.0.1/32 scram-sha-256",
+        "hostssl replication maimi_replicator {{B1_IP}}/32 scram-sha-256",
+        "hostssl replication maimi_replicator {{B2_IP}}/32 scram-sha-256",
+        "hostssl postgres maimi_replicator 127.0.0.1/32 scram-sha-256",
+        "hostssl postgres maimi_replicator {{B1_IP}}/32 scram-sha-256",
+        "hostssl postgres maimi_replicator {{B2_IP}}/32 scram-sha-256",
+        "hostssl postgres maimi_rewind {{B1_IP}}/32 scram-sha-256",
+        "hostssl postgres maimi_rewind {{B2_IP}}/32 scram-sha-256",
+        "hostssl all +maimi_app_login {{A1_IP}}/32 scram-sha-256",
+        "hostssl all +maimi_app_login {{A2_IP}}/32 scram-sha-256",
+        "host all all 0.0.0.0/0 reject",
+        "host replication all 0.0.0.0/0 reject"
+      ]
+    },
+    "tags": {
+      "nofailover": false,
+      "noloadbalance": false,
+      "clonefrom": false,
+      "nosync": false
+    }
+  }
+}

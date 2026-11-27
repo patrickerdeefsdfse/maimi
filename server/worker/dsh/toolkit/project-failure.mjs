@@ -1,0 +1,40 @@
+// Fixed gateway codes only. Exception bodies and business records never cross this boundary.
+const PROJECT_FAILURES = new Set([
+  'project_arguments_invalid',
+  'project_artifact_quota',
+  'project_attachment_expired',
+  'project_attachment_integrity_failed',
+  'project_attachment_invalid',
+  'project_attachment_kind_invalid',
+  'project_attachment_length_mismatch',
+  'project_attachment_not_found',
+  'project_attachment_not_in_session',
+  'project_attachment_too_large',
+  'project_capacity_busy',
+  'project_file_quota',
+  'project_file_transfer_busy',
+  'project_human_authorization_required',
+  'project_job_not_found',
+  'project_not_authorized',
+  'project_not_selected',
+  'project_order_action_invalid',
+  'project_order_mcp_not_configured',
+  'project_order_pilot_unauthorized',
+  'project_order_split_required',
+  'project_order_user_attachment_required',
+  'project_reference_invalid',
+  'project_result_quota',
+  'project_service_unavailable',
+  'project_state_quota',
+  'project_task_cancelled',
+  'project_task_deadline',
+  'project_task_interrupted',
+  'project_worker_authorization_lost',
+  'project_worker_busy',
+  'project_worker_response_timeout',
+  'project_worker_unavailable',
+]);
+
+export function gatewayProjectFailureCode(value) {
+  return typeof value === 'string' && PROJECT_FAILURES.has(value) ? value : null;
+}

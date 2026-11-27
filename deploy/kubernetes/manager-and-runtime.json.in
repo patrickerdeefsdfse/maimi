@@ -1,0 +1,2802 @@
+{
+  "kind": "List",
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production",
+          "pod-security.kubernetes.io/enforce": "privileged",
+          "pod-security.kubernetes.io/enforce-version": "v1.34"
+        },
+        "name": "maimi-production-runtime"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "automountServiceAccountToken": false,
+      "kind": "ServiceAccount",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-termination-observer",
+        "namespace": "maimi-production-runtime"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "data": {
+        "observer.py": "\"\"\"Authenticated, read-only node observations used AFTER Kubernetes deletion.\n\nAPI absence alone does not authorize a new writer. The selected node must report\ntwo complete CRI/cgroup/Pod-directory observations. Missing node access, unknown\ncreation outcomes and incomplete reads retain the PostgreSQL reservation.\nThis is not remote fencing and cannot make a failed sandbox node highly available.\n\"\"\"\nfrom __future__ import annotations\n\nimport asyncio\nfrom dataclasses import asdict, is_dataclass\nimport hashlib\nimport hmac\nimport ipaddress\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\nimport json\nimport os\nfrom pathlib import Path\nimport re\nimport ssl\nimport socketserver\nimport stat\nimport subprocess\nimport sys\nimport time\nimport urllib.parse\nimport urllib.request\nimport uuid\n\nSCHEMA = 'maimi-node-termination/v1'\nMAX_BODY = 16384\nMAX_AGE = 30\nUUID = re.compile(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}')\n\n\nclass ObservationError(RuntimeError):\n    pass\n\n\ndef need(condition, code):\n    if not condition:\n        raise ObservationError(code)\n\n\ndef canonical(value):\n    return json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()\n\n\ndef identity(handle):\n    handle = asdict(handle) if is_dataclass(handle) else dict(handle)\n    result = {k: handle[k] for k in ('namespace','instance','owner','generation','name','pod_uid','node_name')}\n    need(all(isinstance(result[k], str) and re.fullmatch(r'[a-z0-9][a-z0-9.-]{0,252}',result[k])\n             for k in ('namespace','instance','name','node_name')), 'IDENTITY_NAME_INVALID')\n    need(isinstance(result['owner'],str) and re.fullmatch('[a-f0-9]{32}',result['owner']), 'OWNER_INVALID')\n    need(type(result['generation']) is int and 1 <= result['generation'] <= 2147483647, 'GENERATION_INVALID')\n    need(isinstance(result['pod_uid'],str) and UUID.fullmatch(result['pod_uid']), 'POD_UID_INVALID')\n    result['handle_sha256'] = hashlib.sha256(canonical(handle)).hexdigest()\n    return result\n\n\ndef read_key(path):\n    with open(path, 'rb') as stream:\n        meta = os.fstat(stream.fileno())\n        need(stat.S_ISREG(meta.st_mode) and meta.st_size <= 256, 'KEY_FILE_INVALID')\n        if os.name == 'posix':\n            need(meta.st_uid in (0,os.geteuid()) and not meta.st_mode & 0o027, 'KEY_PERMISSIONS_INVALID')\n        key = stream.read(257).strip()\n    need(32 <= len(key) <= 128 and all(33 <= x <= 126 for x in key), 'KEY_FORMAT_INVALID')\n    return key\n\n\ndef signed(body, key):\n    return {'body': body, 'signature': hmac.new(key, canonical(body), hashlib.sha256).hexdigest()}\n\n\ndef authenticate(envelope, key):\n    need(isinstance(envelope,dict) and set(envelope)=={'body','signature'}, 'ENVELOPE_INVALID')\n    signature = envelope['signature']\n    need(isinstance(signature,str) and re.fullmatch('[a-f0-9]{64}',signature), 'SIGNATURE_INVALID')\n    need(hmac.compare_digest(signature,signed(envelope['body'],key)['signature']), 'SIGNATURE_INVALID')\n    return envelope['body']\n\n\nclass NoRedirect(urllib.request.HTTPRedirectHandler):\n    def redirect_request(self,*args,**kwargs):\n        raise ObservationError('OBSERVER_REDIRECT_REFUSED')\n\n\nclass ObserverClient:\n    def __init__(self, url, key_loader, node_name, *, transport=None):\n        parsed = urllib.parse.urlsplit(url)\n        need(parsed.scheme in ('http','https') and parsed.hostname and parsed.path in ('','/')\n             and not parsed.username and not parsed.password and not parsed.query and not parsed.fragment,\n             'OBSERVER_URL_INVALID')\n        need(isinstance(node_name,str) and re.fullmatch('[a-z0-9][a-z0-9.-]{0,252}',node_name), 'OBSERVER_NODE_INVALID')\n        self.url=url.rstrip('/')+'/v1/termination'\n        self.key_loader=key_loader\n        self.node_name=node_name\n        self.pending={}\n        self.transport=transport\n        self.opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),NoRedirect(),\n            urllib.request.HTTPSHandler(context=ssl.create_default_context()))\n\n    @classmethod\n    def from_env(cls):\n        prefix='PERSONAL_CLOUD_K8S_OBSERVER_'\n        path=os.environ[prefix+'KEY_FILE']\n        return cls(os.environ[prefix+'URL'],lambda:read_key(path),\n                   os.environ.get(prefix+'NODE_NAME',os.environ.get('PERSONAL_CLOUD_K8S_WORKER_NODE','')))\n\n    async def __call__(self,handle):\n        target=identity(handle)\n        need(target['node_name']==self.node_name,'OBSERVER_NODE_MISMATCH')\n        self.pending={n:v for n,v in self.pending.items() if time.monotonic()-v[1] <= MAX_AGE}\n        need(len(self.pending)<4096,'OBSERVER_PENDING_LIMIT')\n        nonce=uuid.uuid4().hex\n        body={'schema':SCHEMA,'nonce':nonce,'requested_at':int(time.time()),'identity':target}\n        envelope=signed(body,self.key_loader())\n        self.pending[nonce]=(target,time.monotonic())\n        try:\n            if self.transport is not None:\n                result=await self.transport(envelope)\n            else:\n                result=await asyncio.to_thread(self._request,envelope)\n            self._verified(handle,result)\n            return result\n        except BaseException:\n            self.pending.pop(nonce,None)\n            raise\n\n    def _request(self,envelope):\n        request=urllib.request.Request(self.url,canonical(envelope),{'Content-Type':'application/json'},method='POST')\n        try:\n            with self.opener.open(request,timeout=15) as response:\n                need(response.status==200,'OBSERVER_HTTP_FAILED')\n                raw=response.read(MAX_BODY+1)\n            need(len(raw)<=MAX_BODY,'OBSERVER_RESPONSE_LIMIT')\n            return json.loads(raw)\n        except ObservationError:\n            raise\n        except Exception:\n            raise ObservationError('OBSERVER_UNAVAILABLE') from None\n\n    def _verified(self,handle,proof):\n        target=identity(handle)\n        body=authenticate(proof,self.key_loader())\n        need(isinstance(body,dict) and body.get('schema')==SCHEMA, 'PROOF_SCHEMA_INVALID')\n        nonce=body.get('nonce')\n        need(isinstance(nonce,str) and nonce in self.pending,'PROOF_NONCE_UNKNOWN')\n        expected,started=self.pending[nonce]\n        need(time.monotonic()-started <= MAX_AGE,'PROOF_EXPIRED')\n        need(body.get('identity')==target==expected and target['node_name']==self.node_name,'PROOF_IDENTITY_MISMATCH')\n        need(type(body.get('observed_at')) is int and abs(time.time()-body['observed_at']) <= MAX_AGE,'PROOF_TIME_INVALID')\n        need(isinstance(body.get('boot_id'),str) and UUID.fullmatch(body['boot_id']),'PROOF_BOOT_INVALID')\n        need(isinstance(body.get('observation_id'),str) and UUID.fullmatch(body['observation_id']),'PROOF_AUDIT_INVALID')\n        need(body.get('execution_gone') is True and body.get('samples')==2 and body.get('same_boot') is True\n             and body.get('cri_absent') is True and body.get('pod_directory_absent') is True\n             and body.get('cgroup_unpopulated') is True, 'EXECUTION_NOT_CONFIRMED_GONE')\n        return body\n\n    async def verify(self,record,proof):\n        from worker_reservations import VerifiedTermination\n        handle=record['handle'] if isinstance(record,dict) and 'handle' in record else record\n        body=self._verified(handle,proof)\n        return VerifiedTermination(body['identity']['owner'],body['identity']['generation'],\n            body['identity']['handle_sha256'],body['observation_id'],hashlib.sha256(canonical(proof)).hexdigest())\n\n\nclass LocalNodeReader:\n    \"\"\"Only fixed CRI list operations, filesystem metadata and cgroup counters.\"\"\"\n    def __init__(self, *, cri_binary, cri_socket, kubelet_root, cgroup_root='/sys/fs/cgroup',\n                 boot_id_path='/proc/sys/kernel/random/boot_id'):\n        need(Path(cri_binary).is_absolute() and Path(kubelet_root).is_absolute(),'NODE_PATH_INVALID')\n        need(re.fullmatch(r'unix:///[a-zA-Z0-9/_.-]+',cri_socket),'CRI_SOCKET_INVALID')\n        self.command=[cri_binary,'crictl','--config=/dev/null','--runtime-endpoint',cri_socket,'--timeout','5s']\n        self.kubelet_root=Path(kubelet_root)\n        self.cgroup_root=Path(cgroup_root)\n        self.boot_id_path=Path(boot_id_path)\n\n    def _cri(self,kind):\n        args=['pods','--output','json'] if kind=='items' else ['ps','--all','--output','json']\n        try:\n            p=subprocess.run(self.command+args,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,\n                stderr=subprocess.DEVNULL,timeout=7,env={'PATH':'/usr/sbin:/usr/bin:/sbin:/bin','LANG':'C.UTF-8'},close_fds=True)\n            need(p.returncode==0 and len(p.stdout)<=4*1024*1024,'CRI_QUERY_FAILED')\n            value=json.loads(p.stdout)\n            need(isinstance(value,dict) and kind in value and isinstance(value[kind],list),'CRI_SCHEMA_INVALID')\n            need(len(value[kind])<=10000,'CRI_LIST_LIMIT')\n            return value[kind]\n        except ObservationError:\n            raise\n        except Exception:\n            raise ObservationError('CRI_QUERY_FAILED') from None\n\n    def _cgroups_clear(self,pod_uid):\n        # Unified hierarchy required. Inspect every matching Pod cgroup rather\n        # than guessing one QoS path; an unreadable traversal fails closed.\n        need((self.cgroup_root/'cgroup.controllers').is_file(),'CGROUP_V2_REQUIRED')\n        needles=('pod'+pod_uid,'pod'+pod_uid.replace('-','_'))\n        count=0\n        def failed(error):\n            raise ObservationError('CGROUP_WALK_FAILED')\n        for root,dirs,files in os.walk(self.cgroup_root,followlinks=False,onerror=failed):\n            count+=1\n            need(count<=10000,'CGROUP_WALK_LIMIT')\n            for name in dirs:\n                need(not (Path(root)/name).is_symlink(),'CGROUP_SYMLINK_REFUSED')\n            parts=Path(root).relative_to(self.cgroup_root).parts\n            if not any(any(n==p or p.endswith('-'+n+'.slice') or p==n+'.slice' for n in needles) for p in parts):\n                continue\n            try:\n                events=dict(line.split() for line in (Path(root)/'cgroup.events').read_text().splitlines())\n            except FileNotFoundError:\n                # Removal during traversal is ambiguous; a later observation\n                # can establish absence without interpreting this race.\n                raise ObservationError('CGROUP_CHANGED_DURING_READ') from None\n            need(events.get('populated')=='0','POD_CGROUP_POPULATED')\n        return True\n\n    def sample(self,target):\n        boot=self.boot_id_path.read_text().strip()\n        need(UUID.fullmatch(boot),'NODE_BOOT_ID_INVALID')\n        for kind in ('items','containers'):\n            for row in self._cri(kind):\n                need(isinstance(row,dict) and isinstance(row.get('labels'),dict),'CRI_ITEM_INVALID')\n                labels=row['labels']\n                if labels.get('io.kubernetes.pod.uid')==target['pod_uid']:\n                    raise ObservationError('POD_RUNTIME_REMAINS')\n        pods=self.kubelet_root/'pods'\n        need(pods.is_dir() and not pods.is_symlink(),'KUBELET_PODS_UNAVAILABLE')\n        try:\n            (pods/target['pod_uid']).lstat()\n        except FileNotFoundError:\n            pass\n        else:\n            raise ObservationError('POD_DIRECTORY_REMAINS')\n        self._cgroups_clear(target['pod_uid'])\n        return boot\n\n\nclass NodeObserver:\n    def __init__(self,key_loader,node_name,instance,reader,*,interval=1.0):\n        need(interval>=1,'OBSERVATION_INTERVAL_TOO_SHORT')\n        self.key_loader=key_loader;self.node_name=node_name;self.instance=instance\n        self.reader=reader;self.interval=interval\n\n    def observe(self,envelope):\n        request=authenticate(envelope,self.key_loader())\n        need(isinstance(request,dict) and request.get('schema')==SCHEMA,'REQUEST_SCHEMA_INVALID')\n        need(isinstance(request.get('nonce'),str) and re.fullmatch('[a-f0-9]{32}',request['nonce']),'REQUEST_NONCE_INVALID')\n        need(type(request.get('requested_at')) is int and abs(time.time()-request['requested_at'])<=MAX_AGE,'REQUEST_EXPIRED')\n        target=request.get('identity')\n        need(isinstance(target,dict) and target.get('node_name')==self.node_name and target.get('instance')==self.instance,'REQUEST_NODE_MISMATCH')\n        need(isinstance(target.get('pod_uid'),str) and UUID.fullmatch(target['pod_uid']),'POD_UID_INVALID')\n        first=self.reader.sample(target)\n        time.sleep(self.interval)\n        second=self.reader.sample(target)\n        need(first==second,'NODE_REBOOTED_DURING_OBSERVATION')\n        return signed({'schema':SCHEMA,'nonce':request['nonce'],'identity':target,\n            'observed_at':int(time.time()),'boot_id':second,'observation_id':str(uuid.uuid4()),\n            'execution_gone':True,'samples':2,'same_boot':True,'cri_absent':True,\n            'pod_directory_absent':True,'cgroup_unpopulated':True},self.key_loader())\n\n\nclass NumericThreadingHTTPServer(ThreadingHTTPServer):\n    \"\"\"Bind a numeric address without HTTPServer's implicit reverse-name lookup.\"\"\"\n    def server_bind(self):\n        socketserver.TCPServer.server_bind(self)\n        self.server_name=self.server_address[0]\n        self.server_port=self.server_address[1]\n        print('MAIMI_OBSERVER_BOUND',file=sys.stderr,flush=True)\n\n    def server_activate(self):\n        super().server_activate()\n        print('MAIMI_OBSERVER_LISTEN_READY',file=sys.stderr,flush=True)\n\n\ndef serve_from_env():\n    \"\"\"Explicit node service entry point; never invoked by importing a manager.\"\"\"\n    print('MAIMI_OBSERVER_START_ENTRY',file=sys.stderr,flush=True)\n    key_path=os.environ['MAIMI_OBSERVER_KEY_FILE']\n    observer=NodeObserver(lambda:read_key(key_path),os.environ['MAIMI_OBSERVER_NODE_NAME'],\n        os.environ['MAIMI_OBSERVER_INSTANCE'],LocalNodeReader(cri_binary=os.environ['MAIMI_OBSERVER_K3S_BINARY'],\n        cri_socket=os.environ['MAIMI_OBSERVER_CRI_SOCKET'],kubelet_root=os.environ['MAIMI_OBSERVER_KUBELET_ROOT']))\n    import threading\n    semaphore=threading.BoundedSemaphore(4)\n    class Handler(BaseHTTPRequestHandler):\n        def log_message(self,*args):\n            pass\n        def do_POST(self):\n            self.connection.settimeout(5)\n            acquired=False\n            try:\n                need(self.path=='/v1/termination' and not self.headers.get('Transfer-Encoding'),'REQUEST_REFUSED')\n                length=int(self.headers.get('Content-Length','0'))\n                need(0<length<=MAX_BODY,'REQUEST_SIZE_REFUSED')\n                acquired=semaphore.acquire(blocking=False)\n                need(acquired,'OBSERVER_BUSY')\n                response=observer.observe(json.loads(self.rfile.read(length)))\n                payload=canonical(response);code=200\n            except Exception:\n                payload=canonical({'status':'OBSERVATION_UNAVAILABLE'});code=503\n            finally:\n                if acquired:semaphore.release()\n            self.send_response(code);self.send_header('Content-Type','application/json')\n            self.send_header('Content-Length',str(len(payload)));self.end_headers();self.wfile.write(payload)\n    bind=os.environ.get('MAIMI_OBSERVER_BIND','127.0.0.1')\n    need(isinstance(ipaddress.ip_address(bind),ipaddress.IPv4Address),'OBSERVER_BIND_NUMERIC_IPV4_REQUIRED')\n    port=int(os.environ.get('MAIMI_OBSERVER_PORT','8096'))\n    NumericThreadingHTTPServer((bind,port),Handler).serve_forever()\n\n\nif __name__=='__main__':\n    serve_from_env()\n"
+      },
+      "immutable": true,
+      "kind": "ConfigMap",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-termination-source-r96",
+        "namespace": "maimi-production-runtime"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "termination-a1",
+        "namespace": "maimi-production-runtime"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "http",
+            "port": 8096,
+            "protocol": "TCP",
+            "targetPort": 8096
+          }
+        ],
+        "selector": {
+          "maimi.megmeet.com/component": "termination-observer",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/node-role": "a1"
+        },
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/component": "termination-observer",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "termination-a1",
+        "namespace": "maimi-production-runtime"
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 2,
+        "selector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "termination-observer",
+            "maimi.megmeet.com/environment": "production",
+            "maimi.megmeet.com/node-role": "a1"
+          }
+        },
+        "strategy": {
+          "type": "Recreate"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "maimi.megmeet.com/component": "termination-observer",
+              "maimi.megmeet.com/environment": "production",
+              "maimi.megmeet.com/node-role": "a1"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "python3",
+                  "-I",
+                  "-B",
+                  "-c",
+                  "import hashlib,sys;f=open('/node/bin/crictl','rb');assert hashlib.file_digest(f,'sha256').hexdigest()=='3c8f814620506fa560e9737638f2190bdb1e4cd5356aaeb90b20309d88b58873';f.close();sys.path.insert(0,'/observer');import observer as o;old=o.LocalNodeReader;\nclass HostReader(old):\n def __init__(self,**kw):super().__init__(**kw,cgroup_root='/node/cgroup',boot_id_path='/node/boot_id');self.command=[self.command[0]]+self.command[2:]\no.LocalNodeReader=HostReader;o.serve_from_env()"
+                ],
+                "env": [
+                  {
+                    "name": "MAIMI_OBSERVER_BIND",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_CRI_SOCKET",
+                    "value": "unix:///node/run/containerd.sock"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_INSTANCE",
+                    "value": "maimi-prod-chat-v1"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_K3S_BINARY",
+                    "value": "/node/bin/crictl"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_KEY_FILE",
+                    "value": "/run/observer/key"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_KUBELET_ROOT",
+                    "value": "/node/kubelet"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_NODE_NAME",
+                    "value": "maimi-a1"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_PORT",
+                    "value": "8096"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  }
+                ],
+                "image": "docker.io/library/maimi-r95-production-manager@sha256:66600c7ef6d70ab3c8036c1fd8155cd86886a3a4cdc7a7a972aaf5802acba59a",
+                "imagePullPolicy": "Never",
+                "name": "observer",
+                "ports": [
+                  {
+                    "containerPort": 8096,
+                    "name": "http"
+                  }
+                ],
+                "readinessProbe": {
+                  "periodSeconds": 5,
+                  "tcpSocket": {
+                    "port": 8096
+                  },
+                  "timeoutSeconds": 2
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "256Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "64Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "readOnlyRootFilesystem": true,
+                  "runAsGroup": 0,
+                  "runAsNonRoot": false,
+                  "runAsUser": 0,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/node/run/containerd.sock",
+                    "name": "cri",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/bin/crictl",
+                    "name": "tool",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/kubelet/pods",
+                    "name": "pods",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/cgroup",
+                    "name": "cgroup",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/boot_id",
+                    "name": "boot",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/observer",
+                    "name": "code",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/run/observer",
+                    "name": "key",
+                    "readOnly": true
+                  }
+                ]
+              }
+            ],
+            "enableServiceLinks": false,
+            "nodeSelector": {
+              "kubernetes.io/hostname": "maimi-a1"
+            },
+            "serviceAccountName": "maimi-termination-observer",
+            "terminationGracePeriodSeconds": 10,
+            "volumes": [
+              {
+                "hostPath": {
+                  "path": "/run/k3s/containerd/containerd.sock",
+                  "type": "Socket"
+                },
+                "name": "cri"
+              },
+              {
+                "hostPath": {
+                  "path": "/data/maimi-production/k3s/data/d5316b544b0ddcf993305e38b2aee41dc79e8c5d963a8336f5d8df84e99fb426/bin/k3s",
+                  "type": "File"
+                },
+                "name": "tool"
+              },
+              {
+                "hostPath": {
+                  "path": "/data/maimi-production/kubelet/pods",
+                  "type": "Directory"
+                },
+                "name": "pods"
+              },
+              {
+                "hostPath": {
+                  "path": "/sys/fs/cgroup",
+                  "type": "Directory"
+                },
+                "name": "cgroup"
+              },
+              {
+                "hostPath": {
+                  "path": "/proc/sys/kernel/random/boot_id",
+                  "type": "File"
+                },
+                "name": "boot"
+              },
+              {
+                "configMap": {
+                  "defaultMode": 292,
+                  "name": "maimi-termination-source-r96"
+                },
+                "name": "code"
+              },
+              {
+                "name": "key",
+                "secret": {
+                  "defaultMode": 256,
+                  "secretName": "termination-a1-key-r96"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "termination-a2",
+        "namespace": "maimi-production-runtime"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "http",
+            "port": 8096,
+            "protocol": "TCP",
+            "targetPort": 8096
+          }
+        ],
+        "selector": {
+          "maimi.megmeet.com/component": "termination-observer",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/node-role": "a2"
+        },
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/component": "termination-observer",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "termination-a2",
+        "namespace": "maimi-production-runtime"
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 2,
+        "selector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "termination-observer",
+            "maimi.megmeet.com/environment": "production",
+            "maimi.megmeet.com/node-role": "a2"
+          }
+        },
+        "strategy": {
+          "type": "Recreate"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "maimi.megmeet.com/component": "termination-observer",
+              "maimi.megmeet.com/environment": "production",
+              "maimi.megmeet.com/node-role": "a2"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "python3",
+                  "-I",
+                  "-B",
+                  "-c",
+                  "import hashlib,sys;f=open('/node/bin/crictl','rb');assert hashlib.file_digest(f,'sha256').hexdigest()=='3c8f814620506fa560e9737638f2190bdb1e4cd5356aaeb90b20309d88b58873';f.close();sys.path.insert(0,'/observer');import observer as o;old=o.LocalNodeReader;\nclass HostReader(old):\n def __init__(self,**kw):super().__init__(**kw,cgroup_root='/node/cgroup',boot_id_path='/node/boot_id');self.command=[self.command[0]]+self.command[2:]\no.LocalNodeReader=HostReader;o.serve_from_env()"
+                ],
+                "env": [
+                  {
+                    "name": "MAIMI_OBSERVER_BIND",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_CRI_SOCKET",
+                    "value": "unix:///node/run/containerd.sock"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_INSTANCE",
+                    "value": "maimi-prod-chat-v1"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_K3S_BINARY",
+                    "value": "/node/bin/crictl"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_KEY_FILE",
+                    "value": "/run/observer/key"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_KUBELET_ROOT",
+                    "value": "/node/kubelet"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_NODE_NAME",
+                    "value": "maimi-a2"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_PORT",
+                    "value": "8096"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  }
+                ],
+                "image": "docker.io/library/maimi-r95-production-manager@sha256:66600c7ef6d70ab3c8036c1fd8155cd86886a3a4cdc7a7a972aaf5802acba59a",
+                "imagePullPolicy": "Never",
+                "name": "observer",
+                "ports": [
+                  {
+                    "containerPort": 8096,
+                    "name": "http"
+                  }
+                ],
+                "readinessProbe": {
+                  "periodSeconds": 5,
+                  "tcpSocket": {
+                    "port": 8096
+                  },
+                  "timeoutSeconds": 2
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "256Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "64Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "readOnlyRootFilesystem": true,
+                  "runAsGroup": 0,
+                  "runAsNonRoot": false,
+                  "runAsUser": 0,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/node/run/containerd.sock",
+                    "name": "cri",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/bin/crictl",
+                    "name": "tool",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/kubelet/pods",
+                    "name": "pods",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/cgroup",
+                    "name": "cgroup",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/boot_id",
+                    "name": "boot",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/observer",
+                    "name": "code",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/run/observer",
+                    "name": "key",
+                    "readOnly": true
+                  }
+                ]
+              }
+            ],
+            "enableServiceLinks": false,
+            "nodeSelector": {
+              "kubernetes.io/hostname": "maimi-a2"
+            },
+            "serviceAccountName": "maimi-termination-observer",
+            "terminationGracePeriodSeconds": 10,
+            "volumes": [
+              {
+                "hostPath": {
+                  "path": "/run/k3s/containerd/containerd.sock",
+                  "type": "Socket"
+                },
+                "name": "cri"
+              },
+              {
+                "hostPath": {
+                  "path": "/var/lib/rancher/k3s/data/d5316b544b0ddcf993305e38b2aee41dc79e8c5d963a8336f5d8df84e99fb426/bin/k3s",
+                  "type": "File"
+                },
+                "name": "tool"
+              },
+              {
+                "hostPath": {
+                  "path": "/data/maimi-production/kubelet/pods",
+                  "type": "Directory"
+                },
+                "name": "pods"
+              },
+              {
+                "hostPath": {
+                  "path": "/sys/fs/cgroup",
+                  "type": "Directory"
+                },
+                "name": "cgroup"
+              },
+              {
+                "hostPath": {
+                  "path": "/proc/sys/kernel/random/boot_id",
+                  "type": "File"
+                },
+                "name": "boot"
+              },
+              {
+                "configMap": {
+                  "defaultMode": 292,
+                  "name": "maimi-termination-source-r96"
+                },
+                "name": "code"
+              },
+              {
+                "name": "key",
+                "secret": {
+                  "defaultMode": 256,
+                  "secretName": "termination-a2-key-r96"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "termination-c",
+        "namespace": "maimi-production-runtime"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "http",
+            "port": 8096,
+            "protocol": "TCP",
+            "targetPort": 8096
+          }
+        ],
+        "selector": {
+          "maimi.megmeet.com/component": "termination-observer",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/node-role": "c"
+        },
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/component": "termination-observer",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "termination-c",
+        "namespace": "maimi-production-runtime"
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 2,
+        "selector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "termination-observer",
+            "maimi.megmeet.com/environment": "production",
+            "maimi.megmeet.com/node-role": "c"
+          }
+        },
+        "strategy": {
+          "type": "Recreate"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "maimi.megmeet.com/component": "termination-observer",
+              "maimi.megmeet.com/environment": "production",
+              "maimi.megmeet.com/node-role": "c"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "python3",
+                  "-I",
+                  "-B",
+                  "-c",
+                  "import hashlib,sys;f=open('/node/bin/crictl','rb');assert hashlib.file_digest(f,'sha256').hexdigest()=='3c8f814620506fa560e9737638f2190bdb1e4cd5356aaeb90b20309d88b58873';f.close();sys.path.insert(0,'/observer');import observer as o;old=o.LocalNodeReader;\nclass HostReader(old):\n def __init__(self,**kw):super().__init__(**kw,cgroup_root='/node/cgroup',boot_id_path='/node/boot_id');self.command=[self.command[0]]+self.command[2:]\no.LocalNodeReader=HostReader;o.serve_from_env()"
+                ],
+                "env": [
+                  {
+                    "name": "MAIMI_OBSERVER_BIND",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_CRI_SOCKET",
+                    "value": "unix:///node/run/containerd.sock"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_INSTANCE",
+                    "value": "maimi-prod-execution-v1"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_K3S_BINARY",
+                    "value": "/node/bin/crictl"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_KEY_FILE",
+                    "value": "/run/observer/key"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_KUBELET_ROOT",
+                    "value": "/node/kubelet"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_NODE_NAME",
+                    "value": "maimi-c"
+                  },
+                  {
+                    "name": "MAIMI_OBSERVER_PORT",
+                    "value": "8096"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  }
+                ],
+                "image": "docker.io/library/maimi-r95-production-manager@sha256:66600c7ef6d70ab3c8036c1fd8155cd86886a3a4cdc7a7a972aaf5802acba59a",
+                "imagePullPolicy": "Never",
+                "name": "observer",
+                "ports": [
+                  {
+                    "containerPort": 8096,
+                    "name": "http"
+                  }
+                ],
+                "readinessProbe": {
+                  "periodSeconds": 5,
+                  "tcpSocket": {
+                    "port": 8096
+                  },
+                  "timeoutSeconds": 2
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "256Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "64Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "readOnlyRootFilesystem": true,
+                  "runAsGroup": 0,
+                  "runAsNonRoot": false,
+                  "runAsUser": 0,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/node/run/containerd.sock",
+                    "name": "cri",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/bin/crictl",
+                    "name": "tool",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/kubelet/pods",
+                    "name": "pods",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/cgroup",
+                    "name": "cgroup",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/node/boot_id",
+                    "name": "boot",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/observer",
+                    "name": "code",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/run/observer",
+                    "name": "key",
+                    "readOnly": true
+                  }
+                ]
+              }
+            ],
+            "enableServiceLinks": false,
+            "nodeSelector": {
+              "kubernetes.io/hostname": "maimi-c"
+            },
+            "serviceAccountName": "maimi-termination-observer",
+            "terminationGracePeriodSeconds": 10,
+            "volumes": [
+              {
+                "hostPath": {
+                  "path": "/run/k3s/containerd/containerd.sock",
+                  "type": "Socket"
+                },
+                "name": "cri"
+              },
+              {
+                "hostPath": {
+                  "path": "/data/maimi-production/k3s/data/d5316b544b0ddcf993305e38b2aee41dc79e8c5d963a8336f5d8df84e99fb426/bin/k3s",
+                  "type": "File"
+                },
+                "name": "tool"
+              },
+              {
+                "hostPath": {
+                  "path": "/data/maimi-production/kubelet/pods",
+                  "type": "Directory"
+                },
+                "name": "pods"
+              },
+              {
+                "hostPath": {
+                  "path": "/sys/fs/cgroup",
+                  "type": "Directory"
+                },
+                "name": "cgroup"
+              },
+              {
+                "hostPath": {
+                  "path": "/proc/sys/kernel/random/boot_id",
+                  "type": "File"
+                },
+                "name": "boot"
+              },
+              {
+                "configMap": {
+                  "defaultMode": 292,
+                  "name": "maimi-termination-source-r96"
+                },
+                "name": "code"
+              },
+              {
+                "name": "key",
+                "secret": {
+                  "defaultMode": 256,
+                  "secretName": "termination-c-key-r96"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "automountServiceAccountToken": false,
+      "kind": "ServiceAccount",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager",
+        "namespace": "maimi-production"
+      }
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager",
+        "namespace": "maimi-production"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "create",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "services",
+            "persistentvolumeclaims",
+            "secrets"
+          ],
+          "verbs": [
+            "get",
+            "create",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "discovery.k8s.io"
+          ],
+          "resources": [
+            "endpointslices"
+          ],
+          "verbs": [
+            "get",
+            "list"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager",
+        "namespace": "maimi-production"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "maimi-manager"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "maimi-manager",
+          "namespace": "maimi-production"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager-maimi-production"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "persistentvolumes"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            "storage.k8s.io"
+          ],
+          "resourceNames": [
+            "maimi-prod-local-state-retain"
+          ],
+          "resources": [
+            "storageclasses"
+          ],
+          "verbs": [
+            "get"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRoleBinding",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager-maimi-production"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "maimi-manager-maimi-production"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "maimi-manager",
+          "namespace": "maimi-production"
+        }
+      ]
+    },
+    {
+      "apiVersion": "v1",
+      "data": {
+        "image-admission.json": "{\"card_image\":\"docker.io/library/maimi-r106-worker@sha256:ca87a9d2eb97fc04c3fc74b1e919c0a4c2d62d7702e9f4af33306e23605f04c8\",\"files_image\":\"docker.io/library/maimi-r106-worker@sha256:ca87a9d2eb97fc04c3fc74b1e919c0a4c2d62d7702e9f4af33306e23605f04c8\",\"runtime\":\"0.2.2-rc.1\",\"schema\":\"maimi-k8s-worker-image-admission/v2\",\"worker_image\":\"docker.io/library/maimi-r106-worker@sha256:ca87a9d2eb97fc04c3fc74b1e919c0a4c2d62d7702e9f4af33306e23605f04c8\"}\n",
+        "pool.json": "{\"nodes\":[{\"cpu\":5000,\"ephemeral\":32768,\"memory\":10240,\"name\":\"maimi-a1\",\"observer_key_file\":\"/run/observer/a1\",\"observer_url\":\"http://termination-a1.maimi-production-runtime.svc:8096\",\"slots\":20,\"starting\":3},{\"cpu\":5000,\"ephemeral\":32768,\"memory\":10240,\"name\":\"maimi-a2\",\"observer_key_file\":\"/run/observer/a2\",\"observer_url\":\"http://termination-a2.maimi-production-runtime.svc:8096\",\"slots\":20,\"starting\":3}],\"schema\":\"maimi-execution-pool/v1\"}\n"
+      },
+      "immutable": true,
+      "kind": "ConfigMap",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager-config-r106-rc1",
+        "namespace": "maimi-production"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "personal-cloud-manager",
+        "namespace": "maimi-production"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "http",
+            "port": 8092,
+            "protocol": "TCP",
+            "targetPort": 8092
+          }
+        ],
+        "selector": {
+          "maimi.megmeet.com/component": "personal-cloud-manager",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/pool-role": "chat"
+        },
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/component": "personal-cloud-manager",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "personal-cloud-manager",
+        "namespace": "maimi-production"
+      },
+      "spec": {
+        "replicas": 2,
+        "revisionHistoryLimit": 2,
+        "selector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "personal-cloud-manager",
+            "maimi.megmeet.com/environment": "production",
+            "maimi.megmeet.com/pool-role": "chat"
+          }
+        },
+        "strategy": {
+          "rollingUpdate": {
+            "maxSurge": 0,
+            "maxUnavailable": 1
+          },
+          "type": "RollingUpdate"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "maimi.megmeet.com/component": "personal-cloud-manager",
+              "maimi.megmeet.com/environment": "production",
+              "maimi.megmeet.com/pool-role": "chat"
+            }
+          },
+          "spec": {
+            "affinity": {
+              "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                  "nodeSelectorTerms": [
+                    {
+                      "matchExpressions": [
+                        {
+                          "key": "kubernetes.io/hostname",
+                          "operator": "In",
+                          "values": [
+                            "maimi-a1",
+                            "maimi-a2"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "podAntiAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "labelSelector": {
+                      "matchLabels": {
+                        "maimi.megmeet.com/component": "personal-cloud-manager",
+                        "maimi.megmeet.com/environment": "production",
+                        "maimi.megmeet.com/pool-role": "chat"
+                      }
+                    },
+                    "topologyKey": "kubernetes.io/hostname"
+                  }
+                ]
+              }
+            },
+            "automountServiceAccountToken": true,
+            "containers": [
+              {
+                "command": [
+                  "uvicorn",
+                  "manager_entry:app",
+                  "--app-dir",
+                  "/opt/personal-cloud",
+                  "--host",
+                  "0.0.0.0",
+                  "--port",
+                  "8092",
+                  "--no-access-log"
+                ],
+                "env": [
+                  {
+                    "name": "MAIMI_POOL_ROLE",
+                    "value": "chat"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_CLOSED_SECONDS",
+                    "value": "7200"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_IDLE_SECONDS",
+                    "value": "120"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_API",
+                    "value": "https://kubernetes.default.svc"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_CA_FILE",
+                    "value": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_COMPLETED_IDLE_SECONDS",
+                    "value": "30"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_CPU_MILLIS",
+                    "value": "250"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_EPHEMERAL_MIB",
+                    "value": "512"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_FILES_ACCESS_MODE",
+                    "value": "ReadWriteMany"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_FILES_GIB",
+                    "value": "5"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_FILES_STORAGE_CLASS",
+                    "value": "maimi-prod-shared-files-retain"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_IMAGE_ADMISSION_FILE",
+                    "value": "/etc/maimi/image-admission.json"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_IMAGE_ADMISSION_SHA256",
+                    "value": "8631e94936e23b381abfb99c8e31dd41e7f91f8227aac713fac07b417ebca369"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_LOCAL_STATE_ROOT",
+                    "value": "/data/maimi-production/workspace-state"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_MEMORY_MIB",
+                    "value": "896"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_NAMESPACE",
+                    "value": "maimi-production"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_POOL_FILE",
+                    "value": "/etc/maimi/pool.json"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_PRESSURE_IDLE_SECONDS",
+                    "value": "30"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_QUEUE_LIMIT",
+                    "value": "256"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_QUEUE_SECONDS",
+                    "value": "180"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_RELOCATABLE_CHAT_STATE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_RUNTIME_CLASS",
+                    "value": "maimi-runsc"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_SHARED_FILES_BACKEND",
+                    "value": "nfs"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_SHARED_FILES_PREFIX",
+                    "value": "owners"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_SHARED_NFS_EXPORT",
+                    "value": "/{{NAS_EXPORT_NAME}}/maimi"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_SHARED_NFS_SERVER",
+                    "value": "{{NAS_IP}}"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_STARTUP_PARALLELISM",
+                    "value": "6"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_STATE_ACCESS_MODE",
+                    "value": "ReadWriteOnce"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_STATE_GIB",
+                    "value": "2"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_STATE_STORAGE_CLASS",
+                    "value": "maimi-prod-local-state-retain"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_TOKEN_FILE",
+                    "value": "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_TOTAL_CPU_MILLIS",
+                    "value": "10000"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_TOTAL_EPHEMERAL_MIB",
+                    "value": "65536"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_TOTAL_MEMORY_MIB",
+                    "value": "20480"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_WORKER_NODE",
+                    "value": "maimi-a1"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_WORKSPACE_STATE_BACKEND",
+                    "value": "postgres"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MANAGER_NAMESPACE",
+                    "value": "maimi-prod-chat-v1"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MANAGER_SECRET_FILE",
+                    "value": "/run/maimi/manager-token"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MAX_ACTIVE_HOSTS",
+                    "value": "40"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_METRICS_SECRET_FILE",
+                    "value": "/run/maimi/metrics-token"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MODEL_BASE_URL",
+                    "value": "http://gateway:8080/internal/personal-cloud/model/v1"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_RUNTIME_BACKEND",
+                    "value": "kubernetes"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "DATABASE_URL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "DATABASE_URL",
+                        "name": "maimi-production-db"
+                      }
+                    }
+                  }
+                ],
+                "image": "docker.io/library/maimi-r106-manager@sha256:b0ed0dcbbc80adb0d9c0196845db58fe50756ad720743efe46d14635e353624f",
+                "imagePullPolicy": "Never",
+                "name": "manager",
+                "ports": [
+                  {
+                    "containerPort": 8092,
+                    "name": "http"
+                  }
+                ],
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "python3",
+                      "-I",
+                      "-B",
+                      "-c",
+                      "import json,urllib.request,pathlib;t=pathlib.Path('/run/maimi/manager-token').read_text().strip();r=urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8092/v1/status',headers={'Authorization':'Bearer '+t}),timeout=3);v=json.load(r);raise SystemExit(0 if v.get('status')=='ready' else 1)"
+                    ]
+                  },
+                  "failureThreshold": 3,
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 5
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "1000m",
+                    "ephemeral-storage": "256Mi",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "ephemeral-storage": "64Mi",
+                    "memory": "192Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "readOnlyRootFilesystem": true,
+                  "runAsGroup": 1000,
+                  "runAsNonRoot": true,
+                  "runAsUser": 1000,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "startupProbe": {
+                  "exec": {
+                    "command": [
+                      "python3",
+                      "-I",
+                      "-B",
+                      "-c",
+                      "import json,urllib.request,pathlib;t=pathlib.Path('/run/maimi/manager-token').read_text().strip();r=urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8092/v1/status',headers={'Authorization':'Bearer '+t}),timeout=3);v=json.load(r);raise SystemExit(0 if v.get('status')=='ready' else 1)"
+                    ]
+                  },
+                  "failureThreshold": 30,
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 5
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/maimi",
+                    "name": "config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/run/maimi",
+                    "name": "auth",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/run/observer",
+                    "name": "observer",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  },
+                  {
+                    "mountPath": "/run/maimi-db",
+                    "name": "db-ca",
+                    "readOnly": true
+                  }
+                ]
+              }
+            ],
+            "enableServiceLinks": false,
+            "securityContext": {
+              "fsGroup": 1000,
+              "runAsGroup": 1000,
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "serviceAccountName": "maimi-manager",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "configMap": {
+                  "defaultMode": 292,
+                  "name": "maimi-manager-config-r106-rc1"
+                },
+                "name": "config"
+              },
+              {
+                "name": "auth",
+                "secret": {
+                  "defaultMode": 288,
+                  "secretName": "maimi-runtime-manager-auth-r96"
+                }
+              },
+              {
+                "name": "observer",
+                "secret": {
+                  "defaultMode": 288,
+                  "secretName": "maimi-runtime-observer-keys-r96"
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "64Mi"
+                },
+                "name": "tmp"
+              },
+              {
+                "configMap": {
+                  "defaultMode": 292,
+                  "name": "maimi-production-db-ca"
+                },
+                "name": "db-ca"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "policy/v1",
+      "kind": "PodDisruptionBudget",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "personal-cloud-manager",
+        "namespace": "maimi-production"
+      },
+      "spec": {
+        "minAvailable": 1,
+        "selector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "personal-cloud-manager",
+            "maimi.megmeet.com/environment": "production",
+            "maimi.megmeet.com/pool-role": "chat"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "automountServiceAccountToken": false,
+      "kind": "ServiceAccount",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager",
+        "namespace": "maimi-production-execution"
+      }
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager",
+        "namespace": "maimi-production-execution"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "create",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "services",
+            "persistentvolumeclaims",
+            "secrets"
+          ],
+          "verbs": [
+            "get",
+            "create",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "discovery.k8s.io"
+          ],
+          "resources": [
+            "endpointslices"
+          ],
+          "verbs": [
+            "get",
+            "list"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager",
+        "namespace": "maimi-production-execution"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "maimi-manager"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "maimi-manager",
+          "namespace": "maimi-production-execution"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager-maimi-production-execution"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "persistentvolumes"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            "storage.k8s.io"
+          ],
+          "resourceNames": [
+            "maimi-prod-local-state-retain"
+          ],
+          "resources": [
+            "storageclasses"
+          ],
+          "verbs": [
+            "get"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRoleBinding",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager-maimi-production-execution"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "maimi-manager-maimi-production-execution"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "maimi-manager",
+          "namespace": "maimi-production-execution"
+        }
+      ]
+    },
+    {
+      "apiVersion": "v1",
+      "data": {
+        "image-admission.json": "{\"card_image\":\"docker.io/library/maimi-r106-worker@sha256:ca87a9d2eb97fc04c3fc74b1e919c0a4c2d62d7702e9f4af33306e23605f04c8\",\"files_image\":\"docker.io/library/maimi-r106-worker@sha256:ca87a9d2eb97fc04c3fc74b1e919c0a4c2d62d7702e9f4af33306e23605f04c8\",\"runtime\":\"0.2.2-rc.1\",\"schema\":\"maimi-k8s-worker-image-admission/v2\",\"worker_image\":\"docker.io/library/maimi-r106-worker@sha256:ca87a9d2eb97fc04c3fc74b1e919c0a4c2d62d7702e9f4af33306e23605f04c8\"}\n",
+        "pool.json": "{\"nodes\":[{\"cpu\":14000,\"ephemeral\":65536,\"memory\":24576,\"name\":\"maimi-c\",\"observer_key_file\":\"/run/observer/c\",\"observer_url\":\"http://termination-c.maimi-production-runtime.svc:8096\",\"slots\":40,\"starting\":3}],\"schema\":\"maimi-execution-pool/v1\"}\n"
+      },
+      "immutable": true,
+      "kind": "ConfigMap",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "maimi-manager-config-r106-rc1",
+        "namespace": "maimi-production-execution"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "execution-manager",
+        "namespace": "maimi-production-execution"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "http",
+            "port": 8092,
+            "protocol": "TCP",
+            "targetPort": 8092
+          }
+        ],
+        "selector": {
+          "maimi.megmeet.com/component": "personal-cloud-manager",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/pool-role": "execution"
+        },
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/component": "personal-cloud-manager",
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "execution-manager",
+        "namespace": "maimi-production-execution"
+      },
+      "spec": {
+        "replicas": 2,
+        "revisionHistoryLimit": 2,
+        "selector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "personal-cloud-manager",
+            "maimi.megmeet.com/environment": "production",
+            "maimi.megmeet.com/pool-role": "execution"
+          }
+        },
+        "strategy": {
+          "rollingUpdate": {
+            "maxSurge": 0,
+            "maxUnavailable": 1
+          },
+          "type": "RollingUpdate"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "maimi.megmeet.com/component": "personal-cloud-manager",
+              "maimi.megmeet.com/environment": "production",
+              "maimi.megmeet.com/pool-role": "execution"
+            }
+          },
+          "spec": {
+            "affinity": {
+              "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                  "nodeSelectorTerms": [
+                    {
+                      "matchExpressions": [
+                        {
+                          "key": "kubernetes.io/hostname",
+                          "operator": "In",
+                          "values": [
+                            "maimi-a1",
+                            "maimi-a2"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "podAntiAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "labelSelector": {
+                      "matchLabels": {
+                        "maimi.megmeet.com/component": "personal-cloud-manager",
+                        "maimi.megmeet.com/environment": "production",
+                        "maimi.megmeet.com/pool-role": "execution"
+                      }
+                    },
+                    "topologyKey": "kubernetes.io/hostname"
+                  }
+                ]
+              }
+            },
+            "automountServiceAccountToken": true,
+            "containers": [
+              {
+                "command": [
+                  "uvicorn",
+                  "manager_entry:app",
+                  "--app-dir",
+                  "/opt/personal-cloud",
+                  "--host",
+                  "0.0.0.0",
+                  "--port",
+                  "8092",
+                  "--no-access-log"
+                ],
+                "env": [
+                  {
+                    "name": "MAIMI_POOL_ROLE",
+                    "value": "execution"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_CLOSED_SECONDS",
+                    "value": "7200"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_IDLE_SECONDS",
+                    "value": "60"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_API",
+                    "value": "https://kubernetes.default.svc"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_CA_FILE",
+                    "value": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_COMPLETED_IDLE_SECONDS",
+                    "value": "30"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_CPU_MILLIS",
+                    "value": "500"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_EPHEMERAL_MIB",
+                    "value": "1024"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_FILES_ACCESS_MODE",
+                    "value": "ReadWriteMany"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_FILES_GIB",
+                    "value": "5"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_FILES_STORAGE_CLASS",
+                    "value": "maimi-prod-shared-files-retain"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_IMAGE_ADMISSION_FILE",
+                    "value": "/etc/maimi/image-admission.json"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_IMAGE_ADMISSION_SHA256",
+                    "value": "8631e94936e23b381abfb99c8e31dd41e7f91f8227aac713fac07b417ebca369"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_LOCAL_STATE_ROOT",
+                    "value": "/data/maimi-production/workspace-state"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_MEMORY_MIB",
+                    "value": "768"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_NAMESPACE",
+                    "value": "maimi-production-execution"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_POOL_FILE",
+                    "value": "/etc/maimi/pool.json"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_PRESSURE_IDLE_SECONDS",
+                    "value": "30"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_QUEUE_LIMIT",
+                    "value": "256"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_QUEUE_SECONDS",
+                    "value": "180"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_RELOCATABLE_CHAT_STATE",
+                    "value": "0"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_RUNTIME_CLASS",
+                    "value": "maimi-runsc"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_SHARED_FILES_BACKEND",
+                    "value": "nfs"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_SHARED_FILES_PREFIX",
+                    "value": "owners"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_SHARED_NFS_EXPORT",
+                    "value": "/{{NAS_EXPORT_NAME}}/maimi"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_SHARED_NFS_SERVER",
+                    "value": "{{NAS_IP}}"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_STARTUP_PARALLELISM",
+                    "value": "3"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_STATE_ACCESS_MODE",
+                    "value": "ReadWriteOnce"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_STATE_GIB",
+                    "value": "2"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_STATE_STORAGE_CLASS",
+                    "value": "maimi-prod-local-state-retain"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_TOKEN_FILE",
+                    "value": "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_TOTAL_CPU_MILLIS",
+                    "value": "14000"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_TOTAL_EPHEMERAL_MIB",
+                    "value": "65536"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_TOTAL_MEMORY_MIB",
+                    "value": "24576"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_WORKER_NODE",
+                    "value": "maimi-c"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_K8S_WORKSPACE_STATE_BACKEND",
+                    "value": ""
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MANAGER_NAMESPACE",
+                    "value": "maimi-prod-execution-v1"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MANAGER_SECRET_FILE",
+                    "value": "/run/maimi/manager-token"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MAX_ACTIVE_HOSTS",
+                    "value": "40"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_METRICS_SECRET_FILE",
+                    "value": "/run/maimi/metrics-token"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_MODEL_BASE_URL",
+                    "value": "http://gateway:8080/internal/personal-cloud/model/v1"
+                  },
+                  {
+                    "name": "PERSONAL_CLOUD_RUNTIME_BACKEND",
+                    "value": "kubernetes"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "DATABASE_URL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "DATABASE_URL",
+                        "name": "maimi-production-db"
+                      }
+                    }
+                  }
+                ],
+                "image": "docker.io/library/maimi-r106-manager@sha256:b0ed0dcbbc80adb0d9c0196845db58fe50756ad720743efe46d14635e353624f",
+                "imagePullPolicy": "Never",
+                "name": "manager",
+                "ports": [
+                  {
+                    "containerPort": 8092,
+                    "name": "http"
+                  }
+                ],
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "python3",
+                      "-I",
+                      "-B",
+                      "-c",
+                      "import json,urllib.request,pathlib;t=pathlib.Path('/run/maimi/manager-token').read_text().strip();r=urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8092/v1/status',headers={'Authorization':'Bearer '+t}),timeout=3);v=json.load(r);raise SystemExit(0 if v.get('status')=='ready' else 1)"
+                    ]
+                  },
+                  "failureThreshold": 3,
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 5
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "1000m",
+                    "ephemeral-storage": "256Mi",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "ephemeral-storage": "64Mi",
+                    "memory": "192Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "readOnlyRootFilesystem": true,
+                  "runAsGroup": 1000,
+                  "runAsNonRoot": true,
+                  "runAsUser": 1000,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "startupProbe": {
+                  "exec": {
+                    "command": [
+                      "python3",
+                      "-I",
+                      "-B",
+                      "-c",
+                      "import json,urllib.request,pathlib;t=pathlib.Path('/run/maimi/manager-token').read_text().strip();r=urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8092/v1/status',headers={'Authorization':'Bearer '+t}),timeout=3);v=json.load(r);raise SystemExit(0 if v.get('status')=='ready' else 1)"
+                    ]
+                  },
+                  "failureThreshold": 30,
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 5
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/maimi",
+                    "name": "config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/run/maimi",
+                    "name": "auth",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/run/observer",
+                    "name": "observer",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  },
+                  {
+                    "mountPath": "/run/maimi-db",
+                    "name": "db-ca",
+                    "readOnly": true
+                  }
+                ]
+              }
+            ],
+            "enableServiceLinks": false,
+            "securityContext": {
+              "fsGroup": 1000,
+              "runAsGroup": 1000,
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "serviceAccountName": "maimi-manager",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "configMap": {
+                  "defaultMode": 292,
+                  "name": "maimi-manager-config-r106-rc1"
+                },
+                "name": "config"
+              },
+              {
+                "name": "auth",
+                "secret": {
+                  "defaultMode": 288,
+                  "secretName": "maimi-runtime-manager-auth-r96"
+                }
+              },
+              {
+                "name": "observer",
+                "secret": {
+                  "defaultMode": 288,
+                  "secretName": "maimi-runtime-observer-keys-r96"
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "64Mi"
+                },
+                "name": "tmp"
+              },
+              {
+                "configMap": {
+                  "defaultMode": 292,
+                  "name": "maimi-production-db-ca"
+                },
+                "name": "db-ca"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "policy/v1",
+      "kind": "PodDisruptionBudget",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "execution-manager",
+        "namespace": "maimi-production-execution"
+      },
+      "spec": {
+        "minAvailable": 1,
+        "selector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "personal-cloud-manager",
+            "maimi.megmeet.com/environment": "production",
+            "maimi.megmeet.com/pool-role": "execution"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "manager-r96",
+        "namespace": "maimi-production"
+      },
+      "spec": {
+        "egress": [
+          {
+            "ports": [
+              {
+                "port": 53,
+                "protocol": "UDP"
+              },
+              {
+                "port": 53,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "kube-system"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "kube-dns"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 6443,
+                "protocol": "TCP"
+              },
+              {
+                "port": 443,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{A1_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{A2_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{C_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{SITE_MANAGER_AND_RUNTIME_ENDPOINT_1}}/32"
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 6432,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{A1_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{A2_IP}}/32"
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 3084,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/instance": "maimi-prod-chat-v1"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 8096,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production-runtime"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "termination-observer"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "gateway"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8092,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "personal-cloud-manager"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "workers-r96",
+        "namespace": "maimi-production"
+      },
+      "spec": {
+        "egress": [
+          {
+            "ports": [
+              {
+                "port": 53,
+                "protocol": "UDP"
+              },
+              {
+                "port": 53,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "kube-system"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "kube-dns"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "gateway"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "gateway"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "personal-cloud-manager"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 3084,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "maimi.megmeet.com/instance": "maimi-prod-chat-v1"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "manager-r96",
+        "namespace": "maimi-production-execution"
+      },
+      "spec": {
+        "egress": [
+          {
+            "ports": [
+              {
+                "port": 53,
+                "protocol": "UDP"
+              },
+              {
+                "port": 53,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "kube-system"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "kube-dns"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 6443,
+                "protocol": "TCP"
+              },
+              {
+                "port": 443,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{A1_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{A2_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{C_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{SITE_MANAGER_AND_RUNTIME_ENDPOINT_1}}/32"
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 6432,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "{{A1_IP}}/32"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "{{A2_IP}}/32"
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 3084,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production-execution"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/instance": "maimi-prod-execution-v1"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 8096,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production-runtime"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "termination-observer"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "gateway"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8092,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "personal-cloud-manager"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "workers-r96",
+        "namespace": "maimi-production-execution"
+      },
+      "spec": {
+        "egress": [],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "gateway"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production-execution"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "personal-cloud-manager"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 3084,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "maimi.megmeet.com/instance": "maimi-prod-execution-v1"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "ordinary-worker-services",
+        "namespace": "maimi-production-execution"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "maimi.megmeet.com/instance": "maimi-prod-execution-v1"
+          },
+          "matchExpressions": [
+            {
+              "key": "maimi.megmeet.com/network-mode",
+              "operator": "NotIn",
+              "values": [
+                "confidential"
+              ]
+            }
+          ]
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "ports": [
+              {
+                "port": 53,
+                "protocol": "UDP"
+              },
+              {
+                "port": 53,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "kube-system"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "kube-dns"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "gateway"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "termination-observer-r96",
+        "namespace": "maimi-production-runtime"
+      },
+      "spec": {
+        "egress": [],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "personal-cloud-manager"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "maimi-production-execution"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "maimi.megmeet.com/component": "personal-cloud-manager"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8096,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "maimi.megmeet.com/component": "termination-observer"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "maimi.megmeet.com/environment": "production",
+          "maimi.megmeet.com/release": "maimi-r96-production"
+        },
+        "name": "gateway",
+        "namespace": "maimi-production-execution"
+      },
+      "spec": {
+        "externalName": "gateway.maimi-production.svc.cluster.local",
+        "ports": [
+          {
+            "port": 8080,
+            "protocol": "TCP",
+            "targetPort": 8080
+          }
+        ],
+        "type": "ExternalName"
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "public-worker-web-egress",
+        "namespace": "maimi-production-execution"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "maimi.megmeet.com/instance": "maimi-prod-execution-v1",
+            "maimi.megmeet.com/component": "execution-worker",
+            "maimi.megmeet.com/mode": "worker",
+            "maimi.megmeet.com/network-mode": "public"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "0.0.0.0/0",
+                  "except": [
+                    "0.0.0.0/8",
+                    "10.0.0.0/8",
+                    "100.64.0.0/10",
+                    "127.0.0.0/8",
+                    "168.63.129.16/32",
+                    "169.254.0.0/16",
+                    "172.16.0.0/12",
+                    "192.0.0.0/24",
+                    "192.0.2.0/24",
+                    "192.88.99.0/24",
+                    "192.168.0.0/16",
+                    "198.18.0.0/15",
+                    "198.51.100.0/24",
+                    "203.0.113.0/24",
+                    "224.0.0.0/4",
+                    "240.0.0.0/4"
+                  ]
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 80
+              },
+              {
+                "protocol": "TCP",
+                "port": 443
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
