@@ -28,6 +28,7 @@ from openpyxl import Workbook
 from app import storage_lifecycle as storage
 from app import project_platform as project
 from maimi_projects import sales_orders
+from maimi_projects.service import ProjectFailure
 from order_mcp.config import Settings
 from order_mcp.service import OrderService
 
@@ -149,11 +150,20 @@ class SalesDownloadTests(unittest.TestCase):
                     }
                 raise AssertionError('Unexpected order operation: ' + action)
             async def auth(ctx, key):
-                assert ctx is self.ctx and key == 'sales-orders'; await self.runtime.authorize(self.access)
-            async def save(ctx, card):
-                await auth(ctx, card['connector']); old = await self.state.get(ctx, 'results') or []
-                await self.state.put(ctx, 'results', old + [card]); return {'status': card['status'], 'project_result': card}
-            svc = SimpleNamespace(files=self.files, sales_orders=order_call, _authorize=auth, _save_result=save)
+                permit = self.access.permit
+                if (ctx.user_no != self.access.actor.user_no or ctx.native_session_id != self.access.session_id
+                        or ctx.source != permit['source'] or key != permit['connector']):
+                    raise PermissionError('Synthetic actor, session or permit does not match')
+                await self.runtime.authorize(self.access)
+            def request_service(files, state):
+                async def save(ctx, card):
+                    await auth(ctx, card['connector'])
+                    old = await state.get(ctx, 'results') or []
+                    await state.put(ctx, 'results', old + [card])
+                    return {'status': card['status'], 'project_result': card}
+                return SimpleNamespace(files=files, sales_orders=order_call, _authorize=auth, _save_result=save)
+
+            svc = request_service(self.files, self.state)
             recognize_job = self.start_job('recognize')
             original = self.store.put(self.owner, self.sid, request_id='source', kind='ordinary', name='source.png', media_type='image/png', data=b'synthetic source')
             attachment = await self.files.register({'kind': 'file', 'ref': {'attachmentId': 'sha256:' + original['sha256'], 'name': 'source.png', 'bytes': original['expected_bytes']}}, 'native_message', 'image/png')
@@ -173,11 +183,29 @@ class SalesDownloadTests(unittest.TestCase):
             self.assertEqual(len(history['history']), 1); self.assertEqual(history['history'][0]['result']['project_result']['id'], recognized['project_result']['id'])
             self.assertTrue(await self.state.get(self.ctx, 'results'))
             # Continue through actual gateway review and version-bound preview.
+            # A customer-supplied order item needs ERP evidence or an explicit reviewer choice.
+            incomplete = orders.review(view['id'])
+            self.assertFalse(incomplete['can_prepare'])
+            codes = {f'lines.{i}.item_code': f'TEST-{i + 1}' for i in range(3)}
+            view = orders.revise(view['id'], incomplete['revision'], codes, 'Synthetic reviewer confirmed internal items', human=True)
             review_job = self.start_job('review')
             reviewed = await sales_orders.invoke(svc, self.ctx, 'review', {'order_id': view['id']}); self.finish_job(review_job, reviewed)
             self.assertEqual(reviewed['order_result']['status'], 'review'); self.assertTrue(reviewed['order_result']['can_prepare'])
             prepare_job = self.start_job('prepare')
-            prepared = await sales_orders.invoke(svc, self.ctx, 'prepare', {'order_id': view['id'], 'revision': view['revision']}); self.finish_job(prepare_job, prepared)
+            request = {'order_id': view['id'], 'revision': view['revision']}
+            with self.assertRaisesRegex(ProjectFailure, 'project_human_authorization_required'):
+                await sales_orders.invoke(svc, self.ctx, 'prepare', request)
+            reviewer = SimpleNamespace(**{**vars(self.ctx), 'source': 'human'})
+            with self.assertRaises(PermissionError):
+                await auth(reviewer, 'sales-orders')
+            self.access.permit['source'] = 'human'
+            for changed in ({'user_no': 'OTHER'}, {'native_session_id': 'another-session'}):
+                with self.assertRaises(PermissionError):
+                    await auth(SimpleNamespace(**{**vars(reviewer), **changed}), 'sales-orders')
+            review_service = request_service(project.FilePort(self.runtime, self.access, reviewer),
+                                             project.StatePort(self.runtime, self.access, reviewer))
+            prepared = await sales_orders.invoke(review_service, reviewer, 'prepare', request)
+            self.finish_job(prepare_job, prepared)
             confirm = prepared['project_result']['actions'][0]
             self.assertEqual(confirm['action'], 'submit'); self.assertTrue(confirm['arguments']['confirmation_token'])
             xml_record, _ = await self.files.record(prepared['project_result']['artifacts'][0]['attachment_id'])
